@@ -1,0 +1,11 @@
+{
+  "name": "@turkishpix/web",
+  "version": "1.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build --webpack",
+    "start": "next start --hostname 0.0.0.0 -p ${PORT:-3000}"
+  },
+  "type": "module"
+}

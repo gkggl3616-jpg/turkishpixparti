@@ -1,0 +1,49 @@
+{
+  "name": "turkishpix-siyasi-sistem",
+  "private": true,
+  "version": "1.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build -w @turkishpix/web",
+    "start": "npm run start -w @turkishpix/web",
+    "bot": "npm run start -w @turkishpix/bot",
+    "db:migrate": "node --import tsx scripts/migrate.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "commands:register": "node --import tsx scripts/register-commands.ts",
+    "audit:verify": "node --import tsx scripts/verify-audit.ts",
+    "check:config": "node --import tsx scripts/check-config.ts",
+    "db:harden": "node scripts/harden-db.mjs",
+    "preview:build": "node scripts/build-preview.mjs"
+  },
+  "dependencies": {
+    "discord.js": "^14.22.1",
+    "dotenv": "^17.2.3",
+    "lucide-react": "^0.577.0",
+    "next": "^16.2.0",
+    "pg": "^8.16.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsx": "^4.20.6",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.2",
+    "railway": "^3.13.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module"
+}

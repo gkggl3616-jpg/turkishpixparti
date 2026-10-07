@@ -1,0 +1,10 @@
+import {build} from 'esbuild';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+const entry=`import React from 'react';import{createRoot}from'react-dom/client';import Panel from'../apps/web/src/components/Panel';
+window.fetch=async()=>new Response(JSON.stringify({demo:true,ready:false,clientId:'1557484052133707896',checks:{database:false,oauth:false,bot:false,guild:false,owners:false,voteChannel:false,logChannel:false,audit:false}}),{headers:{'Content-Type':'application/json'}});
+createRoot(document.getElementById('root')).render(React.createElement(Panel));`;
+await mkdir('preview',{recursive:true});await writeFile('preview/entry.tsx',entry);
+const result=await build({entryPoints:['preview/entry.tsx'],bundle:true,write:false,minify:true,format:'iife',platform:'browser',target:['es2022'],jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}});
+const css=await readFile('apps/web/src/app/globals.css','utf8');const script=result.outputFiles[0].text.replace(/<\/script/gi,'<\\/script');
+await writeFile('preview/TurkishPix-Onizleme.html',`<!doctype html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TurkishPix • Arayüz Önizlemesi</title><style>${css}</style></head><body><div id="root"></div><script>${script}</script></body></html>`);
+console.log('Tek dosyalık arayüz önizlemesi oluşturuldu.');
