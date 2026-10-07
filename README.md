@@ -8,7 +8,7 @@ Parti kuruluşu, dört owner onayı, web/Discord ortak oylaması, TBMM, milletve
 
 Bot kimliği doğrulandı; TurkishPix sunucu ID’si `1497372055530639504`. Botun sunucuya eklenmesi, OAuth callback adresinin Developer Portal’a kaydedilmesi ve owner panelinden kanal/rol ID’lerinin girilmesi gerekir. Gerçek Discord üzerinde oy/rol smoke testi bu kurulum tamamlanmadan çalıştırılamaz.
 
-Railway’nin yeni proje isteği kaynak limitiyle reddedildi; mevcut Pixmap projesinde PostgreSQL kurulumu başarılı. Dağıtım bu mevcut projede, yalnızca Pixmap web’in yerine yapılır. Pixmap mobil ve Pixelya korunur.
+Canlı panel: **https://turkishpix-web-production.up.railway.app**. PostgreSQL, Web ve Bot mevcut Railway projesinde çevrim içi. Eski Pixmap web kaldırıldı; Pixmap mobil/APK, diski ve bucket’ı ile Pixelya korunur. Bot Discord Gateway’e bağlandı. Kısıtlı runtime hesabının audit kayıtlarını güncelleyemediği ve trigger’ları kapatamadığı gerçek PostgreSQL üzerinde doğrulandı.
 
 ## Repo yapısı
 
@@ -103,6 +103,6 @@ npm run build
 npm run check:config
 ```
 
-Testlerde PostgreSQL uyumlu PGlite motoru kullanılır; HTTP testlerindeki Discord cevapları kontrollü mock’tur. Gerçek Discord/Railway üretim erişimi ve bağımsız PostgreSQL sunucusunda eşzamanlı yük testi tamamlanmadı. Yeni kurulum izin testleri dahil 26 otomatik test geçer. Tarayıcı doğrulaması dağıtım sırasında yapılır.
+Testlerde PostgreSQL uyumlu PGlite motoru kullanılır; HTTP testlerindeki Discord cevapları kontrollü mock’tur. Discord üzerindeki gerçek dört owner/oy/rol akışı ve bağımsız PostgreSQL sunucusunda eşzamanlı yük testi tamamlanmadı. Yeni kurulum izin testleri dahil 27 otomatik test geçer. Canlı site masaüstü ve 390 px mobil tarayıcıda doğrulandı; tema, menü, rol ID alanları ve modal davranışları kontrol edildi.
 
 Dağıtım için `docs/RAILWAY.md`, güvenlik/işletim sınırları için `docs/OPERATIONS.md` okuyun.

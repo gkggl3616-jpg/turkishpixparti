@@ -82,3 +82,17 @@ Yeni proje isteği kaynak kotasıyla reddedildi. `pixmap-fun-redisless` projesin
 İlk şema kurulumu için geçici DB Setup servisi `node scripts/bootstrap-db.mjs` çalıştırır. Bu serviste `DATABASE_ADMIN_URL` PostgreSQL referansı, `DATABASE_RUNTIME_PASSWORD` rastgele 64 hex karakter ve `BOOTSTRAP_KEEP_ALIVE=true` bulunur. Marker `TURKISHPIX_DATABASE_READY` sonrası geçici servis silinir. Web ve Bot yalnızca kısıtlı `turkishpix_runtime` hesabını kullanır.
 
 Owner → Sunucu kurulumu ekranından sunucu/kanal ID’leri değiştirilir, bot sunucuya davet edilir ve izinler tespit edilir. Görev ve roller ekranından dört rol seçilir veya ID’leri elle girilir. Slash komutları otomatik kaydedilir. OAuth scope’ları `identify guilds.members.read`; privileged intent gerekmez.
+
+## Canlı dağıtım — 7 Ekim 2026
+
+- Web: https://turkishpix-web-production.up.railway.app
+- OAuth2 Redirect URI: `https://turkishpix-web-production.up.railway.app/api/auth/callback`
+- PostgreSQL, Web ve Bot çevrim içi. `/api/health`, `/api/config` ve `/api/overview` 200; anonim `/api/setup` 401.
+- Discord Client Secret client credentials grant ile doğrulandı. Login endpoint Discord’a doğru redirect URI ve scope’larla yönlendirir; gerçek kullanıcı callback henüz test edilmedi.
+- Bot Gateway’e bağlandı: TurkishPix Parti Sistemi. Botun sunucuya eklenmesi gerekir; komutlar sonra otomatik kaydedilir.
+- Runtime audit UPDATE ve trigger disable işlemleri gerçek PostgreSQL’de 42501 ile reddedildi.
+- Geçici migration servisi tamamlandıktan sonra silindi. Web/Bot üzerinde yönetici bağlantısı bulunmaz.
+- Pixmap web kaldırıldı. Pixmap mobil ve Pixelya deployment’ları değişmeden çevrim içi; mevcut mobil storage kaynakları korundu.
+- Owner giriş ekranındaki “İlk Discord kurulumu” bölümü callback adresini ve bot davetini girişten önce gösterir.
+
+Owner ile giriş yaptıktan sonra **Sunucu kurulumu** ekranından oylama ve log kanal ID’lerini, **Görev ve roller** ekranından dört siyasi rol ID’sini girin. İzin kontrolü tamamlanınca gerçek başvuru/onay/oy akışını yukarıdaki smoke testiyle doğrulayın.

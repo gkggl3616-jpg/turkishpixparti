@@ -48,3 +48,9 @@ test('HTTP: çıkış kalıcı session kaydını siler',async()=>{
  const response=await POST(new Request('https://turkishpix.example/api/auth/logout',{method:'POST',headers}));assert.equal(response.status,200);
  const result=await GET(new Request('https://turkishpix.example/api/overview',{headers:{cookie:headers.cookie}}));assert.equal((await result.json()).me,null);
 });
+
+test('HTTP: health şemayı doğrular; açık kurulum bilgisi gizli anahtar içermez',async()=>{
+ const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);assert.equal((await health.json()).status,'ok');
+ const response=await GET(new Request('https://turkishpix.example/api/config'));assert.equal(response.status,200);const body=await response.json();assert.equal(body.redirectUri,'https://turkishpix.example/api/auth/callback');
+ for(const name of ['DISCORD_BOT_TOKEN','DISCORD_CLIENT_SECRET','AUDIT_HMAC_KEY'])assert.ok(!JSON.stringify(body).includes(process.env[name]!));
+});

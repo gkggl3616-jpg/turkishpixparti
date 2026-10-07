@@ -15,7 +15,7 @@ export async function GET(req:Request){
  try{
   if(path==='/api/health'){
    if(!process.env.DATABASE_URL)return json({status:config().demo?'preview':'database_missing'},config().demo?200:503);
-   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup')");if(schemas.rows.length!==3)return json({status:'migration_required'},503);return json({status:'ok',ready:readiness().ready,demo:config().demo});
+   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup')");if(schemas.rows.length!==3)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
   }
   if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();
   if(path==='/api/setup'){
@@ -26,7 +26,7 @@ export async function GET(req:Request){
    if(!r.demo&&r.checks.database){try{r.checks.database=!!(await database().query("SELECT version FROM schema_migrations WHERE version='001_initial'")).rows.length;}catch{r.checks.database=false;}}
    if(r.demo)r.checks.database=false;
    r.ready=Object.values(r.checks).every(Boolean);
-   return json({...r,clientId:config().clientId,guildId:config().guildId,installUrl:botInviteUrl(),rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
+   return json({...r,clientId:config().clientId,guildId:config().guildId,installUrl:botInviteUrl(),redirectUri:config().appUrl+'/api/auth/callback',rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
   }
   if(path==='/api/auth/login'){
    const {url,state}=await oauthStart(new URL(req.url).searchParams.get('return')||'/');
