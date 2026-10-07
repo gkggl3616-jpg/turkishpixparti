@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
-import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles} from '../../../../../../packages/core/src/index';
+import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl} from '../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 function json(data:any,status=200){return NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});}
 function error(e:unknown){
@@ -15,14 +15,18 @@ export async function GET(req:Request){
  try{
   if(path==='/api/health'){
    if(!process.env.DATABASE_URL)return json({status:config().demo?'preview':'database_missing'},config().demo?200:503);
-   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles')");if(schemas.rows.length!==2)return json({status:'migration_required'},503);return json({status:'ok',ready:readiness().ready,demo:config().demo});
+   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup')");if(schemas.rows.length!==3)return json({status:'migration_required'},503);return json({status:'ok',ready:readiness().ready,demo:config().demo});
+  }
+  if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();
+  if(path==='/api/setup'){
+   const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Discord ile giriş yapın.',401);ownerOnly(me);await rateLimit('setup:'+me.id,15,60);return json(await detectConnection(me));
   }
   if(path==='/api/config'){
    const r=readiness();
    if(!r.demo&&r.checks.database){try{r.checks.database=!!(await database().query("SELECT version FROM schema_migrations WHERE version='001_initial'")).rows.length;}catch{r.checks.database=false;}}
    if(r.demo)r.checks.database=false;
    r.ready=Object.values(r.checks).every(Boolean);
-   return json({...r,clientId:config().clientId,guildId:config().guildId,rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
+   return json({...r,clientId:config().clientId,guildId:config().guildId,installUrl:botInviteUrl(),rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
   }
   if(path==='/api/auth/login'){
    const {url,state}=await oauthStart(new URL(req.url).searchParams.get('return')||'/');
@@ -62,13 +66,14 @@ export async function GET(req:Request){
 }
 export async function POST(req:Request){
  try{
+  if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();
   const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Önce Discord ile giriş yapın.',401);csrf(req,me);
   await rateLimit('action:'+me.id,30,60);
   if(new URL(req.url).pathname==='/api/auth/logout'){await logout(req,me);return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json','Set-Cookie':cookie(SESSION_COOKIE,'',0)}});}
   if(new URL(req.url).pathname!=='/api/actions')return json({error:'Sayfa bulunamadı.'},404);
   const raw=await req.text();if(raw.length>800000)throw new DomainError('PAYLOAD_TOO_LARGE','Logo veya form boyutu çok büyük.',413);
   let input;try{input=JSON.parse(raw);}catch{throw new DomainError('INVALID_JSON','Geçersiz form.');}
-  const action=actionSchema.parse(input);await checkActor(me);
+  const action=actionSchema.parse(input);if(action.action==='serverSettings')return json(await saveServerSettings(me,action.data));await checkActor(me);
   const result=action.action==='create'?await createItem(me,action.data):action.action==='approve'?await approveItem(me,action.data):action.action==='vote'?await castVote(me,action.data):action.action==='join'?await membership(me,action.data.partyId):action.action==='leave'?await membership(me):action.action==='roleMappings'?await saveRoleMappings(me,action.data):await reconcileRoles(me);
   return json(result);
  }catch(e){return error(e);}

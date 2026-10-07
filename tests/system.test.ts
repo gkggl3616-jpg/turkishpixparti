@@ -16,6 +16,7 @@ before(async()=>{
  pg=new PGlite();setTestDatabase({query:async(sql:string,params:any[]=[])=>{const result=await pg.query(sql,params);return {rows:result.rows as any[],rowCount:result.affectedRows||0};}});
  await pg.exec(await readFile(new URL('../packages/core/sql/001_initial.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/003_discord_roles.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../packages/core/sql/004_server_setup.sql',import.meta.url),'utf8'));
  for(const user of [...owners,leader,secondLeader])await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[user.id,user.username]);
 });
 after(async()=>{await pg.close();});

@@ -19,7 +19,7 @@ export async function oauthStart(returnPath='/'){
  const state=randomBytes(32).toString('hex');let safePath='/';
  try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&target.pathname==='/'){
   const out=new URL('/',c.appUrl);const view=target.searchParams.get('view'),create=target.searchParams.get('create');
-  if(view&&['genel','partiler','basvurular','oylamalar','tbmm','secimler','kayitlar','owner','roller','ayarlar','kilavuz'].includes(view))out.searchParams.set('view',view);
+  if(view&&['genel','partiler','basvurular','oylamalar','tbmm','secimler','kayitlar','owner','roller','baglanti','ayarlar','kilavuz'].includes(view))out.searchParams.set('view',view);
   if(create&&['PARTY','BILL'].includes(create))out.searchParams.set('create',create);
   safePath=out.pathname+out.search;
  }}catch{}

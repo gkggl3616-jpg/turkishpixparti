@@ -1,6 +1,6 @@
 # Railway dağıtımı
 
-7 Ekim 2026 dağıtım girişiminde hesap yeni proje oluşturmayı `Free plan resource provision limit exceeded` hatasıyla engelledi. Önce hesabın kaynak oluşturma limiti giderilmelidir. Mevcut başka projelere dokunulmadı.
+7 Ekim 2026 dağıtım girişiminde hesap yeni proje oluşturmayı `Free plan resource provision limit exceeded` hatasıyla engelledi. Mevcut Pixmap projesine servis eklemek başarılı olduğu için yerine kurulum bu projede yapılır.
 
 ## Servisler
 
@@ -29,7 +29,7 @@ Resmî kaynaklar:
 4. Web ve Bot’a `DATABASE_URL` olarak bu bağlantıyı verin. IaC kullanırken ortamın Shared Variables bölümünde `DATABASE_RUNTIME_URL` bu değeri taşımalıdır. Private hostname üretim servislerinde korunmalıdır.
 5. Yönetici URL’sini Web ve Bot değişkenlerine koymayın. Uygulama rolü audit trigger’larını kapatamaz.
 
-Web pre-deploy komutu `node scripts/migrate.mjs`’dir. `001_initial` ve `003_discord_roles` şemaları zaten varsa bunları doğrulayıp çıkar; kısıtlı rol DDL çalıştırmaz. İleride yeni migration sürümleri için yönetici migration ortamı kullanılır.
+Web pre-deploy komutu `node scripts/migrate.mjs`’dir. `001_initial`, `003_discord_roles` ve `004_server_setup` şemaları zaten varsa bunları doğrulayıp çıkar; kısıtlı rol DDL çalıştırmaz. İleride yeni migration sürümleri için yönetici migration ortamı kullanılır.
 
 ## Paylaşılan değişkenler
 
@@ -61,7 +61,7 @@ OAuth2 Client Secret ve bot token’ını, Web/Bot tarafından ulaşılabilen pr
 
 Web HTTPS domain’i üretildikten sonra `APP_URL` iki serviste aynı olmalıdır. Discord Redirect URI bu domain + `/api/auth/callback` olarak kaydedilir. Healthcheck `/api/health`, timeout 180 saniye. Bot servisinde public domain ve HTTP healthcheck gerekmiyor; çalışan süreç kontrol edilir.
 
-Bot sunucuya eklenir. `/partikur` ve diğer komutlar, yapılandırılmış ortamda `npm run commands:register` ile sunucuya kaydedilir. Gateway botu kullanıldığı için Interactions Endpoint URL boş kalır.
+Bot sunucuya eklenir. `/partikur` ve diğer komutlar otomatik kaydedilir. Gateway botu kullanıldığı için Interactions Endpoint URL boş kalır.
 
 Canlı smoke testi:
 
@@ -75,16 +75,10 @@ Canlı smoke testi:
 
 Bu smoke testi canlı bağlantı bilgileri eksik olduğu için bu teslimatta çalıştırılmadı.
 
-## 7 Ekim 2026 hesap kontrolü
+## Mevcut projede yerine kurulum
 
-Görülen iki proje ve üç uygulama servisi:
+Yeni proje isteği kaynak kotasıyla reddedildi. `pixmap-fun-redisless` projesinde yeni PostgreSQL servisi başarıyla kuruldu. Kullanıcının talebi yalnızca `pixmap-fun` web servisini TurkishPix ile değiştirmektir. Pixmap mobile servisi, diski ve bucket’ı; ayrı Pixelya projesi korunur.
 
-| Proje | Servis | Public domain |
-| --- | --- | --- |
-| pixelya-studio | pixelya-studio-web | https://pixelya-studio-web-production.up.railway.app |
-| pixmap-fun-redisless | pixmap-fun | https://pixmap-fun-production.up.railway.app |
-| pixmap-fun-redisless | pixmap-studio-mobile-v9 | https://pixmap-studio-mobile-v9-production.up.railway.app |
+İlk şema kurulumu için geçici DB Setup servisi `node scripts/bootstrap-db.mjs` çalıştırır. Bu serviste `DATABASE_ADMIN_URL` PostgreSQL referansı, `DATABASE_RUNTIME_PASSWORD` rastgele 64 hex karakter ve `BOOTSTRAP_KEEP_ALIVE=true` bulunur. Marker `TURKISHPIX_DATABASE_READY` sonrası geçici servis silinir. Web ve Bot yalnızca kısıtlı `turkishpix_runtime` hesabını kullanır.
 
-Pixmap projesinde ayrıca 500 MB disk ve bir storage bucket var. Railway yeni TurkishPix projesini kod almadan `Free plan resource provision limit exceeded. Please upgrade to provision more resources!` yanıtıyla reddetti. API kaynak kotasının tam sayacını döndürmedi; disk veya bucket’ın bu reddi oluşturduğu doğrulanmış değildir. Mevcut uygulamalar silinmedi veya değiştirilmedi.
-
-Dört siyasi rolü **Discord rolleri** sayfasından eşleştirin. Bot için `Manage Roles` izni ve hedef rollerin üzerinde bir bot rolü gerekir. OAuth giriş scope’ları `identify guilds.members.read`; rolleri okuyan bot Guild Members veya Message Content privileged intent gerektirmez.
+Owner → Sunucu kurulumu ekranından sunucu/kanal ID’leri değiştirilir, bot sunucuya davet edilir ve izinler tespit edilir. Görev ve roller ekranından dört rol seçilir veya ID’leri elle girilir. Slash komutları otomatik kaydedilir. OAuth scope’ları `identify guilds.members.read`; privileged intent gerekmez.

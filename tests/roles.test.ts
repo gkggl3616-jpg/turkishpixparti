@@ -24,7 +24,7 @@ let pg:PGlite;const originalFetch=globalThis.fetch;const mutations:{method:strin
 const db={query:async(sql:string,params:any[]=[])=>{const result=await pg.query(sql,params);return {rows:result.rows as any[],rowCount:result.affectedRows||0};}};
 before(async()=>{
  pg=new PGlite();setTestDatabase(db);
- for(const file of ['001_initial','003_discord_roles'])await pg.exec(await readFile(new URL('../packages/core/sql/'+file+'.sql',import.meta.url),'utf8'));
+ for(const file of ['001_initial','003_discord_roles','004_server_setup'])await pg.exec(await readFile(new URL('../packages/core/sql/'+file+'.sql',import.meta.url),'utf8'));
  for(const user of [...owners,citizen,other])await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[user.id,user.username]);
  globalThis.fetch=async(input:any,init:any)=>{
   const url=String(input),method=init?.method||'GET';

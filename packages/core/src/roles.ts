@@ -23,6 +23,10 @@ export async function discordRoleCatalog(){
   discordRequest(`/guilds/${c.guildId}/roles`),discordRequest('/users/@me'),discordRequest(`/guilds/${c.guildId}`)
  ]);
  const botMember=await discordRequest(`/guilds/${c.guildId}/members/${self.id}`);
+ return buildRoleCatalog(roles,self,guild,botMember);
+}
+export function buildRoleCatalog(roles:DiscordRole[],self:any,guild:any,botMember:any){
+ const c=config();
  const all=roles as DiscordRole[];
  const owned=all.filter(r=>r.id===c.guildId||botMember.roles.includes(r.id));
  const permissions=owned.reduce((n,r)=>n|BigInt(r.permissions),0n);

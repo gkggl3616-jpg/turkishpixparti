@@ -6,6 +6,7 @@ const text=z.string().trim().min(10).max(10000);
 export const roleKeySchema=z.enum(['TBMM_PRESIDENT','PARTY_LEADER','MP','PARTY_MEMBER']);
 export const roleRequestSchema=z.object({userId:snowflake,roleKey:roleKeySchema,enabled:z.boolean(),reason:text});
 export const roleMappingSchema=z.object({mappings:z.object({TBMM_PRESIDENT:snowflake.nullable(),PARTY_LEADER:snowflake.nullable(),MP:snowflake.nullable(),PARTY_MEMBER:snowflake.nullable()})});
+export const serverSettingsSchema=z.object({guildId:snowflake,voteChannel:z.union([snowflake,z.literal('')]),logChannel:z.union([snowflake,z.literal('')])});
 export const createSchema=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('PARTY'),name:z.string().trim().min(3).max(80),abbreviation:z.string().trim().min(2).max(12).transform(s=>s.toLocaleUpperCase('tr-TR')),logo,description:text,goals:text,leaderUsername:z.string().trim().min(2).max(40),color:z.string().regex(/^#[a-fA-F0-9]{6}$/).default('#dc3a45')}),
  z.object({kind:z.enum(['BILL','DIRECTIVE']),title:z.string().trim().min(5).max(150),description:text,articles:z.string().trim().min(10).max(30000)}),
@@ -22,7 +23,8 @@ export const actionSchema=z.discriminatedUnion('action',[
  z.object({action:z.literal('join'),data:z.object({partyId:id})}),
  z.object({action:z.literal('leave'),data:z.object({}).default({})}),
  z.object({action:z.literal('roleMappings'),data:roleMappingSchema}),
- z.object({action:z.literal('reconcileRoles'),data:z.object({}).default({})})
+ z.object({action:z.literal('reconcileRoles'),data:z.object({}).default({})}),
+ z.object({action:z.literal('serverSettings'),data:serverSettingsSchema})
 ]);
 export function dhondt(votes:Record<string,number>,seats:number,capacity:Record<string,number>={}){
  const result:Record<string,number>=Object.fromEntries(Object.keys(votes).sort().map(k=>[k,0]));

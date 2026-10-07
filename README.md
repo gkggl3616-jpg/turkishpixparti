@@ -1,14 +1,14 @@
-# TurkishPix Siyasi Sistem v1.1.0
+# TurkishPix Siyasi Sistem v1.2.0
 
 Discord bot + Next.js web panel + PostgreSQL. Uygulama kimliği ve public key, kullanıcı tarafından verilen ekran görüntülerinden alındı. Gizli anahtarlar kaynak kodda veya bu pakette bulunmaz.
 
 ## Durum
 
-Kaynak kod, SQL şeması, Discord botu, OAuth2, dört owner onayı, parti başvuruları, web/Discord ortak oylaması, TBMM, milletvekili atama, kanun/yönerge teklifleri ve seçim akışları uygulandı. Yerel testler ve production build çalıştırıldı. Dört owner ID’si yapılandırıldı; Discord rol okuma, eşleştirme ve dört onaylı atama eklendi. Gerçek bot token’ı, sunucu ID’si ve kanal ID’leri eksik olduğu için Discord üzerinde canlı uçtan uca test yapılmadı.
+Parti kuruluşu, dört owner onayı, web/Discord ortak oylaması, TBMM, milletvekili atama, kanun/yönerge teklifleri, seçimler ve imzalı denetim zinciri uygulandı. v1.2, ayrı owner menüsü, yenilenen arayüz, elle kanal/rol ID girişi, bot daveti ve gerçek Discord izin tespiti ekler.
 
-Railway proje oluşturma isteği, hesabın `Free plan resource provision limit exceeded` hatasıyla reddedildi. Yeni bir Railway projesi, hizmeti veya canlı site oluşturulmadı. Bu durum bir yazılım hatası değildir; hesap yeni kaynak oluşturmaya izin vermiyor. Bu pakette canlı bir URL iddiası yoktur.
+Bot kimliği doğrulandı; TurkishPix sunucu ID’si `1497372055530639504`. Botun sunucuya eklenmesi, OAuth callback adresinin Developer Portal’a kaydedilmesi ve owner panelinden kanal/rol ID’lerinin girilmesi gerekir. Gerçek Discord üzerinde oy/rol smoke testi bu kurulum tamamlanmadan çalıştırılamaz.
 
-`npm run preview:build` ile üretilen `preview/TurkishPix-Onizleme.html` dosyasını tarayıcıda açarak paneli örnek kayıtlarla inceleyebilirsiniz. Bu dosya çevrimdışı bir arayüz önizlemesidir; gerçek veri oluşturmaz veya oy göndermez.
+Railway’nin yeni proje isteği kaynak limitiyle reddedildi; mevcut Pixmap projesinde PostgreSQL kurulumu başarılı. Dağıtım bu mevcut projede, yalnızca Pixmap web’in yerine yapılır. Pixmap mobil ve Pixelya korunur.
 
 ## Repo yapısı
 
@@ -36,7 +36,7 @@ npm run db:migrate
 npm run dev
 ```
 
-Web varsayılan olarak `http://localhost:3000` adresinde çalışır. Botu ikinci terminalde `npm run bot` ile başlatın. Bot gerekli ayarlar eksikse veya `DEMO_MODE=true` ise çalışmayı reddeder. Bot çalışırken, zaman dolunca oylamalar otomatik sonuçlanır ve Discord gönderim kuyruğu işlenir.
+Web varsayılan olarak `http://localhost:3000` adresinde çalışır. Botu ikinci terminalde `npm run bot` ile başlatın. Bot token/veritabanı eksikse veya `DEMO_MODE=true` ise çalışmayı reddeder. Kanal ID’leri eksikse çevrim içi kalır; oylama worker’ı yapılandırma tamamlanınca çalışır. Bot çalışırken, zaman dolunca oylamalar otomatik sonuçlanır ve Discord gönderim kuyruğu işlenir.
 
 Yalnızca arayüzü görmek için `.env` içinde `DEMO_MODE=true` kullanın. Örnek veriler gerçek kayıtlarla karıştırılmaz.
 
@@ -48,7 +48,7 @@ Yalnızca arayüzü görmek için `.env` içinde `DEMO_MODE=true` kullanın. Ör
 4. Discord geliştirici modu açılıp sunucu, oylama kanalı ve log kanalı ID’leri kopyalanır. Dört owner ID’si `.env.example` ve Railway tanımında hazırdır.
 5. `DISCORD_OWNER_IDS` virgülle ayrılmış, birbirinden farklı dört ID olmalıdır. Yetki kullanıcı adına veya girilen form bilgisine göre verilmez.
 6. Bot sunucuya `bot` ve `applications.commands` scope’larıyla eklenir. İzinler: View Channel, Send Messages, Embed Links. Panelden siyasi rollerin atanması için ayrıca Manage Roles gerekir ve botun en üst rolü, atanacak rolün üstünde olmalıdır.
-7. `npm run commands:register` çalıştırılır.
+7. Bot sunucuya eklendiğinde yedi slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
 
 Bot Gateway kullanır; Developer Portal’daki **Interactions Endpoint URL boş bırakılır**. Message Content intent ve mesaj okuma yetkisi kullanılmaz.
 
@@ -56,7 +56,7 @@ Komutlar: `/partikur`, `/partiler`, `/oylamalar`, `/tbmm`, `/secimler`, `/teklif
 
 ## Discord rolleri
 
-Discord ile giriş yapan üyeler **Discord rolleri** sayfasından kendi sunucu rollerini görebilir. Owner’lar aynı sayfada mevcut Discord rollerini TBMM başkanı, parti başkanı, milletvekili ve parti üyesi görevleriyle eşleştirir. Botun hiyerarşisi ve izinleri canlı olarak kontrol edilir; yönetici, sunucu yönetimi veya rol yönetimi yetkisi içeren roller eşleştirilemez.
+Discord rollerini okuma API’si giriş yapan hesabın kendi rollerini gösterir. Owner’lar **Görev ve roller** sayfasında mevcut Discord rollerini TBMM başkanı, parti başkanı, milletvekili ve parti üyesi görevleriyle eşleştirir. Botun hiyerarşisi ve izinleri canlı olarak kontrol edilir; yönetici, sunucu yönetimi veya rol yönetimi yetkisi içeren roller eşleştirilemez.
 
 Owner, Discord kullanıcı ID’sini girerek bir üyeyi bulur ve gerekçeli rol atama/kaldırma başvurusu açar. Her işlem dört ayrı onay ister. Parti kabulü, üyelik değişikliği ve seçim sonucundaki otomatik rol işleri ayrıca kuyrukta işlenir. **Görevleri eşitle** düğmesi tüm kayıtlı hesapları yeniden kontrol eder. Rol değişimleri Discord audit gerekçesi ve uygulamanın imzalı log’unda kayıtlıdır.
 
@@ -103,6 +103,6 @@ npm run build
 npm run check:config
 ```
 
-Testlerde PostgreSQL uyumlu PGlite motoru kullanılır; HTTP testlerindeki Discord cevapları kontrollü mock’tur. Gerçek Discord/Railway üretim erişimi ve bağımsız PostgreSQL sunucusunda eşzamanlı yük testi tamamlanmadı. Browser ile görsel etkileşim testi bu ortamda tamamlanamadı.
+Testlerde PostgreSQL uyumlu PGlite motoru kullanılır; HTTP testlerindeki Discord cevapları kontrollü mock’tur. Gerçek Discord/Railway üretim erişimi ve bağımsız PostgreSQL sunucusunda eşzamanlı yük testi tamamlanmadı. Yeni kurulum izin testleri dahil 26 otomatik test geçer. Tarayıcı doğrulaması dağıtım sırasında yapılır.
 
 Dağıtım için `docs/RAILWAY.md`, güvenlik/işletim sınırları için `docs/OPERATIONS.md` okuyun.
