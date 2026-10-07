@@ -67,6 +67,8 @@ export async function approveItem(actor:Actor,input:unknown){
   if(!item)throw new DomainError('NOT_FOUND','Başvuru bulunamadı.',404);
   if(item.state!=='OWNER_REVIEW')throw new DomainError('NOT_REVIEWING','Bu başvuru artık owner incelemesinde değil.',409);
   if(!item.owner_ids.includes(actor.id))throw new DomainError('NOT_REVIEWER','Başvurunun owner listesinde değilsiniz.',403);
+  // Worker ve eşleştirme işlemleriyle aynı kilit sırası: rol kilidi, ardından audit kilidi.
+  if(item.kind==='ROLE_ASSIGNMENT')await tx.query('SELECT pg_advisory_xact_lock(1557484055)');
   if((await tx.query('SELECT owner_id FROM approvals WHERE item_id=$1 AND owner_id=$2',[item.id,actor.id])).rows.length)throw new DomainError('ALREADY_REVIEWED','Bu başvuru için kararınız zaten kaydedildi.',409);
   await tx.query('INSERT INTO approvals(item_id,owner_id,decision,reason) VALUES($1,$2,$3,$4)',[item.id,actor.id,data.decision,data.reason]);
   await audit(tx,actor.id,'OWNER_'+data.decision,item.id,{reason:data.reason});
@@ -78,7 +80,6 @@ export async function approveItem(actor:Actor,input:unknown){
   const count=Number((await tx.query("SELECT count(*) AS count FROM approvals WHERE item_id=$1 AND decision='APPROVE'",[item.id])).rows[0].count);
   if(count<item.approval_quorum)return {message:`Onay kaydedildi (${count}/${item.approval_quorum}).`};
   if(item.kind==='ROLE_ASSIGNMENT'){
-   await tx.query('SELECT pg_advisory_xact_lock(1557484055)');
    await applyRoleRequest(tx,item,actor);
    await tx.query("UPDATE items SET state='PASSED',updated_at=now() WHERE id=$1",[item.id]);
    return {message:'Dört owner onayı tamamlandı. Discord rol işlemi kuyruğa eklendi.'};
