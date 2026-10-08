@@ -1,0 +1,5 @@
+import {z} from 'zod';
+import {featureNames} from './features-catalog';
+export const featureSettingsSchema=z.object({enabled:z.boolean().default(true),economy:z.boolean().default(true),planner:z.boolean().default(true),community:z.boolean().default(true),moderation:z.boolean().default(true),resources:z.boolean().default(true),disabledCommands:z.array(z.enum(featureNames as [string,...string[]])).max(50).default([]),channelIds:z.array(z.string().regex(/^\d{17,20}$/)).max(50).default([]),xpEnabled:z.boolean().default(true),xpPerMessage:z.number().int().min(1).max(25).default(10),xpCooldownSeconds:z.number().int().min(30).max(600).default(60),xpDailyCap:z.number().int().min(100).max(5000).default(500),dailyReward:z.number().int().min(10).max(1000).default(100),suggestionChannel:z.union([z.string().regex(/^\d{17,20}$/),z.literal('')]).default('')});
+export type FeatureSettings=z.infer<typeof featureSettingsSchema>;
+export function defaultFeatureSettings():FeatureSettings{return featureSettingsSchema.parse({});}

@@ -6,7 +6,7 @@ const client=await pool.connect();
 try{
  await client.query('BEGIN');await client.query('SELECT pg_advisory_xact_lock(1557484054)');
  const exists=(await client.query("SELECT to_regclass('public.schema_migrations') AS present")).rows[0].present;
- for(const version of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation']){
+ for(const version of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation','009_community_features']){
   const applied=exists&&(await client.query('SELECT version FROM schema_migrations WHERE version=$1',[version])).rows.length>0;
   if(!applied)await client.query(await readFile(new URL('../packages/core/sql/'+version+'.sql',import.meta.url),'utf8'));
  }

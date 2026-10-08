@@ -17,7 +17,7 @@ Ana sayfa modül seçim ekranıdır. Ayrı paneller: `/secim`, `/guvenlik`, `/ka
 - Güvenlik: spam, etiket, Discord daveti ve izinli alan adı filtreleri; isteğe bağlı susturma; genç hesap ve yoğun giriş uyarıları. Owner, sunucu sahibi, yönetici ve belirlenen muaf roller/kanallar korunur. Varsayılan koruma kapalıdır, panelden etkinleştirilir.
 - Karşılama: yeni üyeye tek mesaj, seçilen kanalda yalnızca o üyeye etiket; `{user}`, `{username}`, `{server}`, `{count}` alanları. `sa`, `selamünaleyküm`, `merhaba`, `selam` mesajlarına rastgele cevap ve kullanıcı başına dakika sınırı.
 - Duyurular: kanal mesajı veya `/duyurukatıl` ile katılan DM aboneleri; `/duyuruayril`, önizleme ve gönderim onayı, 10 dakika kampanya aralığı, iptal ve teslim durumları. Üye listesinden izinsiz toplu DM gönderimi yoktur.
-- Yapay zekâ: `/yapayzekaaktif`, `/yapayzekakapat`, `/sor`, botu etiketleme ve bot mesajını yanıtlama. Aritmetik kod değerlendirmeden yerelde çalışır. Genel sorular için OpenAI API anahtarı web panelinden AES-GCM ile şifrelenerek kaydedilir veya iki servisin `OPENAI_API_KEY` değişkenine eklenir. Model `OPENAI_MODEL`; varsayılan `gpt-4.1-mini`. API çağrıları kullanıcı/dakika ve sunucu/gün limitleriyle sınırlanır.
+- Yapay zekâ: `/yapayzekaaktif`, `/yapayzekakapat`, `/sor`, botu etiketleme ve bot mesajını yanıtlama. Aritmetik kod değerlendirmeden yerelde çalışır. Genel sorular için Groq veya OpenAI API anahtarı web panelinden AES-GCM ile şifrelenerek kaydedilir veya iki servisin `OPENAI_API_KEY` değişkenine eklenir. Model `OPENAI_MODEL`; varsayılan `gpt-4.1-mini`. API çağrıları kullanıcı/dakika ve sunucu/gün limitleriyle sınırlanır.
 
 Üye olayları için **Server Members Intent**, genel sohbet için **Message Content Intent** gerekir. Bot uygulamasında bu izinler doğrulandı. Güvenlik için Manage Messages ve isteğe bağlı Moderate Members, karşılama/duyuru için View Channel ve Send Messages gerekir. Bot bu izinleri web panelinde raporlar.
 
@@ -59,7 +59,7 @@ Yalnızca arayüzü görmek için `.env` içinde `DEMO_MODE=true` kullanın. Ör
 4. Discord geliştirici modu açılıp sunucu, oylama kanalı ve log kanalı ID’leri kopyalanır. Dört owner ID’si `.env.example` ve Railway tanımında hazırdır.
 5. `DISCORD_OWNER_IDS` virgülle ayrılmış, birbirinden farklı dört ID olmalıdır. Yetki kullanıcı adına veya girilen form bilgisine göre verilmez.
 6. Bot sunucuya `bot` ve `applications.commands` scope’larıyla eklenir. İzinler: View Channel, Send Messages, Embed Links. Panelden siyasi rollerin atanması için ayrıca Manage Roles gerekir ve botun en üst rolü, atanacak rolün üstünde olmalıdır.
-7. Bot sunucuya eklendiğinde 45 slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
+7. Bot sunucuya eklendiğinde 95 slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
 
 Canlı OAuth callback adresi **`https://turkishpix-web-production.up.railway.app/api/auth/callback`**. OAuth2 → Redirects → Add Redirect alanına eksiksiz eklenir ve **Save Changes** ile kaydedilir. Sitedeki owner giriş ekranı kayıt durumunu Discord API’den kontrol eder. Kayıt yokken giriş isteği Discord’un hata sayfasına gönderilmez.
 
@@ -140,7 +140,7 @@ Dağıtım için `docs/RAILWAY.md`, güvenlik/işletim sınırları için `docs/
 | Mini oyunlar (10) | `/tas-kagit-makas`, `/sayi-tahmin`, `/kelime-tahmin`, `/bilmece`, `/bilgi`, `/tarih-sorusu`, `/matematik`, `/hafiza`, `/refleks`, `/xox` |
 | Topluluk (6) | `/profil`, `/liderlik`, `/avatar`, `/kullanici`, `/sunucu`, `/ping` |
 
-Discord’da `/yardim` kategori menüsü 45 komutu açıklar. Owner panelindeki `/eglence` sayfası modülü, tek tek komutları, izinli metin kanallarını ve 3–60 saniyelik beklemeyi yönetir. Eski ayarlar yeni grubu otomatik olarak açık varsayılanıyla alır.
+Discord’da `/yardim` kategori menüsü sistem ve eğlence komutlarını; `/ozellikler` 50 yeni topluluk aracını açıklar. Owner panelindeki `/eglence` sayfası modülü, tek tek komutları, izinli metin kanallarını ve 3–60 saniyelik beklemeyi yönetir. Eski ayarlar yeni grubu otomatik olarak açık varsayılanıyla alır.
 
 - Listeleri `|` ile ayırın: `/takim kisiler:Ali | Ayşe | Ece | Mehmet adet:2`. `/anket soru:Ne içelim? secenekler:Çay | Kahve dakika:10`.
 - Her oyun 5 dakika açık kalır; sahibi oynar ve “Turu bitir” ile kapatabilir. Aynı üyeye en fazla üç aktif oturum; toplam 12 komut/dakika; anket başlatırken 5 dakika bekleme uygulanır. Hafıza ve refleks oyunları oyuncuya özeldir.
@@ -164,3 +164,30 @@ Owner paneli ayrıca özel yasaklı ifadeleri, tam ifade istisnalarını, içeri
 Botta Message Content Intent ve ilgili kanalda Mesajları Yönet izni gerekir; susturma için Üyeleri Sustur ve uygun rol hiyerarşisi gerekir. Discord AutoMod ek katmanı `Sunucuyu Yönet` varsa botun kendi oluşturduğu bir anahtar kelime kuralını yönetir. Diğer kurallara dokunmaz; sunucunun altı anahtar kelime kuralı doluysa bot filtresi çalışmaya devam eder. Yerleşik kural yalnızca dar kapsamlı ağır kelimeleri ve bağımsız propaganda sloganlarını engeller. Discord bu kurallarda yöneticileri kendi davranışına göre muaf tutar; bot filtresinin yönetici ayarı ayrıdır.
 
 Yeni ve düzenlenen mesajlar ile `AutoModerationActionExecution` olayları test edilir. Kural/işlem/kullanıcı/kanal/mesaj kimliği ve metnin hash'i saklanır; ham mesaj metni loga, audit zincirine veya inceleme tablosuna yazılmaz. Varsayılan ayrıntı saklama 30 gündür; özet güvenlik kayıtları ve imzalı audit geçmişi korunur.
+
+
+## v2.4 — 50 topluluk aracı, etiketli loglar ve ücretsiz API
+
+Tüm bot logları parlak renkli embed, Türkçe işlem açıklaması, zaman damgası ve kullanıcı/kanal/rol etiketleri kullanır. Loglarda `allowed_mentions.parse=[]` bildirimleri kapatır; entity bağlantıları Discord tarafından görüntülenir. Moderasyon logları ihlal metnini içermez. Not, görev ve destek komutları üyeye özel yanıt verir.
+
+Yeni komutların tam listesi ve seçenekleri `packages/core/src/features-catalog.ts` içindedir. 50 yeni + 30 eğlence + 15 sistem = 95 slash komutu. Owner `/topluluk` panelinde beş modülü, tek tek komutları, izinli kanalları, XP bekleme/kota değerlerini ve günlük sanal ödülü yönetir. Owner panelinde kişisel not/görev/hatırlatmalar listelenmez. Destek ve öneriler owner işlemlerine açıktır.
+
+- **12 seviye/ekonomi komutu:** `/uyeprofil`, `/seviye`, `/siralama`, `/gunluk`, `/cuzdan`, `/transfer`, `/magaza`, `/satinal`, `/envanter`, `/rozetler`, `/tesekkur`, `/itibar`.
+- **10 kişisel araç:** `/hatirlat`, `/hatirlatmalar`, `/hatirlatmasil`, `/notekle`, `/notlar`, `/notsil`, `/gorevekle`, `/gorevler`, `/gorevtamamla`, `/gorevsil`.
+- **12 topluluk komutu:** `/cekilis`, `/cekilissonuc`, `/cekiliskapat`, `/etkinlik`, `/etkinlikler`, `/etkinlikkapat`, `/oner`, `/oneriler`, `/oneridurum`, `/destek`, `/destekler`, `/destekkapat`.
+- **9 yetkili aracı:** `/uyar`, `/uyarilar`, `/uyarikaldir`, `/yavasmod`, `/kilitle`, `/kilitac`, `/temizle`, `/duyuru`, `/sabitle`.
+- **7 rol/rehber aracı:** `/rolmenu`, `/rolmenukapat`, `/sss`, `/sssekle`, `/ssssil`, `/kanalbilgi`, `/ozellikler`.
+
+XP sadece korunmuş sohbetin uygun katkılarında verilir; en az 8 karakter, varsayılan 60 saniye bekleme, tekrar hash kontrolü ve günlük 500 XP sınırı vardır. Seviye eşiği `100 × seviye²`. Sanal Pix ve rozetlerin nakit veya yetki karşılığı yoktur. Ekonomi hareketleri PostgreSQL kilitleri ve interaction makbuzlarıyla tekrarlara karşı korunur. Günlük ödül/teşekkür Türkiye saatine göre yenilenir. DM hatırlatıcıları kalıcı kuyrukta işlenir ve iptal/modül kontrolleri gönderimden önce tekrarlanır.
+
+Çekiliş tek sefer, Node kriptografik rastgele sayı üreteciyle sonuçlanır; bedelsiz katılım ve organizatör teslimi. Etkinlik ve öneri düğmeleri tekil üyelik tutar. Rol menüsü izinleri sıfır, entegrasyon tarafından yönetilmeyen, botun altında olan kozmetik rollerle sınırlıdır; kanal izin overwrite'larında erişim sağlayan veya siyasi görevle eşleşen roller reddedilir. Rol her tıklamada yeniden doğrulanır. Uyarı, temizlik, yavaş mod, kilit ve duyuru komutları gerçek Discord izinlerini kontrol eder. Temizlik onayı 60 saniyelik HMAC düğmesine bağlıdır, bir kere siler; 14 günden eski mesajları atlar. Kanal kilidi @everyone yazma alanlarını kapatır; özel rol izinleri korunur ve açmada önceki üç durumlu değerler geri getirilir.
+
+### Groq ücretsiz API kurulumu
+
+1. https://console.groq.com/keys adresinde kendi hesabında API anahtarı oluştur.
+2. `/yapay-zeka` owner panelinde **Groq** seç. Varsayılan model `openai/gpt-oss-20b`; anahtarı girip **Bağla ve yapay zekâyı aç** kullan.
+3. Deneme alanında soru sor; `/sor`, etiket ve bot mesajına yanıt aynı bağlantıyı kullanır.
+
+Anahtar AES-256-GCM ile şifrelenir; tarayıcıya geri dönmez ve audit kaydına yazılmaz. Alternatif olarak her iki servise `GROQ_API_KEY` ve `GROQ_MODEL` eklenebilir. Groq hesap kotası geçerlidir; 429 durumunda anlaşılır hata verilir, ücretli sağlayıcıya otomatik geçiş yoktur. Kota rakamları sabit varsayılmaz: https://console.groq.com/docs/rate-limits . OpenAI ayarları geriye uyumludur. Aritmetik yerel çalışır. Gerçek API yanıtını doğrulamak için kullanıcının kendi anahtarı gerekir; test suite sağlayıcı protokolünü ve hatalarını mock ile doğrular.
+
+Migration zincirine `009_community_features` eklenmiştir. Yeni tablolar runtime rolüne sınırlı CRUD erişimi alır; denetim tablosunun koruması korunur. Kapanmış destek ve tamamlanan/iptal edilen kişisel kayıtlar 30 günde, idempotency makbuzları 90 günde temizlenir. Owner paneli kayıt geçmişinde son 60 kaydı gösterir.

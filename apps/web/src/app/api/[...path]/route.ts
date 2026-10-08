@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
-import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl,applicationConnection,communityOverview,saveCommunitySettings,createAnnouncement,cancelAnnouncement,assistantAnswer,communitySettings,saveAIProvider,reviewModeration,inspectContent,contentModerationSchema} from '../../../../../../packages/core/src/index';
+import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl,applicationConnection,communityOverview,saveCommunitySettings,createAnnouncement,cancelAnnouncement,assistantAnswer,communitySettings,saveAIProvider,reviewModeration,getFeatureRecord,updateFeatureRecord,inspectContent,contentModerationSchema} from '../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 function json(data:any,status=200){return NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});}
 function error(e:unknown){
@@ -15,7 +15,7 @@ export async function GET(req:Request){
  try{
   if(path==='/api/health'){
    if(!process.env.DATABASE_URL)return json({status:config().demo?'preview':'database_missing'},config().demo?200:503);
-   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation')");if(schemas.rows.length!==7)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
+   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation','009_community_features')");if(schemas.rows.length!==8)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
   }
   if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();
   if(path==='/api/community'){const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Discord ile giriş yapın.',401);return json({...await communityOverview(me),csrf:me.csrf,me});}
@@ -75,7 +75,8 @@ export async function POST(req:Request){
   await rateLimit('action:'+me.id,30,60);
   if(new URL(req.url).pathname==='/api/auth/logout'){await logout(req,me);return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json','Set-Cookie':cookie(SESSION_COOKIE,'',0)}});}
   const endpoint=new URL(req.url).pathname;
-  if(['/api/community/settings','/api/community/campaign','/api/community/cancel','/api/community/assistant','/api/community/provider','/api/community/moderation-preview','/api/community/moderation-review'].includes(endpoint)){ownerOnly(me);const raw=await req.text();if(raw.length>40000)throw new DomainError('PAYLOAD_TOO_LARGE','Form boyutu çok büyük.',413);let input;try{input=JSON.parse(raw);}catch{throw new DomainError('INVALID_JSON','Geçersiz form.');}
+  if(['/api/community/settings','/api/community/campaign','/api/community/cancel','/api/community/assistant','/api/community/provider','/api/community/moderation-preview','/api/community/moderation-review','/api/community/feature-review'].includes(endpoint)){ownerOnly(me);const raw=await req.text();if(raw.length>40000)throw new DomainError('PAYLOAD_TOO_LARGE','Form boyutu çok büyük.',413);let input;try{input=JSON.parse(raw);}catch{throw new DomainError('INVALID_JSON','Geçersiz form.');}
+   if(endpoint.endsWith('/feature-review')){const record=await getFeatureRecord(input.id);if(!['TICKET','SUGGESTION','WARNING','FAQ','ROLE_MENU'].includes(record.kind)||!({TICKET:['CLOSED'],SUGGESTION:['APPROVED','REJECTED'],WARNING:['CANCELLED'],FAQ:['CANCELLED'],ROLE_MENU:['CLOSED']} as any)[record.kind].includes(input.status))throw new DomainError('INVALID_FEATURE_REVIEW','Bu kayıt için işlem geçersiz.');await updateFeatureRecord(me,input.id,input.status,true,'panel:'+input.id+':'+input.status);return json({message:'Kayıt güncellendi.'});}
    if(endpoint.endsWith('/moderation-review'))return json(await reviewModeration(me,input));
    if(endpoint.endsWith('/moderation-preview')){if(typeof input.text!=='string'||input.text.length>2000)throw new DomainError('INVALID_PREVIEW','En fazla 2000 karakterlik bir metin girin.');return json({decision:inspectContent(input.text,contentModerationSchema.parse(input.settings)),message:'Bot filtre denemesi tamamlandı.'});}
    if(endpoint.endsWith('/provider'))return json(await saveAIProvider(me,input));

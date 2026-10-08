@@ -47,7 +47,7 @@ export async function createItem(actor:Actor,input:unknown){
   }
   const id=randomUUID();await tx.query('INSERT INTO items(id,kind,title,description,payload,author_id,owner_ids,approval_quorum,min_votes,ballot_hours) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,data.kind,title,description,payload,actor.id,JSON.stringify(c.owners),c.quorum,c.minVotes,data.kind==='ELECTION'?data.hours:c.ballotHours]);
   await audit(tx,actor.id,'ITEM_SUBMITTED',id,{kind:data.kind,title});
-  await enqueue(tx,'LOG',{text:`Yeni başvuru: ${title} (${data.kind})`,itemId:id},`submitted:${id}`);
+  await enqueue(tx,'LOG',{text:`Yeni başvuru: ${title} (${data.kind})`,itemId:id,actorId:actor.id},`submitted:${id}`);
   return {id,message:'Başvurunuz dört owner’ın incelemesine gönderildi.'};
  });
 }
@@ -74,7 +74,7 @@ export async function approveItem(actor:Actor,input:unknown){
   await audit(tx,actor.id,'OWNER_'+data.decision,item.id,{reason:data.reason});
   if(data.decision==='REJECT'){
    await tx.query("UPDATE items SET state='REJECTED',updated_at=now() WHERE id=$1",[item.id]);
-   await enqueue(tx,'LOG',{text:`Başvuru reddedildi: ${item.title}. Gerekçe: ${data.reason}`,itemId:item.id},`rejected:${item.id}`);
+   await enqueue(tx,'LOG',{text:`Başvuru reddedildi: ${item.title}. Gerekçe: ${data.reason}`,itemId:item.id,actorId:actor.id},`rejected:${item.id}`);
    return {message:'Başvuru gerekçenizle reddedildi.'};
   }
   const count=Number((await tx.query("SELECT count(*) AS count FROM approvals WHERE item_id=$1 AND decision='APPROVE'",[item.id])).rows[0].count);

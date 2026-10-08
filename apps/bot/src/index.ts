@@ -1,9 +1,10 @@
 import 'dotenv/config';
+import {handleFeatureInteraction,featureTick} from './features';
 import {handleEntertainmentInteraction,entertainmentTick} from './entertainment';
 import {moderateChat,nativeModerationExecution,moderationMaintenance} from './moderation';
 import {Client,GatewayIntentBits,Events,MessageFlags,PermissionFlagsBits,ActivityType,Partials} from 'discord.js';
 import {randomUUID} from 'node:crypto';
-import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,entertainmentCommands,syncNativeModeration} from '@turkishpix/core';
+import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,entertainmentCommands,syncNativeModeration,awardChatXP,cleanupFeatures,brightEmbed,theme} from '@turkishpix/core';
 import {commandReply,commands} from '../../../packages/core/src/commands';
 const initial=config();
 if(!process.env.DATABASE_URL||!initial.botToken||initial.demo){console.error('Bot token ve veritabanı gerekli; demo modu kapalı olmalı.');process.exit(1);}
@@ -21,14 +22,15 @@ function applyPresence(){
 }
 async function heartbeat(connected=client.isReady()){
  const guild=client.guilds.cache.get(config().guildId),bot=guild?.members.me;
- await database().query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected,botId:client.user?.id||null,botName:client.user?.username||null,guilds:[...client.guilds.cache.keys()],intents:enabledIntents,presence:appliedPresence?settings.presence:null,protection:{enabled:settings.security.enabled&&settings.security.content.enabled,categories:Object.entries(settings.security.content.modes).filter(([,v])=>v!=='OFF').map(([k])=>k),edits:settings.security.content.checkEdits,native:nativeStatus},permissions:{manageGuild:bot?.permissions.has(PermissionFlagsBits.ManageGuild)||false,deleteMessages:bot?.permissions.has(PermissionFlagsBits.ManageMessages)||false,timeout:bot?.permissions.has(PermissionFlagsBits.ModerateMembers)||false}}]);
+ await database().query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected,botId:client.user?.id||null,botName:client.user?.username||null,guilds:[...client.guilds.cache.keys()],intents:enabledIntents,presence:appliedPresence?settings.presence:null,protection:{enabled:settings.security.enabled&&settings.security.content.enabled,categories:Object.entries(settings.security.content.modes).filter(([,v])=>v!=='OFF').map(([k])=>k),edits:settings.security.content.checkEdits,native:nativeStatus},features:{enabled:settings.features.enabled,commands:50,totalCommands:commands.length,xp:settings.features.xpEnabled},permissions:{manageChannels:bot?.permissions.has(PermissionFlagsBits.ManageChannels)||false,manageRoles:bot?.permissions.has(PermissionFlagsBits.ManageRoles)||false,embedLinks:bot?.permissions.has(PermissionFlagsBits.EmbedLinks)||false,manageGuild:bot?.permissions.has(PermissionFlagsBits.ManageGuild)||false,deleteMessages:bot?.permissions.has(PermissionFlagsBits.ManageMessages)||false,timeout:bot?.permissions.has(PermissionFlagsBits.ModerateMembers)||false}}]);
 }
-async function register(){const c=config();if(c.guildId&&client.guilds.cache.has(c.guildId)&&registeredGuild!==c.guildId){const saved=await discordRequest(`/applications/${c.clientId}/guilds/${c.guildId}/commands`,{method:'PUT',body:JSON.stringify(commands.map(({contexts,integration_types,...cmd})=>cmd))});if(!Array.isArray(saved)||saved.length!==commands.length)throw new DomainError('COMMAND_REGISTRATION_FAILED','Komut kaydı doğrulanamadı.');registeredGuild=c.guildId;console.log(`TurkishPix ${saved.length} slash komutu kaydedildi (${entertainmentCommands.length} yeni eğlence komutu).`);}}
-client.on(Events.ClientReady,()=>{appliedPresence='';applyPresence();console.log(`TurkishPix bot hazır: ${client.user?.tag}`);void heartbeat().catch(()=>{});});
+async function register(){const c=config();if(c.guildId&&client.guilds.cache.has(c.guildId)&&registeredGuild!==c.guildId){const saved=await discordRequest(`/applications/${c.clientId}/guilds/${c.guildId}/commands`,{method:'PUT',body:JSON.stringify(commands.map(({contexts,integration_types,...cmd})=>cmd))});if(!Array.isArray(saved)||saved.length!==commands.length)throw new DomainError('COMMAND_REGISTRATION_FAILED','Komut kaydı doğrulanamadı.');registeredGuild=c.guildId;console.log(`TurkishPix ${saved.length} slash komutu kaydedildi (${entertainmentCommands.length} eğlence + 50 yeni topluluk özelliği).`);}}
+client.on(Events.ClientReady,()=>{appliedPresence='';applyPresence();console.log(`TurkishPix bot hazır: ${client.user?.tag}`);const bot=client.guilds.cache.get(config().guildId)?.members.me;console.log('FEATURE_PERMISSIONS',JSON.stringify({manageChannels:!!bot?.permissions.has(PermissionFlagsBits.ManageChannels),manageRoles:!!bot?.permissions.has(PermissionFlagsBits.ManageRoles),embedLinks:!!bot?.permissions.has(PermissionFlagsBits.EmbedLinks)}));void heartbeat().catch(()=>{});});
 client.on(Events.GuildCreate,()=>{registeredGuild='';});client.on(Events.GuildDelete,()=>{registeredGuild='';});
 client.on(Events.Error,()=>console.error('DISCORD_GATEWAY_ERROR'));
 client.on(Events.InteractionCreate,async interaction=>{
  if(interaction.guildId!==config().guildId){if(interaction.isRepliable())await interaction.reply({content:'Bu bot TurkishPix sunucusuna bağlı.',flags:MessageFlags.Ephemeral});return;}
+ if(await handleFeatureInteraction(interaction,settings))return;
  if(await handleEntertainmentInteraction(interaction,settings.entertainment))return;
  if(interaction.isChatInputCommand()){
   const name=interaction.commandName,actor={id:interaction.user.id,username:interaction.user.username,avatar:interaction.user.avatar};
@@ -39,7 +41,7 @@ client.on(Events.InteractionCreate,async interaction=>{
     else if(name==='duyurukatıl'||name==='duyuruayril'){if(name==='duyurukatıl'&&!settings.announcements.enabled)throw new DomainError('ANNOUNCEMENTS_DISABLED','DM duyuruları şu anda kapalı.');content=(await setDMSubscription(actor,name==='duyurukatıl')).message;}
     else if(name==='sesdmac'||name==='sesdmkapat')content=(await setVoiceDMPreference(actor,name==='sesdmac')).message;
     else{if(settings.ai.channelIds.length&&!settings.ai.channelIds.includes(interaction.channelId))throw new DomainError('AI_CHANNEL','Bu kanalda yapay zekâ açık değil.');content=(await assistantAnswer(actor.id,interaction.options.getString('soru',true),settings.ai)).text;}
-    await interaction.editReply({content,allowedMentions:{parse:[]}});
+    await interaction.editReply({embeds:[brightEmbed(name==='sor'?'🤖 TurkishPix yardımcısı':'✨ Tercihin güncellendi',content,[],theme.purple)],allowedMentions:{parse:[]}});
    }catch(e){await interaction.editReply({content:e instanceof DomainError?e.message:'İşlem tamamlanamadı. Biraz sonra tekrar deneyin.',allowedMentions:{parse:[]}});}return;
   }
   await interaction.reply({...commandReply(name) as any,flags:MessageFlags.Ephemeral});return;
@@ -78,14 +80,15 @@ client.on(Events.MessageCreate,async message=>{
    if(settings.security.timeoutMinutes&&member?.moderatable){try{await member.timeout(settings.security.timeoutMinutes*60000,'TurkishPix güvenlik: '+violation);action+=' + TIMEOUT';}catch{action+=' + TIMEOUT_FAILED';}}
    await recordSecurity({id:message.author.id,username:message.author.username,avatar:message.author.avatar},message.channelId,violation,action,settings);return;
   }
+  await awardChatXP({id:message.author.id,username:message.author.username,avatar:message.author.avatar},message.content,settings.features,message.channelId).catch(()=>console.error('CHAT_XP_FAILED'));
   if(settings.welcome.greetingsEnabled&&(!settings.welcome.greetingChannelIds.length||settings.welcome.greetingChannelIds.includes(message.channelId))&&isGreeting(message.content)){
    const key=message.channelId+':'+message.author.id,now=Date.now();if(now-(greetingTimes.get(key)||0)>=60000){greetingTimes.set(key,now);if(greetingTimes.size>4096)greetingTimes.delete(greetingTimes.keys().next().value!);await message.reply({content:settings.welcome.replies[Math.floor(Math.random()*settings.welcome.replies.length)],allowedMentions:{parse:[],repliedUser:false}});}return;
   }
   if(!settings.ai.enabled||(settings.ai.channelIds.length&&!settings.ai.channelIds.includes(message.channelId)))return;
   const mentioned=!!client.user&&message.mentions.users.has(client.user.id);let previous:string|undefined;
-  if(!mentioned&&message.reference?.messageId){try{const ref=await message.fetchReference();if(ref.author.id===client.user?.id)previous=ref.content;}catch{}}
+  if(!mentioned&&message.reference?.messageId){try{const ref=await message.fetchReference();if(ref.author.id===client.user?.id)previous=ref.content||ref.embeds.map(e=>e.description||'').join('\n');}catch{}}
   if(!mentioned&&!previous)return;const text=message.content.replace(new RegExp('<@!?'+client.user!.id+'>','g'),'').trim();
-  try{const answer=await assistantAnswer(message.author.id,text,settings.ai,previous);await message.reply({content:answer.text,allowedMentions:{parse:[],repliedUser:false}});}catch(e){await message.reply({content:e instanceof DomainError?e.message:'Yapay zekâ yanıtı şu anda alınamıyor.',allowedMentions:{parse:[],repliedUser:false}});}
+  try{const answer=await assistantAnswer(message.author.id,text,settings.ai,previous);await message.reply({embeds:[brightEmbed('🤖 TurkishPix yardımcısı',answer.text,[],theme.purple)],allowedMentions:{parse:[],repliedUser:false}});}catch(e){await message.reply({content:e instanceof DomainError?e.message:'Yapay zekâ yanıtı şu anda alınamıyor.',allowedMentions:{parse:[],repliedUser:false}});}
  }catch{console.error('MESSAGE_EVENT_FAILED');}
 });
 client.on(Events.MessageUpdate,async(oldMessage,newMessage)=>{
@@ -99,10 +102,10 @@ client.on(Events.MessageUpdate,async(oldMessage,newMessage)=>{
  }catch{console.error('MESSAGE_EDIT_MODERATION_FAILED');}
 });
 client.on(Events.AutoModerationActionExecution,execution=>{void nativeModerationExecution(execution,settings,nativeStatus?.ruleId||'').catch(()=>console.error('NATIVE_MODERATION_RECORD_FAILED'));});
-let stopped=false,lastRefresh=0,lastPolitical=0,lastEntertainment=0,lastModeration=0;
+let stopped=false,lastRefresh=0,lastPolitical=0,lastEntertainment=0,lastModeration=0,lastFeatures=0;
 async function worker(){while(!stopped){try{
  const now=Date.now();if(now-lastRefresh>=5000){await loadServerSettings();settings=await communitySettings();applyPresence();if(client.isReady()){const bot=client.guilds.cache.get(config().guildId)?.members.me;nativeStatus=await syncNativeModeration(settings.security.content,settings.security.enabled,!!bot?.permissions.has(PermissionFlagsBits.ManageGuild),client.user.id)||nativeStatus;const protection=JSON.stringify({enabled:settings.security.enabled&&settings.security.content.enabled,modes:settings.security.content.modes,edits:settings.security.content.checkEdits,normalize:settings.security.content.normalizeObfuscation,escalation:settings.security.content.escalation,messageContent:enabledIntents.messageContent,deleteMessages:!!bot?.permissions.has(PermissionFlagsBits.ManageMessages),timeout:!!bot?.permissions.has(PermissionFlagsBits.ModerateMembers),native:nativeStatus?.reason});if(protection!==lastProtection){console.log('CHAT_PROTECTION_STATUS',protection);lastProtection=protection;}}await heartbeat();lastRefresh=now;}
- if(client.isReady()&&client.guilds.cache.has(config().guildId)){await register();if(now-lastModeration>=3600000){await moderationMaintenance(settings);lastModeration=now;}await communityDeliveryTick();if(now-lastEntertainment>=30000){await entertainmentTick();lastEntertainment=now;}if(now-lastPolitical>=5000&&readiness().ready){await workerTick();lastPolitical=now;}}
+ if(client.isReady()&&client.guilds.cache.has(config().guildId)){await register();if(now-lastModeration>=3600000){await moderationMaintenance(settings);await cleanupFeatures();lastModeration=now;}if(now-lastFeatures>=5000){await featureTick(client,settings);lastFeatures=now;}await communityDeliveryTick();if(now-lastEntertainment>=30000){await entertainmentTick();lastEntertainment=now;}if(now-lastPolitical>=5000&&readiness().ready){await workerTick();lastPolitical=now;}}
  }catch(e){console.error('Kuyruk kontrolü başarısız:',e instanceof DomainError?e.code:'INTERNAL');}await new Promise(r=>setTimeout(r,1000));}}
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{stopped=true;await heartbeat(false).catch(()=>{});client.destroy();await closeDatabase();process.exit(0);});
 try{await client.login(initial.botToken);void worker();}catch{console.error('Bot Discord bağlantısını kuramadı. Token, intent izinleri ve Gateway bağlantısını kontrol edin.');await closeDatabase();process.exit(1);}

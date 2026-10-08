@@ -1,3 +1,4 @@
+import {brightEmbed,userTag,displayText,theme} from './presentation';
 import {database,transaction} from './db';
 import {closeBallot} from './service';
 import {config} from './config';
@@ -18,7 +19,7 @@ export async function processOutbox(){
   const c=config();const p=job.payload;
   if(job.kind==='LOG'){
    if(!c.logChannel)throw new Error('DISCORD_LOG_CHANNEL_ID eksik');
-   await discordRequest(`/channels/${c.logChannel}/messages`,{method:'POST',body:JSON.stringify({content:p.text+'\n'+c.appUrl+'/?view=basvurular',allowed_mentions:{parse:[]},nonce:nonce(job.id),enforce_nonce:true})});
+   await discordRequest(`/channels/${c.logChannel}/messages`,{method:'POST',body:JSON.stringify({embeds:[brightEmbed('🏛️ Meclis işlem kaydı',displayText(p.text,1800),[...(p.actorId?[{name:'👤 İşlemi yapan',value:userTag(p.actorId)}]:[]),{name:'🔗 Başvurular',value:'[Başvuru panelini aç]('+c.appUrl+'/?view=basvurular)'}],theme.gold)],allowed_mentions:{parse:[]},nonce:nonce(job.id),enforce_nonce:true})});
   }else if(['ROLE_ADD','ROLE_REMOVE','ROLE_SYNC','ROLE_UNMAP'].includes(job.kind)){
    const key=roleKeySchema.parse(p.roleKey||'MP');
    await transaction(async tx=>{

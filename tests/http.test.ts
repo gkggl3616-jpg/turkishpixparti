@@ -2,7 +2,7 @@ import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {readFile} from 'node:fs/promises';
-import {setTestDatabase,sha256,oauthStart,cookieValue,resetApplicationCache,defaultContentModeration,inspectContent,recordModeration} from '../packages/core/src/index';
+import {setTestDatabase,sha256,oauthStart,cookieValue,resetApplicationCache,defaultContentModeration,inspectContent,addFeatureRecord,getFeatureRecord,recordModeration} from '../packages/core/src/index';
 import {GET,POST} from '../apps/web/src/app/api/[...path]/route';
 process.env.APP_URL='https://turkishpix.example';process.env.DATABASE_URL='postgresql://test.invalid/test';
 process.env.AUDIT_HMAC_KEY='test-only-key-012345678901234567890123456789';
@@ -17,7 +17,7 @@ before(async()=>{
  await pg.exec(await readFile(new URL('../packages/core/sql/003_discord_roles.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/004_server_setup.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/005_community.sql',import.meta.url),'utf8'));
- await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/007_entertainment.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/007_entertainment.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));
  await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[user.id,user.username]);
  await pg.query("INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sha256(token),user.id,csrf]);
  globalThis.fetch=async(input:any,init:any)=>{
@@ -79,4 +79,11 @@ test('HTTP: içerik denemesi owner ve CSRF gerektirir; metin kaydedilmez ve ince
  const forged=await POST(new Request('https://turkishpix.example/api/community/moderation-preview',{method:'POST',headers:{...ownerHeaders,'x-csrf-token':'wrong'},body}));assert.equal(forged.status,403);
  const before=await pg.query('SELECT count(*)::int AS n FROM moderation_cases');const preview=await POST(new Request('https://turkishpix.example/api/community/moderation-preview',{method:'POST',headers:ownerHeaders,body}));assert.equal(preview.status,200);assert.equal((await preview.json()).decision.category,'PROFANITY');assert.deepEqual((await pg.query('SELECT count(*)::int AS n FROM moderation_cases')).rows,before.rows);
  const decision=inspectContent('siktir',rules)!;const saved=await recordModeration(user,{messageId:'http-case',channelId:'999999999999999999',content:'siktir',source:'CREATE',decision,action:'MESSAGE_DELETED'},rules);const reviewed=await POST(new Request('https://turkishpix.example/api/community/moderation-review',{method:'POST',headers:ownerHeaders,body:JSON.stringify({id:saved.id,status:'DISMISSED'})}));assert.equal(reviewed.status,200);assert.equal((await pg.query<any>('SELECT status FROM moderation_cases WHERE id=$1',[saved.id])).rows[0].status,'DISMISSED');
+});
+
+test('HTTP: yeni owner işlem merkezi kimlik ve CSRF ister; kişisel kayıtlara müdahale edemez',async()=>{
+ const ticket=await addFeatureRecord(user,'TICKET','Yardım talebi',{description:'Özel destek'}, {},'http-ticket'),body=JSON.stringify({id:ticket.id,status:'CLOSED'}),ownerHeaders={...headers,cookie:'tp_session='+'ef'.repeat(32)},citizenHeaders={...headers,cookie:'tp_session='+'cd'.repeat(32)};
+ const call=(h:any,b=body)=>POST(new Request('https://turkishpix.example/api/community/feature-review',{method:'POST',headers:h,body:b}));
+ assert.equal((await call({})).status,401);assert.equal((await call(citizenHeaders)).status,403);assert.equal((await call({...ownerHeaders,'x-csrf-token':'wrong'})).status,403);assert.equal((await getFeatureRecord(ticket.id)).status,'OPEN');assert.equal((await call(ownerHeaders)).status,200);assert.equal((await getFeatureRecord(ticket.id)).status,'CLOSED');
+ const note=await addFeatureRecord(user,'NOTE','Özel kişisel not',{}, {},'http-note');assert.equal((await call(ownerHeaders,JSON.stringify({id:note.id,status:'CANCELLED'}))).status,400);assert.equal((await getFeatureRecord(note.id)).status,'OPEN');
 });
