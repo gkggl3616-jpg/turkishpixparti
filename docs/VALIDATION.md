@@ -1,19 +1,16 @@
-# Doğrulama kaydı — 7 Ekim 2026
+# Doğrulama kaydı — 8 Ekim 2026 / v2.1
 
 | Kontrol | Sonuç |
 | --- | --- |
-| `npm test` | 23/23 test başarılı |
-| `npm run typecheck` | Başarılı; core, bot, scriptler, testler ve Railway IaC |
-| `npm run build` | Next.js 16.4.0 production build başarılı; web TypeScript kontrolü dahil |
-| `npm audit --omit=dev --audit-level=high` | 0 güvenlik açığı raporlandı |
-| `npm run preview:build` | Tek dosyalık offline HTML oluşturuldu |
-| Railway proje oluşturma | Hesap resource provision limitinden reddedildi |
-| Gerçek Discord OAuth/gateway testi | Bot token ve sunucu/kanal ID’leri eksik; yapılmadı |
-| Browser görsel/etkileşim QA | Bu ortamda tamamlanmadı |
-| Docker container build | Docker runtime bulunmadığı için doğrudan çalıştırılmadı |
+| `npm test` | 41/41 test başarılı |
+| `npm run typecheck` | Core, bot, scriptler ve testler başarılı |
+| `npm run build` | Next.js production build ve web TypeScript kontrolü başarılı |
+| Ses DM kuyruğu | Giriş, çıkış, kanal değişimi, cooldown, kapatma, 403, 429 ve bildirim süresi senaryoları başarılı |
+| Kanal kataloğu | Kanal izin sırası, gizli kanal filtresi, salt okunur kanal ve kategori adları doğrulandı |
+| Eski ayarlar | Ses ve aktivite varsayılanlarıyla mevcut kaydın korunması doğrulandı |
 
-Testler PostgreSQL WASM motoru PGlite ile çalışır. Gerçek Discord REST cevapları HTTP/OAuth testlerinde mock kullanır. Bu testler üretim Discord erişiminin çalıştığını kanıtlamaz.
+Testler PostgreSQL WASM motoru PGlite ile çalışır. Discord REST ve DM gönderimleri bu testlerde mock kullanır. PGlite tek bağlantı kullandığından cooldown testi art arda çağrılarla yürütülür; gerçek çok bağlantılı PostgreSQL yarış testi yapılmadı.
 
-Doğrulanan senaryolar: dört ayrı owner onayı, çift karar engeli, tek hesap tek oy, süresi biten oylama, ret gerekçesi, lider kimliği, parti kabulü, D’Hondt ve dönem başlatma, MP seçmen snapshot’ı ve katılım çoğunluğu, audit/oy/onay değişiklik engeli, HMAC zinciri ve bozulma tespiti, transaction rollback, CSRF/origin/rate limit, logo doğrulama, kişiye özel oy verisi, kısıtlı PostgreSQL rolünün DDL engeli, HTTP yetkilendirme, OAuth state/cookie eşleşmesi ve tek kullanımlık callback, session logout.
+Gerçek Discord ses olayından DM teslimi bu testlerin kapsamında değildir. Canlı deployment, bot gateway ve HTTP health kontrolleri ayrıca doğrulanır. Bu ortamda Chromium indirme başarısız olduğu için görsel tarayıcı QA tamamlanamadı.
 
-Rol testleri ayrıca bot izinlerini, rol hiyerarşisini, yönetici/entegrasyon rollerinin engelini, owner-only eşleştirmeyi, aynı rolün iki göreve bağlanmamasını, kişisel rol görünürlüğünü, dört onaylı atama/kaldırmayı, gecikmiş işlerde güncel durum kontrolünü, aktif MP şartını, tek TBMM başkanını, dönem sınırını ve eski/yeni rol eşitlemesini doğruladı.
+Önceki siyasi sistem, rol yönetimi, OAuth state/cookie, CSRF, HMAC denetim zinciri, tek oy, dört owner onayı, meclis/MP kuralları ve kısıtlı runtime rolü kontrolleri aynı test paketinde korunur.

@@ -11,6 +11,8 @@ export const commands=[
  {name:'sor',description:'TurkishPix yardımcısına soru sor.',options:[{name:'soru',description:'Sorunuz veya matematik işlemi',type:3,required:true,max_length:2000}]},
  {name:'duyurukatıl',description:'Sunucunun DM duyurularını almaya katıl.'},
  {name:'duyuruayril',description:'DM duyurularından ayrıl.'},
+ {name:'sesdmac',description:'Ses kanalı giriş ve çıkış DM bildirimlerini aç.'},
+ {name:'sesdmkapat',description:'Ses kanalı giriş ve çıkış DM bildirimlerini kapat.'},
  {name:'botpanel',description:'Bot yönetim merkezini aç.'},
  {name:'yardim',description:'Siyasi sistemin komut ve kurallarını öğren.'}
 ].map(c=>({...c,type:1,contexts:[0],integration_types:[0]}));

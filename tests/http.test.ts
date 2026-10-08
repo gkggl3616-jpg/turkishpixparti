@@ -17,6 +17,7 @@ before(async()=>{
  await pg.exec(await readFile(new URL('../packages/core/sql/003_discord_roles.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/004_server_setup.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/005_community.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));
  await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[user.id,user.username]);
  await pg.query("INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sha256(token),user.id,csrf]);
  globalThis.fetch=async(input:any,init:any)=>{

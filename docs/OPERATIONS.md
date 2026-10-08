@@ -14,3 +14,15 @@
 - Dört owner ID’si başvuru açılırken kayda alınır. Ortam listesinden çıkarılan kişi yeni işlemlerde owner yetkisi kullanamaz; eski bekleyen başvurulardaki owner snapshot’ı değişmez. Owner değişikliği öncesinde bekleyen başvuruları sonuçlandırmak gerekir.
 - Kanun teklifinin seçmen listesi açılışta sabitlenir. Yeni döneme geçiş sırasında eski teklifler otomatik iptal edilmez; artık aktif olmayan üyeler oy veremez. Yetersiz katılımda teklif başarısız sonuçlanır.
 - Renk temaları ve ses/imleç tercihleri cihazda saklanır. Ses, tarayıcının kullanıcı etkileşimi izniyle Web Audio’dan üretilir. Dokunmatik cihazlarda özel imleç gösterilmez; reduced-motion tercihi gözetilir.
+
+
+## v2.1 — Kanal listeleri, ses DM ve aktivite
+
+- Owner panelindeki metin ve ses kanalları Discord REST üzerinden alınır; botun View Channel izni olmayan kanallar listeden çıkarılır. Gönderim izni olmayan metin kanalları seçimde pasif görünür.
+- Karşılama sayfasında ses DM modülü, giriş/çıkış anahtarları, kanal filtresi, iki mesaj şablonu ve bekleme süresi bulunur. Yeni modül varsayılan olarak kapalıdır; mevcut ayarlar korunur. Şablonlar `{username}`, `{user}`, `{server}`, `{channel}` destekler.
+- `/sesdmkapat` bekleyen ve gelecekteki ses DM bildirimlerini durdurur. `/sesdmac` yeniden açar. Duyuru aboneliği bağımsızdır.
+- Mikrofon/kamera değişiklikleri bildirim üretmez. Kanal değişikliği ilgili çıkış ve giriş olayı olarak işlenir. Kullanıcı başına olay türüne göre bekleme süresi PostgreSQL üzerinde kontrol edilir; kilit birden fazla worker'ın aynı kullanıcıyı aynı anda hazırlamasını engeller. 5 dakikadan eski ses bildirimleri gönderilmez.
+- `/bot-ayarlari` üzerinden çevrim içi durum, aktivite türü ve yazısı yönetilir. Bot değişiklikleri yaklaşık 5 saniyede uygular. Discord bot presence alanları resim veya Rich Presence düğmelerini desteklemez.
+- `006_voice_presence` migration'ı ses DM türünü, kullanıcı tercihlerini ve cooldown indeksini ekler. Bot pre-deploy komutu admin bağlantısıyla migration uygular. Web health endpoint'i beş migration'ın tamamını gerektirir.
+- Railway'de bot ve web source `gkggl3616-jpg/turkishpixparti`, branch `main`, Dockerfile.bot / Dockerfile.web. Deploy ayarları Railway API ile güncellenmiştir: uyku kapalı, ALWAYS restart; botta migration pre-deploy ve overlap 0. Diğer üç serviste de uyku kapalı ve ALWAYS restart uygulanır. Kaynak limitleri veya replika sayıları artırılmaz.
+- `railway.bot.json` ve `railway.web.json` eski Config as Code örnekleridir. Güncel Railway bu dosyalara yeni servis bağlantısını kabul etmez; canlı ayarlar API/dashboard üzerinden yönetilir. Bu güncelleme kaynak kodunda IaC sahipliği veya kaynak silme işlemi yapmaz.

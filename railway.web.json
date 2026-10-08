@@ -7,10 +7,10 @@
   "deploy": {
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 180,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10,
+    "restartPolicyType": "ALWAYS",
     "preDeployCommand": [
       "node scripts/migrate.mjs"
-    ]
+    ],
+    "sleepApplication": false
   }
 }
