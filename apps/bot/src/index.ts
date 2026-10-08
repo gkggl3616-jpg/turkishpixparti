@@ -1,7 +1,8 @@
 import 'dotenv/config';
+import {handleEntertainmentInteraction,entertainmentTick} from './entertainment';
 import {Client,GatewayIntentBits,Events,MessageFlags,PermissionFlagsBits,ActivityType} from 'discord.js';
 import {randomUUID} from 'node:crypto';
-import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer} from '@turkishpix/core';
+import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,entertainmentCommands} from '@turkishpix/core';
 import {commandReply,commands} from '../../../packages/core/src/commands';
 const initial=config();
 if(!process.env.DATABASE_URL||!initial.botToken||initial.demo){console.error('Bot token ve veritabanı gerekli; demo modu kapalı olmalı.');process.exit(1);}
@@ -21,12 +22,13 @@ async function heartbeat(connected=client.isReady()){
  const guild=client.guilds.cache.get(config().guildId),bot=guild?.members.me;
  await database().query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected,botId:client.user?.id||null,botName:client.user?.username||null,guilds:[...client.guilds.cache.keys()],intents:enabledIntents,presence:appliedPresence?settings.presence:null,permissions:{deleteMessages:bot?.permissions.has(PermissionFlagsBits.ManageMessages)||false,timeout:bot?.permissions.has(PermissionFlagsBits.ModerateMembers)||false}}]);
 }
-async function register(){const c=config();if(c.guildId&&client.guilds.cache.has(c.guildId)&&registeredGuild!==c.guildId){await discordRequest(`/applications/${c.clientId}/guilds/${c.guildId}/commands`,{method:'PUT',body:JSON.stringify(commands.map(({contexts,integration_types,...cmd})=>cmd))});registeredGuild=c.guildId;console.log('TurkishPix slash komutları kaydedildi.');}}
+async function register(){const c=config();if(c.guildId&&client.guilds.cache.has(c.guildId)&&registeredGuild!==c.guildId){const saved=await discordRequest(`/applications/${c.clientId}/guilds/${c.guildId}/commands`,{method:'PUT',body:JSON.stringify(commands.map(({contexts,integration_types,...cmd})=>cmd))});if(!Array.isArray(saved)||saved.length!==commands.length)throw new DomainError('COMMAND_REGISTRATION_FAILED','Komut kaydı doğrulanamadı.');registeredGuild=c.guildId;console.log(`TurkishPix ${saved.length} slash komutu kaydedildi (${entertainmentCommands.length} yeni eğlence komutu).`);}}
 client.on(Events.ClientReady,()=>{appliedPresence='';applyPresence();console.log(`TurkishPix bot hazır: ${client.user?.tag}`);void heartbeat().catch(()=>{});});
 client.on(Events.GuildCreate,()=>{registeredGuild='';});client.on(Events.GuildDelete,()=>{registeredGuild='';});
 client.on(Events.Error,()=>console.error('DISCORD_GATEWAY_ERROR'));
 client.on(Events.InteractionCreate,async interaction=>{
  if(interaction.guildId!==config().guildId){if(interaction.isRepliable())await interaction.reply({content:'Bu bot TurkishPix sunucusuna bağlı.',flags:MessageFlags.Ephemeral});return;}
+ if(await handleEntertainmentInteraction(interaction,settings.entertainment))return;
  if(interaction.isChatInputCommand()){
   const name=interaction.commandName,actor={id:interaction.user.id,username:interaction.user.username,avatar:interaction.user.avatar};
   if(['yapayzekaaktif','yapayzekakapat','duyurukatıl','duyuruayril','sesdmac','sesdmkapat','sor'].includes(name)){
@@ -84,10 +86,10 @@ client.on(Events.MessageCreate,async message=>{
   try{const answer=await assistantAnswer(message.author.id,text,settings.ai,previous);await message.reply({content:answer.text,allowedMentions:{parse:[],repliedUser:false}});}catch(e){await message.reply({content:e instanceof DomainError?e.message:'Yapay zekâ yanıtı şu anda alınamıyor.',allowedMentions:{parse:[],repliedUser:false}});}
  }catch{console.error('MESSAGE_EVENT_FAILED');}
 });
-let stopped=false,lastRefresh=0,lastPolitical=0;
+let stopped=false,lastRefresh=0,lastPolitical=0,lastEntertainment=0;
 async function worker(){while(!stopped){try{
  const now=Date.now();if(now-lastRefresh>=5000){await loadServerSettings();settings=await communitySettings();applyPresence();await heartbeat();lastRefresh=now;}
- if(client.isReady()&&client.guilds.cache.has(config().guildId)){await register();await communityDeliveryTick();if(now-lastPolitical>=5000&&readiness().ready){await workerTick();lastPolitical=now;}}
+ if(client.isReady()&&client.guilds.cache.has(config().guildId)){await register();await communityDeliveryTick();if(now-lastEntertainment>=30000){await entertainmentTick();lastEntertainment=now;}if(now-lastPolitical>=5000&&readiness().ready){await workerTick();lastPolitical=now;}}
  }catch(e){console.error('Kuyruk kontrolü başarısız:',e instanceof DomainError?e.code:'INTERNAL');}await new Promise(r=>setTimeout(r,1000));}}
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{stopped=true;await heartbeat(false).catch(()=>{});client.destroy();await closeDatabase();process.exit(0);});
 try{await client.login(initial.botToken);void worker();}catch{console.error('Bot Discord bağlantısını kuramadı. Token, intent izinleri ve Gateway bağlantısını kontrol edin.');await closeDatabase();process.exit(1);}

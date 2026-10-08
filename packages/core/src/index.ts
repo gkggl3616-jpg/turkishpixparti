@@ -11,3 +11,6 @@ export * from './setup';
 export * from './application';
 export * from './community';
 export * from './assistant';
+export * from './entertainment';
+export * from './entertainment-catalog';
+export * from './entertainment-games';

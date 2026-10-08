@@ -1,4 +1,5 @@
 import {config} from './config';
+import {entertainmentCommands} from './entertainment-catalog';
 export const commands=[
  {name:'partikur',description:'Parti kuruluş başvurusunu web panelinde başlat.'},
  {name:'partiler',description:'TurkishPix siyasi partilerini görüntüle.'},
@@ -14,7 +15,8 @@ export const commands=[
  {name:'sesdmac',description:'Ses kanalı giriş ve çıkış DM bildirimlerini aç.'},
  {name:'sesdmkapat',description:'Ses kanalı giriş ve çıkış DM bildirimlerini kapat.'},
  {name:'botpanel',description:'Bot yönetim merkezini aç.'},
- {name:'yardim',description:'Siyasi sistemin komut ve kurallarını öğren.'}
+ {name:'yardim',description:'45 komutun kategorilerini ve kullanımını öğren.'},
+ ...entertainmentCommands.map(({category,...command})=>command)
 ].map(c=>({...c,type:1,contexts:[0],integration_types:[0]}));
 export function commandReply(name:string){
  const c=config();const views:Record<string,string>={partikur:'basvurular',partiler:'partiler',oylamalar:'oylamalar',tbmm:'tbmm',secimler:'secimler',teklif:'tbmm',yardim:'kilavuz'};

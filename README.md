@@ -59,7 +59,7 @@ Yalnızca arayüzü görmek için `.env` içinde `DEMO_MODE=true` kullanın. Ör
 4. Discord geliştirici modu açılıp sunucu, oylama kanalı ve log kanalı ID’leri kopyalanır. Dört owner ID’si `.env.example` ve Railway tanımında hazırdır.
 5. `DISCORD_OWNER_IDS` virgülle ayrılmış, birbirinden farklı dört ID olmalıdır. Yetki kullanıcı adına veya girilen form bilgisine göre verilmez.
 6. Bot sunucuya `bot` ve `applications.commands` scope’larıyla eklenir. İzinler: View Channel, Send Messages, Embed Links. Panelden siyasi rollerin atanması için ayrıca Manage Roles gerekir ve botun en üst rolü, atanacak rolün üstünde olmalıdır.
-7. Bot sunucuya eklendiğinde yedi slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
+7. Bot sunucuya eklendiğinde 45 slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
 
 Canlı OAuth callback adresi **`https://turkishpix-web-production.up.railway.app/api/auth/callback`**. OAuth2 → Redirects → Add Redirect alanına eksiksiz eklenir ve **Save Changes** ile kaydedilir. Sitedeki owner giriş ekranı kayıt durumunu Discord API’den kontrol eder. Kayıt yokken giriş isteği Discord’un hata sayfasına gönderilmez.
 
@@ -127,6 +127,25 @@ npm run build
 npm run check:config
 ```
 
-Testlerde PostgreSQL uyumlu PGlite motoru kullanılır; HTTP testlerindeki Discord cevapları kontrollü mock’tur. Discord üzerindeki gerçek dört owner/oy/rol akışı ve bağımsız PostgreSQL sunucusunda eşzamanlı yük testi tamamlanmadı. Yeni kurulum izin testleri dahil 27 otomatik test geçer. Canlı site masaüstü ve 390 px mobil tarayıcıda doğrulandı; tema, menü, rol ID alanları ve modal davranışları kontrol edildi.
+Testlerde PostgreSQL uyumlu PGlite motoru kullanılır; HTTP testlerindeki Discord cevapları kontrollü mock’tur. Discord üzerindeki gerçek dört owner/oy/rol akışı ve bağımsız PostgreSQL sunucusunda eşzamanlı yük testi tamamlanmadı. Eğlence, oyun, kurulum ve izin testleri dahil otomatik testler `npm test` ile çalışır. Canlı site masaüstü ve 390 px mobil tarayıcıda doğrulandı; tema, menü, rol ID alanları ve modal davranışları kontrol edildi.
 
 Dağıtım için `docs/RAILWAY.md`, güvenlik/işletim sınırları için `docs/OPERATIONS.md` okuyun.
+
+
+## v2.2 · 30 yeni eğlence ve topluluk komutu
+
+| Kategori | Komutlar |
+| --- | --- |
+| Eğlence (14) | `/zar`, `/yazitura`, `/8top`, `/sans`, `/uyum`, `/iltifat`, `/saka`, `/espri`, `/motivasyon`, `/gununsozu`, `/sec`, `/karistir`, `/takim`, `/anket` |
+| Mini oyunlar (10) | `/tas-kagit-makas`, `/sayi-tahmin`, `/kelime-tahmin`, `/bilmece`, `/bilgi`, `/tarih-sorusu`, `/matematik`, `/hafiza`, `/refleks`, `/xox` |
+| Topluluk (6) | `/profil`, `/liderlik`, `/avatar`, `/kullanici`, `/sunucu`, `/ping` |
+
+Discord’da `/yardim` kategori menüsü 45 komutu açıklar. Owner panelindeki `/eglence` sayfası modülü, tek tek komutları, izinli metin kanallarını ve 3–60 saniyelik beklemeyi yönetir. Eski ayarlar yeni grubu otomatik olarak açık varsayılanıyla alır.
+
+- Listeleri `|` ile ayırın: `/takim kisiler:Ali | Ayşe | Ece | Mehmet adet:2`. `/anket soru:Ne içelim? secenekler:Çay | Kahve dakika:10`.
+- Her oyun 5 dakika açık kalır; sahibi oynar ve “Turu bitir” ile kapatabilir. Aynı üyeye en fazla üç aktif oturum; toplam 12 komut/dakika; anket başlatırken 5 dakika bekleme uygulanır. Hafıza ve refleks oyunları oyuncuya özeldir.
+- Galibiyet 20, beraberlik 5 puan verir. Türkiye saatiyle günlük üst sınır 500 puandır. Puanların parasal değeri yoktur. Sonuçlar tek kez yazılır; eski düğmeler ve başka oyuncuların hamleleri reddedilir.
+- XOX üç seviyelidir; zor seviye minimax kullanır. Tahmin oyunları form, diğer oyunlar düğme kullanır. Refleks ölçümü ağ ve Discord gecikmesini de içerir.
+- Anketlerde 2–5 seçenek, 1–60 dakika ve hesap başına bir oy vardır; anket sahibi veya owner erken kapatabilir. Süre bitince düğmeler en geç 30 saniyelik işçi turunda kapatılır. Bot yeniden başladığında oturumlar veritabanından okunur.
+- `007_entertainment` migration’ı dört tabloyu ve runtime izinlerini ekler. Kapalı oturum ayrıntıları 7 gün sonra temizlenir; toplam puanlar korunur. Botun kanalda Bağlantıları Yerleştir izni gerekir.
+- Otomatik testler 30 komutun bot yönlendirmesini, Discord payload sınırlarını, oyun kurallarını, tüm insan hamlelerinde zor XOX’un yenilmezliğini, puan tekrar korumasını, süreleri ve anket izinlerini kapsar. Gerçek üye komutları test amacıyla tetiklenmez.

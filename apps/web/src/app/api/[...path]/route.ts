@@ -15,7 +15,7 @@ export async function GET(req:Request){
  try{
   if(path==='/api/health'){
    if(!process.env.DATABASE_URL)return json({status:config().demo?'preview':'database_missing'},config().demo?200:503);
-   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence')");if(schemas.rows.length!==5)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
+   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment')");if(schemas.rows.length!==6)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
   }
   if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();
   if(path==='/api/community'){const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Discord ile giriş yapın.',401);return json({...await communityOverview(me),csrf:me.csrf,me});}
