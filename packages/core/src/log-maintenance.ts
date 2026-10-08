@@ -16,7 +16,7 @@ export function legacySecurityEmbed(content:string,panelUrl:string){
 }
 
 /** Repair recent bot-owned messages once; audit records and message IDs stay intact. */
-export async function repairLegacySecurityLogs(botId:string,channelIds:string[]){
+export async function repairLegacySecurityLogs(botId:string,channelIds:string[],pause:(ms:number)=>Promise<void>=ms=>new Promise(resolve=>setTimeout(resolve,ms))){
  const c=config(),channels=[...new Set(channelIds.filter(id=>/^\d{17,20}$/.test(id)))];
  let repaired=0;
  for(const channelId of channels){
@@ -25,17 +25,26 @@ export async function repairLegacySecurityLogs(botId:string,channelIds:string[])
   const channel=await discordRequest('/channels/'+channelId);
   if(channel.guild_id!==c.guildId)continue;
   // The delivery ledger identifies our own messages without requiring Read Message History.
-  const delivered=(await database().query("SELECT message_id,payload,sent_at FROM community_deliveries WHERE guild_id=$1 AND kind='SECURITY_LOG' AND status='SENT' AND message_id IS NOT NULL AND payload->>'channelId'=$2 ORDER BY sent_at DESC LIMIT 100",[c.guildId,channelId])).rows;
-  const messages=delivered.length?delivered.map(row=>({id:row.message_id,author:{id:botId},content:row.payload.content,embeds:row.payload.embeds,timestamp:new Date(row.sent_at).toISOString()})):await discordRequest('/channels/'+channelId+'/messages?limit=100');
+  const delivered=(await database().query("SELECT id,message_id,payload,sent_at FROM community_deliveries WHERE guild_id=$1 AND kind='SECURITY_LOG' AND status='SENT' AND message_id IS NOT NULL AND payload->>'channelId'=$2 ORDER BY sent_at DESC LIMIT 100",[c.guildId,channelId])).rows;
+  const messages=delivered.length?delivered.filter(row=>!row.payload.logPresentationVersion).map(row=>({id:row.message_id,deliveryId:row.id,author:{id:botId},content:row.payload.content,embeds:row.payload.embeds,timestamp:new Date(row.sent_at).toISOString()})):await discordRequest('/channels/'+channelId+'/messages?limit=100');
   let count=0;
   for(const message of messages){
    if(message.author?.id!==botId)continue;
    const oldText=message.content||message.embeds?.[0]?.description||'';
    const embed=legacySecurityEmbed(oldText,c.appUrl);if(!embed)continue;
    embed.timestamp=message.timestamp;
-   try{await discordRequest('/channels/'+channelId+'/messages/'+message.id,{method:'PATCH',body:JSON.stringify({content:null,embeds:[embed],allowed_mentions:{parse:[]}})});}
-   catch(e){if(e instanceof DomainError&&e.message.includes('(404)'))continue;throw e;}
-   count++;repaired++;
+   let success=false,deleted=false;
+   for(let attempt=0;attempt<5;attempt++){
+    const response=await fetch('https://discord.com/api/v10/channels/'+channelId+'/messages/'+message.id,{method:'PATCH',headers:{Authorization:'Bot '+c.botToken,'Content-Type':'application/json'},body:JSON.stringify({content:null,embeds:[embed],allowed_mentions:{parse:[]}}),signal:AbortSignal.timeout(10000)});
+    if(response.status===429){const limit=await response.json();await pause(Math.max(1000,Math.min(60000,Math.ceil((Number(limit.retry_after)||2)*1000))));continue;}
+    if(response.status===404){deleted=true;break;}
+    if(!response.ok)throw new DomainError('LOG_REPAIR_FAILED','Log onarımı yanıt vermedi ('+response.status+').',503);
+    success=true;break;
+   }
+   if(!success&&!deleted)throw new DomainError('LOG_REPAIR_RATE_LIMIT','Discord hız sınırı nedeniyle log onarımı sonraki turda devam edecek.',429);
+   // Mark each completed message so a later retry starts where it stopped.
+   if(message.deliveryId)await database().query("UPDATE community_deliveries SET payload=jsonb_set(payload,'{logPresentationVersion}','\"bright-v1\"'::jsonb) WHERE id=$1",[message.deliveryId]);
+   if(success){count++;repaired++;await pause(1100);}
   }
   await database().query('INSERT INTO integration_status(name,status) VALUES($1,$2) ON CONFLICT(name) DO NOTHING',[marker,{repaired:count,scanned:messages.length}]);
  }

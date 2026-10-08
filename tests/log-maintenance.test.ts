@@ -52,3 +52,17 @@ test('Geçmiş okuma izni olmadan gönderim kaydındaki kendi logu onarılır; s
  let historyReads=0,patches=0;globalThis.fetch=async(input:any,init:any)=>{const url=String(input);if(url.includes('?limit=')){historyReads++;return Response.json({}, {status:403});}if(init.method==='PATCH'){patches++;return url.endsWith('679')?Response.json({}, {status:404}):Response.json({id:'123456789012345678'});}return Response.json({guild_id:guild});};
  assert.equal((await repairLegacySecurityLogs(bot,[channel])).repaired,1);assert.equal(historyReads,0);assert.equal(patches,2);assert.equal((await pg.query('SELECT name FROM integration_status')).rows.length,1);
 });
+
+test('Discord hız sınırında beklenir; yarıda kesilen onarım tamamlanmış mesajı tekrar düzenlemez',async()=>{
+ await pg.query("INSERT INTO community_deliveries(id,guild_id,kind,payload,status,message_id,sent_at) VALUES(gen_random_uuid(),$1,'SECURITY_LOG',$2,'SENT','123456789012345678',now()),(gen_random_uuid(),$1,'SECURITY_LOG',$2,'SENT','123456789012345679',now())",[guild,{channelId:channel,content:legacy}]);
+ const calls:string[]=[],waits:number[]=[];let limited=true;
+ globalThis.fetch=async(input:any,init:any)=>{if(init.method!=='PATCH')return Response.json({guild_id:guild});const url=String(input);calls.push(url);if(calls.length>1&&limited)return Response.json({retry_after:2.5},{status:429});return Response.json({id:'ok'});};
+ const pause=async(ms:number)=>{waits.push(ms);};
+ await assert.rejects(repairLegacySecurityLogs(bot,[channel],pause),(e:any)=>e.code==='LOG_REPAIR_RATE_LIMIT');
+ assert.equal((await pg.query("SELECT id FROM community_deliveries WHERE payload->>'logPresentationVersion'='bright-v1'")).rows.length,1);
+ assert.equal((await pg.query('SELECT name FROM integration_status')).rows.length,0);
+ assert.equal(waits.filter(ms=>ms===2500).length,5);
+ limited=false;assert.equal((await repairLegacySecurityLogs(bot,[channel],pause)).repaired,1);
+ assert.equal(calls.filter(url=>url===calls[0]).length,1);
+ assert.equal((await pg.query('SELECT name FROM integration_status')).rows.length,1);
+});
