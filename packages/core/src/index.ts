@@ -9,3 +9,5 @@ export * from './worker';
 export * from './roles';
 export * from './setup';
 export * from './application';
+export * from './community';
+export * from './assistant';

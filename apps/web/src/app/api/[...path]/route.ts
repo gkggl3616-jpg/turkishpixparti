@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
-import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl,applicationConnection} from '../../../../../../packages/core/src/index';
+import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl,applicationConnection,communityOverview,saveCommunitySettings,createAnnouncement,cancelAnnouncement,assistantAnswer,communitySettings,saveAIProvider} from '../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 function json(data:any,status=200){return NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});}
 function error(e:unknown){
@@ -15,9 +15,10 @@ export async function GET(req:Request){
  try{
   if(path==='/api/health'){
    if(!process.env.DATABASE_URL)return json({status:config().demo?'preview':'database_missing'},config().demo?200:503);
-   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup')");if(schemas.rows.length!==3)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
+   const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup','005_community')");if(schemas.rows.length!==4)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',ready:readiness().ready,demo:config().demo});
   }
   if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();
+  if(path==='/api/community'){const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Discord ile giriş yapın.',401);return json({...await communityOverview(me),csrf:me.csrf,me});}
   if(path==='/api/setup'){
    const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Discord ile giriş yapın.',401);ownerOnly(me);await rateLimit('setup:'+me.id,15,60);return json(await detectConnection(me));
   }
@@ -73,6 +74,14 @@ export async function POST(req:Request){
   const me=await session(req);if(!me)throw new DomainError('UNAUTHENTICATED','Önce Discord ile giriş yapın.',401);csrf(req,me);
   await rateLimit('action:'+me.id,30,60);
   if(new URL(req.url).pathname==='/api/auth/logout'){await logout(req,me);return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json','Set-Cookie':cookie(SESSION_COOKIE,'',0)}});}
+  const endpoint=new URL(req.url).pathname;
+  if(['/api/community/settings','/api/community/campaign','/api/community/cancel','/api/community/assistant','/api/community/provider'].includes(endpoint)){ownerOnly(me);const raw=await req.text();if(raw.length>16000)throw new DomainError('PAYLOAD_TOO_LARGE','Form boyutu çok büyük.',413);let input;try{input=JSON.parse(raw);}catch{throw new DomainError('INVALID_JSON','Geçersiz form.');}
+   if(endpoint.endsWith('/provider'))return json(await saveAIProvider(me,input));
+   if(endpoint.endsWith('/settings'))return json(await saveCommunitySettings(me,input));
+   if(endpoint.endsWith('/campaign'))return json(await createAnnouncement(me,input));
+   if(endpoint.endsWith('/cancel'))return json(await cancelAnnouncement(me,input.id));
+   if(typeof input.question!=='string')throw new DomainError('AI_INPUT','Bir soru yazın.');return json(await assistantAnswer(me.id,input.question,(await communitySettings()).ai));
+  }
   if(new URL(req.url).pathname!=='/api/actions')return json({error:'Sayfa bulunamadı.'},404);
   const raw=await req.text();if(raw.length>800000)throw new DomainError('PAYLOAD_TOO_LARGE','Logo veya form boyutu çok büyük.',413);
   let input;try{input=JSON.parse(raw);}catch{throw new DomainError('INVALID_JSON','Geçersiz form.');}

@@ -1,4 +1,4 @@
-# TurkishPix Siyasi Sistem v1.2.0
+# TurkishPix Bot Merkezi v2.0.0
 
 Discord bot + Next.js web panel + PostgreSQL. Uygulama kimliği ve public key, kullanıcı tarafından verilen ekran görüntülerinden alındı. Gizli anahtarlar kaynak kodda veya bu pakette bulunmaz.
 
@@ -9,6 +9,17 @@ Parti kuruluşu, dört owner onayı, web/Discord ortak oylaması, TBMM, milletve
 Bot kimliği doğrulandı; TurkishPix sunucu ID’si `1497372055530639504`. Botun sunucuya eklenmesi, OAuth callback adresinin Developer Portal’a kaydedilmesi ve owner panelinden kanal/rol ID’lerinin girilmesi gerekir. Gerçek Discord üzerinde oy/rol smoke testi bu kurulum tamamlanmadan çalıştırılamaz.
 
 Canlı panel: **https://turkishpix-web-production.up.railway.app**. PostgreSQL, Web ve Bot mevcut Railway projesinde çevrim içi. Eski Pixmap web kaldırıldı; Pixmap mobil/APK, diski ve bucket’ı ile Pixelya korunur. Bot Discord Gateway’e bağlandı. Kısıtlı runtime hesabının audit kayıtlarını güncelleyemediği ve trigger’ları kapatamadığı gerçek PostgreSQL üzerinde doğrulandı.
+
+## Bot merkezi v2.0
+
+Ana sayfa modül seçim ekranıdır. Ayrı paneller: `/secim`, `/guvenlik`, `/karsilama`, `/duyurular`, `/yapay-zeka`. Kanal ID’leri ve tüm modül ayarları Discord ile giriş yapan dört owner hesabından yönetilir.
+
+- Güvenlik: spam, etiket, Discord daveti ve izinli alan adı filtreleri; isteğe bağlı susturma; genç hesap ve yoğun giriş uyarıları. Owner, sunucu sahibi, yönetici ve belirlenen muaf roller/kanallar korunur. Varsayılan koruma kapalıdır, panelden etkinleştirilir.
+- Karşılama: yeni üyeye tek mesaj, seçilen kanalda yalnızca o üyeye etiket; `{user}`, `{username}`, `{server}`, `{count}` alanları. `sa`, `selamünaleyküm`, `merhaba`, `selam` mesajlarına rastgele cevap ve kullanıcı başına dakika sınırı.
+- Duyurular: kanal mesajı veya `/duyurukatıl` ile katılan DM aboneleri; `/duyuruayril`, önizleme ve gönderim onayı, 10 dakika kampanya aralığı, iptal ve teslim durumları. Üye listesinden izinsiz toplu DM gönderimi yoktur.
+- Yapay zekâ: `/yapayzekaaktif`, `/yapayzekakapat`, `/sor`, botu etiketleme ve bot mesajını yanıtlama. Aritmetik kod değerlendirmeden yerelde çalışır. Genel sorular için OpenAI API anahtarı web panelinden AES-GCM ile şifrelenerek kaydedilir veya iki servisin `OPENAI_API_KEY` değişkenine eklenir. Model `OPENAI_MODEL`; varsayılan `gpt-4.1-mini`. API çağrıları kullanıcı/dakika ve sunucu/gün limitleriyle sınırlanır.
+
+Üye olayları için **Server Members Intent**, genel sohbet için **Message Content Intent** gerekir. Bot uygulamasında bu izinler doğrulandı. Güvenlik için Manage Messages ve isteğe bağlı Moderate Members, karşılama/duyuru için View Channel ve Send Messages gerekir. Bot bu izinleri web panelinde raporlar.
 
 ## Repo yapısı
 
@@ -63,7 +74,7 @@ General Information için:
 
 Bot avatarı ve uygulama simgesine meclis temalı TurkishPix arması eklendi. Profil görseli `apps/web/public/brand/turkishpix-bot.png` konumundadır; slash komutları bu görselli embed ile panel bağlantısı sunar.
 
-Bot Gateway kullanır; Developer Portal’daki **Interactions Endpoint URL boş bırakılır**. Message Content intent ve mesaj okuma yetkisi kullanılmaz.
+Bot Gateway kullanır; Developer Portal’daki **Interactions Endpoint URL boş bırakılır**. Karşılama, selam ve güvenlik modülleri için Guild Members ve Message Content intent’leri kullanılır.
 
 Komutlar: `/partikur`, `/partiler`, `/oylamalar`, `/tbmm`, `/secimler`, `/teklif`, `/yardim`.
 

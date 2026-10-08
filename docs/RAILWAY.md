@@ -81,7 +81,7 @@ Yeni proje isteği kaynak kotasıyla reddedildi. `pixmap-fun-redisless` projesin
 
 İlk şema kurulumu için geçici DB Setup servisi `node scripts/bootstrap-db.mjs` çalıştırır. Bu serviste `DATABASE_ADMIN_URL` PostgreSQL referansı, `DATABASE_RUNTIME_PASSWORD` rastgele 64 hex karakter ve `BOOTSTRAP_KEEP_ALIVE=true` bulunur. Marker `TURKISHPIX_DATABASE_READY` sonrası geçici servis silinir. Web ve Bot yalnızca kısıtlı `turkishpix_runtime` hesabını kullanır.
 
-Owner → Sunucu kurulumu ekranından sunucu/kanal ID’leri değiştirilir, bot sunucuya davet edilir ve izinler tespit edilir. Görev ve roller ekranından dört rol seçilir veya ID’leri elle girilir. Slash komutları otomatik kaydedilir. OAuth scope’ları `identify guilds.members.read`; privileged intent gerekmez.
+Owner → Sunucu kurulumu ekranından sunucu/kanal ID’leri değiştirilir, bot sunucuya davet edilir ve izinler tespit edilir. Görev ve roller ekranından dört rol seçilir veya ID’leri elle girilir. Slash komutları otomatik kaydedilir. OAuth scope’ları `identify guilds.members.read`. v2 karşılama, güvenlik ve selam modülleri ayrıca Guild Members ve Message Content Gateway intent’leri kullanır.
 
 ## Canlı dağıtım — 7 Ekim 2026
 
@@ -96,3 +96,11 @@ Owner → Sunucu kurulumu ekranından sunucu/kanal ID’leri değiştirilir, bot
 - Owner giriş ekranındaki “İlk Discord kurulumu” bölümü callback adresini ve bot davetini girişten önce gösterir.
 
 Owner ile giriş yaptıktan sonra **Sunucu kurulumu** ekranından oylama ve log kanal ID’lerini, **Görev ve roller** ekranından dört siyasi rol ID’sini girin. İzin kontrolü tamamlanınca gerçek başvuru/onay/oy akışını yukarıdaki smoke testiyle doğrulayın.
+
+## v2 community migration
+
+`005_community` adds module settings, encrypted provider storage, subscriptions, delivery queue, security events and AI usage tables. Existing election/audit tables are untouched. Apply with an administrator in a migration environment, then keep Web/Bot on `turkishpix_runtime`.
+
+For the existing Railway project, the bot pre-deploy can run the migration with a temporary `DATABASE_ADMIN_URL` reference. Its runtime command must remove that variable (`env -u DATABASE_ADMIN_URL npm run bot`). Once the migration succeeds, clear the temporary variable, remove the pre-deploy command, restore `npm run bot` and redeploy the bot. The web service never receives the administrative URL.
+
+Optional `OPENAI_API_KEY`/`OPENAI_MODEL` can be set on both services. The owner panel also supports encrypted database-backed credentials, which both services share. The key derivation uses the server’s stable `AUDIT_HMAC_KEY`; replacing it requires saving the provider key again. No API key is included in audit details or API responses.

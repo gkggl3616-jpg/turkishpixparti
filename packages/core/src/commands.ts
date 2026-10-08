@@ -6,10 +6,16 @@ export const commands=[
  {name:'tbmm',description:'TBMM ve milletvekili listesini görüntüle.'},
  {name:'secimler',description:'Seçimleri ve sonuçlarını görüntüle.'},
  {name:'teklif',description:'Yönerge veya kanun teklifini web panelinde sun.'},
+ {name:'yapayzekaaktif',description:'Yapay zekâ yanıtlarını etkinleştir (owner).'},
+ {name:'yapayzekakapat',description:'Yapay zekâ yanıtlarını kapat (owner).'},
+ {name:'sor',description:'TurkishPix yardımcısına soru sor.',options:[{name:'soru',description:'Sorunuz veya matematik işlemi',type:3,required:true,max_length:2000}]},
+ {name:'duyurukatıl',description:'Sunucunun DM duyurularını almaya katıl.'},
+ {name:'duyuruayril',description:'DM duyurularından ayrıl.'},
+ {name:'botpanel',description:'Bot yönetim merkezini aç.'},
  {name:'yardim',description:'Siyasi sistemin komut ve kurallarını öğren.'}
 ].map(c=>({...c,type:1,contexts:[0],integration_types:[0]}));
 export function commandReply(name:string){
  const c=config();const views:Record<string,string>={partikur:'basvurular',partiler:'partiler',oylamalar:'oylamalar',tbmm:'tbmm',secimler:'secimler',teklif:'tbmm',yardim:'kilavuz'};
  const text=name==='partikur'?'Parti adını, kısaltmasını, logosunu, açıklamasını ve hedeflerini panele gir. Lider kendi Discord hesabıyla başvurur. Dört owner onayından sonra halk oylaması açılır.':name==='yardim'?'/partikur · /partiler · /oylamalar · /tbmm · /secimler · /teklif\nOwner onayları ve oylar kaydedilir. Her hesap bir oy kullanabilir.':'İlgili sayfayı panelde açabilirsiniz.';
- return {embeds:[{title:name==='partikur'?'TurkishPix · Parti kuruluşu':'TurkishPix · Cumhuriyet portalı',description:text,color:0xd6ad55,thumbnail:{url:c.appUrl+'/brand/turkishpix-bot.png'},footer:{text:'Dört owner · Ortak irade · Kayıtlı kararlar'}}],components:[{type:1,components:[{type:2,style:5,label:name==='partikur'?'Parti başvurusu yap':'Paneli aç',url:c.appUrl+'/?view='+(views[name]||'genel')+(name==='partikur'?'&create=PARTY':name==='teklif'?'&create=BILL':'')}]}],allowed_mentions:{parse:[]}};
+ return {embeds:[{title:name==='partikur'?'TurkishPix · Parti kuruluşu':'TurkishPix · Cumhuriyet portalı',description:text,color:0xd6ad55,thumbnail:{url:c.appUrl+'/brand/turkishpix-bot.png'},footer:{text:'Dört owner · Ortak irade · Kayıtlı kararlar'}}],components:[{type:1,components:[{type:2,style:5,label:name==='partikur'?'Parti başvurusu yap':'Paneli aç',url:(name==='botpanel'?c.appUrl:c.appUrl+'/?view='+(views[name]||'genel'))+(name==='partikur'?'&create=PARTY':name==='teklif'?'&create=BILL':'')}]}],allowed_mentions:{parse:[]}};
 }
