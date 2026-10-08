@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
-import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl} from '../../../../../../packages/core/src/index';
+import {config,readiness,DomainError,database,session,csrf,oauthStart,oauthCallback,logout,cookie,SESSION_COOKIE,STATE_COOKIE,rateLimit,checkActor,createItem,approveItem,castVote,membership,overview,actionSchema,ownerOnly,verifyAudit,roleManagement,memberRoles,saveRoleMappings,reconcileRoles,loadServerSettings,saveServerSettings,detectConnection,botInviteUrl,applicationConnection} from '../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 function json(data:any,status=200){return NextResponse.json(data,{status,headers:{'Cache-Control':'no-store'}});}
 function error(e:unknown){
@@ -25,12 +25,15 @@ export async function GET(req:Request){
    const r=readiness();
    if(!r.demo&&r.checks.database){try{r.checks.database=!!(await database().query("SELECT version FROM schema_migrations WHERE version='001_initial'")).rows.length;}catch{r.checks.database=false;}}
    if(r.demo)r.checks.database=false;
+   const application=r.demo?{verified:false,redirectRegistered:null,owner:null}:await applicationConnection();
+   r.checks.oauth=r.checks.oauth&&application.verified&&application.redirectRegistered!==false;
    r.ready=Object.values(r.checks).every(Boolean);
-   return json({...r,clientId:config().clientId,guildId:config().guildId,installUrl:botInviteUrl(),redirectUri:config().appUrl+'/api/auth/callback',rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
+   return json({...r,application,clientId:config().clientId,guildId:config().guildId,installUrl:botInviteUrl(),redirectUri:config().appUrl+'/api/auth/callback',rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
   }
   if(path==='/api/auth/login'){
-   const {url,state}=await oauthStart(new URL(req.url).searchParams.get('return')||'/');
-   return new Response(null,{status:302,headers:{Location:url,'Set-Cookie':cookie(STATE_COOKIE,state,1/6),'Cache-Control':'no-store'}});
+   try{const {url,state}=await oauthStart(new URL(req.url).searchParams.get('return')||'/');
+    return new Response(null,{status:302,headers:{Location:url,'Set-Cookie':cookie(STATE_COOKIE,state,1/6),'Cache-Control':'no-store'}});
+   }catch(e){if(e instanceof DomainError)return NextResponse.redirect(new URL('/?view=owner&error='+e.code,config().appUrl));throw e;}
   }
   if(path==='/api/auth/callback'){
    try{const result=await oauthCallback(req);const res=NextResponse.redirect(new URL(result.returnPath,config().appUrl));res.headers.append('Set-Cookie',cookie(SESSION_COOKIE,result.secret,config().sessionHours));res.headers.append('Set-Cookie',cookie(STATE_COOKIE,'',0));return res;}

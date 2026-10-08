@@ -24,7 +24,7 @@ test('Sunucu ayarları owner gerektirir, aynı kanalı reddeder ve yeniden yükl
  setServerSettings({});assert.notEqual(config().voteChannel,input.voteChannel);await loadServerSettings();assert.equal(config().voteChannel,input.voteChannel);assert.equal((await verifyAudit()).valid,true);
 });
 test('Geçerli bot sunucuya eklenmediyse erişim varmış gibi gösterilmez; secret dönmez',async()=>{
- const urls:string[]=[];globalThis.fetch=async(input:any)=>{const url=String(input);urls.push(url);if(url.endsWith('/users/@me'))return Response.json({id:'777777777777777777',username:'TurkishPix'});if(url.endsWith('/users/@me/guilds'))return Response.json([]);throw new Error('Unexpected request');};
+ const urls:string[]=[];globalThis.fetch=async(input:any)=>{const url=String(input);urls.push(url);if(url.endsWith('/applications/@me'))return Response.json({id:'1557484052133707896',redirect_uris:[],owner:{id:owner.id,username:owner.username}});if(url.endsWith('/users/@me'))return Response.json({id:'777777777777777777',username:'TurkishPix'});if(url.endsWith('/users/@me/guilds'))return Response.json([]);throw new Error('Unexpected request');};
  await assert.rejects(detectConnection(citizen),/owner/);const result=await detectConnection(owner);
- assert.equal(result.bot.authenticated,true);assert.equal(result.bot.installed,false);assert.equal(urls.length,2);assert.ok(!JSON.stringify(result).includes(process.env.DISCORD_BOT_TOKEN!));assert.ok(!JSON.stringify(result).includes(process.env.AUDIT_HMAC_KEY!));
+ assert.equal(result.bot.authenticated,true);assert.equal(result.bot.installed,false);assert.equal(urls.length,3);assert.equal(result.application.redirectRegistered,false);assert.ok(!JSON.stringify(result).includes(process.env.DISCORD_BOT_TOKEN!));assert.ok(!JSON.stringify(result).includes(process.env.AUDIT_HMAC_KEY!));
 });

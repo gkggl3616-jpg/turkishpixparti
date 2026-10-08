@@ -8,3 +8,4 @@ export * from './auth';
 export * from './worker';
 export * from './roles';
 export * from './setup';
+export * from './application';

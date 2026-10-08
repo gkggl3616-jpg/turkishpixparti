@@ -4,6 +4,7 @@ import {serverSettingsSchema} from './validation';
 import {discordRequest,syncUser} from './discord';
 import {audit} from './audit';
 import {buildRoleCatalog,roleMappings,ROLE_LABELS} from './roles';
+import {applicationConnection} from './application';
 type Actor={id:string;username:string;avatar?:string|null};
 function owner(actor:Actor){if(!config().owners.includes(actor.id))throw new DomainError('FORBIDDEN','Sunucu kurulumu yalnızca owner hesaplarına açık.',403);}
 export function botInviteUrl(){return 'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:config().clientId,scope:'bot applications.commands',permissions:'268520448',guild_id:config().guildId,disable_guild_select:config().guildId?'true':'false'}).toString();}
@@ -41,7 +42,8 @@ function channelChecks(permissions:bigint){return {view:!!(permissions&1024n),se
 export async function detectConnection(actor:Actor){
  owner(actor);const c=config();const settings={guildId:c.guildId,voteChannel:c.voteChannel,logChannel:c.logChannel};
  const [mappings,heartbeat]=await Promise.all([roleMappings(),database().query("SELECT status,updated_at FROM integration_status WHERE name='discord'")]);
- const base={settings,mappings,labels:ROLE_LABELS,installUrl:botInviteUrl(),redirectUri:c.appUrl+'/api/auth/callback',checks:readiness().checks,heartbeat:heartbeat.rows[0]||null};
+ const application=await applicationConnection();
+ const base={application,settings,mappings,labels:ROLE_LABELS,installUrl:botInviteUrl(),redirectUri:c.appUrl+'/api/auth/callback',checks:readiness().checks,heartbeat:heartbeat.rows[0]||null};
  if(!c.botToken)return {...base,bot:{authenticated:false,installed:false,error:'Bot token sunucu değişkenlerine eklenmeli.'},channels:[],roles:[]};
  try{
   const [self,guilds]=await Promise.all([discordRequest('/users/@me'),discordRequest('/users/@me/guilds')]);

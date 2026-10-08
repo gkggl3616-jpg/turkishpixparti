@@ -42,13 +42,26 @@ Yalnızca arayüzü görmek için `.env` içinde `DEMO_MODE=true` kullanın. Ör
 
 ## Discord kurulumu
 
-1. Developer Portal’da uygulama `1557484052133707896` açılır.
+1. [Developer Portal](https://discord.com/developers/applications), uygulama sahibi **@frizz2025** hesabıyla açılır. Uygulamalar listesinden `TurkishPix Parti Sistemi` (`1557484052133707896`) seçilir. “Application not found” hatasında bu hesabı ve uygulama seçimini kontrol edin.
 2. **Bot** bölümünden bot token’ı alınır. OAuth2 Client Secret, bot token’ı değildir.
 3. OAuth2 Redirect URI: `APP_URL/api/auth/callback`. Yerelde `http://localhost:3000/api/auth/callback`.
 4. Discord geliştirici modu açılıp sunucu, oylama kanalı ve log kanalı ID’leri kopyalanır. Dört owner ID’si `.env.example` ve Railway tanımında hazırdır.
 5. `DISCORD_OWNER_IDS` virgülle ayrılmış, birbirinden farklı dört ID olmalıdır. Yetki kullanıcı adına veya girilen form bilgisine göre verilmez.
 6. Bot sunucuya `bot` ve `applications.commands` scope’larıyla eklenir. İzinler: View Channel, Send Messages, Embed Links. Panelden siyasi rollerin atanması için ayrıca Manage Roles gerekir ve botun en üst rolü, atanacak rolün üstünde olmalıdır.
 7. Bot sunucuya eklendiğinde yedi slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
+
+Canlı OAuth callback adresi **`https://turkishpix-web-production.up.railway.app/api/auth/callback`**. OAuth2 → Redirects → Add Redirect alanına eksiksiz eklenir ve **Save Changes** ile kaydedilir. Sitedeki owner giriş ekranı kayıt durumunu Discord API’den kontrol eder. Kayıt yokken giriş isteği Discord’un hata sayfasına gönderilmez.
+
+General Information için:
+
+| Alan | Değer |
+| --- | --- |
+| Terms of Service URL | `https://turkishpix-web-production.up.railway.app/terms` |
+| Privacy Policy URL | `https://turkishpix-web-production.up.railway.app/privacy` |
+| Interactions Endpoint URL | Boş bırakılır |
+| Linked Roles Verification URL | Boş bırakılır; rol atamaları bot API’si kullanır |
+
+Bot avatarı ve uygulama simgesine meclis temalı TurkishPix arması eklendi. Profil görseli `apps/web/public/brand/turkishpix-bot.png` konumundadır; slash komutları bu görselli embed ile panel bağlantısı sunar.
 
 Bot Gateway kullanır; Developer Portal’daki **Interactions Endpoint URL boş bırakılır**. Message Content intent ve mesaj okuma yetkisi kullanılmaz.
 

@@ -1,0 +1,4 @@
+import Link from 'next/link';
+export default function PolicyPage({title,children}:{title:string;children:React.ReactNode}){
+ return <main className="legal-page"><Link className="legal-brand" href="/"><img src="/brand/turkishpix-bot.png" alt="TurkishPix arması"/>TURKISHPIX · CUMHURİYET PORTALI</Link><article className="surface"><span className="eyebrow">TOPLULUK BİLGİLENDİRMESİ · 8 EKİM 2026</span><h1>{title}</h1>{children}<h2>İletişim</h2><p>Sorularınız ve veri talepleriniz için <a href="https://discord.gg/turkishpix" target="_blank" rel="noreferrer">TurkishPix Discord sunucusundaki</a> owner ekibine ulaşın. Discord uygulamasının sahibi <strong>@frizz2025</strong> hesabıdır.</p></article><div className="policy-links"><Link href="/">Panele dön</Link><Link href="/terms">Kullanım koşulları</Link><Link href="/privacy">Gizlilik</Link></div></main>;
+}
