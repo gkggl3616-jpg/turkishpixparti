@@ -1,4 +1,4 @@
-import {config} from './config';
+import {config,DomainError} from './config';
 import {database} from './db';
 import {discordRequest} from './discord';
 import {securityEmbed} from './presentation';
@@ -20,18 +20,21 @@ export async function repairLegacySecurityLogs(botId:string,channelIds:string[])
  const c=config(),channels=[...new Set(channelIds.filter(id=>/^\d{17,20}$/.test(id)))];
  let repaired=0;
  for(const channelId of channels){
-  const marker='security-log-presentation-v2:'+channelId;
+  const marker='security-log-presentation-v3:'+channelId;
   if((await database().query('SELECT name FROM integration_status WHERE name=$1',[marker])).rows.length)continue;
   const channel=await discordRequest('/channels/'+channelId);
   if(channel.guild_id!==c.guildId)continue;
-  const messages=await discordRequest('/channels/'+channelId+'/messages?limit=100');
+  // The delivery ledger identifies our own messages without requiring Read Message History.
+  const delivered=(await database().query("SELECT message_id,payload,sent_at FROM community_deliveries WHERE guild_id=$1 AND kind='SECURITY_LOG' AND status='SENT' AND message_id IS NOT NULL AND payload->>'channelId'=$2 ORDER BY sent_at DESC LIMIT 100",[c.guildId,channelId])).rows;
+  const messages=delivered.length?delivered.map(row=>({id:row.message_id,author:{id:botId},content:row.payload.content,embeds:row.payload.embeds,timestamp:new Date(row.sent_at).toISOString()})):await discordRequest('/channels/'+channelId+'/messages?limit=100');
   let count=0;
   for(const message of messages){
    if(message.author?.id!==botId)continue;
    const oldText=message.content||message.embeds?.[0]?.description||'';
    const embed=legacySecurityEmbed(oldText,c.appUrl);if(!embed)continue;
    embed.timestamp=message.timestamp;
-   await discordRequest('/channels/'+channelId+'/messages/'+message.id,{method:'PATCH',body:JSON.stringify({content:null,embeds:[embed],allowed_mentions:{parse:[]}})});
+   try{await discordRequest('/channels/'+channelId+'/messages/'+message.id,{method:'PATCH',body:JSON.stringify({content:null,embeds:[embed],allowed_mentions:{parse:[]}})});}
+   catch(e){if(e instanceof DomainError&&e.message.includes('(404)'))continue;throw e;}
    count++;repaired++;
   }
   await database().query('INSERT INTO integration_status(name,status) VALUES($1,$2) ON CONFLICT(name) DO NOTHING',[marker,{repaired:count,scanned:messages.length}]);

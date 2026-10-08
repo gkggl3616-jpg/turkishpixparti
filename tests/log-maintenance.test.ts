@@ -46,3 +46,9 @@ test('Yeniden başlatma öncesinden kalmış log kuyruğu yeni etiket biçimiyle
  await communityDeliveryTick();assert.equal(sent.embeds[0].fields.find((f:any)=>f.name==='👤 Üye').value,'<@'+member+'>');assert.deepEqual(sent.allowed_mentions,{parse:[],users:[]});
  assert.equal((await pg.query<any>('SELECT status FROM community_deliveries')).rows[0].status,'SENT');
 });
+
+test('Geçmiş okuma izni olmadan gönderim kaydındaki kendi logu onarılır; silinmiş mesaj atlanır',async()=>{
+ await pg.query("INSERT INTO community_deliveries(id,guild_id,kind,payload,status,message_id,sent_at) VALUES(gen_random_uuid(),$1,'SECURITY_LOG',$2,'SENT','123456789012345678',now()),(gen_random_uuid(),$1,'SECURITY_LOG',$2,'SENT','123456789012345679',now())",[guild,{channelId:channel,content:legacy}]);
+ let historyReads=0,patches=0;globalThis.fetch=async(input:any,init:any)=>{const url=String(input);if(url.includes('?limit=')){historyReads++;return Response.json({}, {status:403});}if(init.method==='PATCH'){patches++;return url.endsWith('679')?Response.json({}, {status:404}):Response.json({id:'123456789012345678'});}return Response.json({guild_id:guild});};
+ assert.equal((await repairLegacySecurityLogs(bot,[channel])).repaired,1);assert.equal(historyReads,0);assert.equal(patches,2);assert.equal((await pg.query('SELECT name FROM integration_status')).rows.length,1);
+});
