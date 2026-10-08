@@ -17,7 +17,7 @@ before(async()=>{
  await pg.exec(await readFile(new URL('../packages/core/sql/003_discord_roles.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/004_server_setup.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/005_community.sql',import.meta.url),'utf8'));
- await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/007_entertainment.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/007_entertainment.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/010_music_application_security.sql',import.meta.url),'utf8'));
  await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[user.id,user.username]);
  await pg.query("INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sha256(token),user.id,csrf]);
  globalThis.fetch=async(input:any,init:any)=>{
@@ -52,7 +52,7 @@ test('HTTP: çıkış kalıcı session kaydını siler',async()=>{
 });
 
 test('HTTP: health şemayı doğrular; açık kurulum bilgisi gizli anahtar içermez',async()=>{
- const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);const healthBody=await health.json();assert.equal(healthBody.status,'ok');assert.equal(healthBody.version,'2.4.1');
+ const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);const healthBody=await health.json();assert.equal(healthBody.status,'ok');assert.equal(healthBody.version,'2.5.0');
  const response=await GET(new Request('https://turkishpix.example/api/config'));assert.equal(response.status,200);const body=await response.json();assert.equal(body.redirectUri,'https://turkishpix.example/api/auth/callback');
  for(const name of ['DISCORD_BOT_TOKEN','DISCORD_CLIENT_SECRET','AUDIT_HMAC_KEY'])assert.ok(!JSON.stringify(body).includes(process.env[name]!));
 });
@@ -86,4 +86,15 @@ test('HTTP: yeni owner işlem merkezi kimlik ve CSRF ister; kişisel kayıtlara 
  const call=(h:any,b=body)=>POST(new Request('https://turkishpix.example/api/community/feature-review',{method:'POST',headers:h,body:b}));
  assert.equal((await call({})).status,401);assert.equal((await call(citizenHeaders)).status,403);assert.equal((await call({...ownerHeaders,'x-csrf-token':'wrong'})).status,403);assert.equal((await getFeatureRecord(ticket.id)).status,'OPEN');assert.equal((await call(ownerHeaders)).status,200);assert.equal((await getFeatureRecord(ticket.id)).status,'CLOSED');
  const note=await addFeatureRecord(user,'NOTE','Özel kişisel not',{}, {},'http-note');assert.equal((await call(ownerHeaders,JSON.stringify({id:note.id,status:'CANCELLED'}))).status,400);assert.equal((await getFeatureRecord(note.id)).status,'OPEN');
+});
+
+test('HTTP: müzik durumu ve kalıcı ses işlemleri owner ve CSRF ister',async()=>{
+ const ownerHeaders={...headers,cookie:'tp_session='+'ef'.repeat(32)},citizenHeaders={...headers,cookie:'tp_session='+'cd'.repeat(32)},channelId='999999999999999997',body=JSON.stringify({channelId,action:'katil'});
+ const get=(h:any)=>GET(new Request('https://turkishpix.example/api/music',{headers:h}));
+ const post=(h:any)=>POST(new Request('https://turkishpix.example/api/community/music',{method:'POST',headers:h,body}));
+ assert.equal((await get({})).status,401);assert.equal((await get(citizenHeaders)).status,403);assert.equal((await get(ownerHeaders)).status,200);
+ assert.equal((await post({})).status,401);assert.equal((await post(citizenHeaders)).status,403);assert.equal((await post({...ownerHeaders,'x-csrf-token':'wrong'})).status,403);
+ await pg.query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected:true}]);
+ const previous=globalThis.fetch;globalThis.fetch=async(input:any,init:any)=>String(input).endsWith('/channels/'+channelId)?Response.json({id:channelId,guild_id:process.env.DISCORD_GUILD_ID,type:2}):previous(input,init);
+ try{const response=await post(ownerHeaders);assert.equal(response.status,200);const job=await response.json();const stored=(await pg.query<any>('SELECT * FROM music_jobs WHERE id=$1',[job.id])).rows[0];assert.equal(stored.status,'QUEUED');assert.equal(stored.actor_id,'111111111111111111');assert.equal((await (await get(ownerHeaders)).json()).jobs[0].id,job.id);}finally{globalThis.fetch=previous;}
 });

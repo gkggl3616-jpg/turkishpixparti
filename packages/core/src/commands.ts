@@ -1,4 +1,5 @@
 import {featureCommands} from './features-catalog';
+import {musicCommands} from './music-policy';
 import {config} from './config';
 import {entertainmentCommands} from './entertainment-catalog';
 export const commands=[
@@ -16,7 +17,8 @@ export const commands=[
  {name:'sesdmac',description:'Ses kanalı giriş ve çıkış DM bildirimlerini aç.'},
  {name:'sesdmkapat',description:'Ses kanalı giriş ve çıkış DM bildirimlerini kapat.'},
  {name:'botpanel',description:'Bot yönetim merkezini aç.'},
- {name:'yardim',description:'95 komutun kategorilerini ve kullanımını öğren.'},
+ {name:'yardim',description:'97 komutun kategorilerini ve kullanımını öğren.'},
+ ...musicCommands,
  ...featureCommands.map(({category,...command})=>command),
  ...entertainmentCommands.map(({category,...command})=>command)
 ].map(c=>({...c,type:1,contexts:[0],integration_types:[0]}));

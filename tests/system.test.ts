@@ -95,7 +95,7 @@ test('Genel bakış kullanıcı oylarını yalnızca kendi hesabına döndürür
  const privateData=await overview(leader);assert.equal(privateData.me.isDeputy,true);assert.ok(privateData.me.votes.length>0);assert.ok(publicData.ballots.every((b:any)=>!b.user_id));
 });
 test('Kısıtlı uygulama rolü audit trigger’larını devre dışı bırakamaz',async()=>{
- await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/010_music_application_security.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/002_runtime_role.sql',import.meta.url),'utf8'));
  await pg.exec('SET ROLE turkishpix_runtime');
  try{
