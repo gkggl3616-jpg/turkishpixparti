@@ -1,17 +1,18 @@
 import 'dotenv/config';
 import {handleEntertainmentInteraction,entertainmentTick} from './entertainment';
-import {Client,GatewayIntentBits,Events,MessageFlags,PermissionFlagsBits,ActivityType} from 'discord.js';
+import {moderateChat,nativeModerationExecution,moderationMaintenance} from './moderation';
+import {Client,GatewayIntentBits,Events,MessageFlags,PermissionFlagsBits,ActivityType,Partials} from 'discord.js';
 import {randomUUID} from 'node:crypto';
-import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,entertainmentCommands} from '@turkishpix/core';
+import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,entertainmentCommands,syncNativeModeration} from '@turkishpix/core';
 import {commandReply,commands} from '../../../packages/core/src/commands';
 const initial=config();
 if(!process.env.DATABASE_URL||!initial.botToken||initial.demo){console.error('Bot token ve veritabanı gerekli; demo modu kapalı olmalı.');process.exit(1);}
 await loadServerSettings();
 let appFlags=0;try{appFlags=(await discordRequest('/applications/@me')).flags||0;}catch{console.error('Uygulama izinleri doğrulanamadı; temel komutlarla devam ediliyor.');}
 const enabledIntents={members:!!(appFlags&((1<<14)|(1<<15))),messageContent:!!(appFlags&((1<<18)|(1<<19))),voiceStates:true};
-const client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildMessages,GatewayIntentBits.GuildVoiceStates,...(enabledIntents.members?[GatewayIntentBits.GuildMembers]:[]),...(enabledIntents.messageContent?[GatewayIntentBits.MessageContent]:[])]});
+const client=new Client({partials:[Partials.Message,Partials.Channel],intents:[GatewayIntentBits.AutoModerationExecution,GatewayIntentBits.Guilds,GatewayIntentBits.GuildMessages,GatewayIntentBits.GuildVoiceStates,...(enabledIntents.members?[GatewayIntentBits.GuildMembers]:[]),...(enabledIntents.messageContent?[GatewayIntentBits.MessageContent]:[])]});
 let registeredGuild='',settings=defaultCommunitySettings();const guard=new MessageGuard();const greetingTimes=new Map<string,number>();let joins:number[]=[],lastRaid=0;
-let appliedPresence='';
+let appliedPresence='',lastProtection='';let nativeStatus:any=null;
 function applyPresence(){
  if(!client.isReady())return;
  const key=JSON.stringify(settings.presence);if(key===appliedPresence)return;
@@ -20,7 +21,7 @@ function applyPresence(){
 }
 async function heartbeat(connected=client.isReady()){
  const guild=client.guilds.cache.get(config().guildId),bot=guild?.members.me;
- await database().query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected,botId:client.user?.id||null,botName:client.user?.username||null,guilds:[...client.guilds.cache.keys()],intents:enabledIntents,presence:appliedPresence?settings.presence:null,permissions:{deleteMessages:bot?.permissions.has(PermissionFlagsBits.ManageMessages)||false,timeout:bot?.permissions.has(PermissionFlagsBits.ModerateMembers)||false}}]);
+ await database().query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected,botId:client.user?.id||null,botName:client.user?.username||null,guilds:[...client.guilds.cache.keys()],intents:enabledIntents,presence:appliedPresence?settings.presence:null,protection:{enabled:settings.security.enabled&&settings.security.content.enabled,categories:Object.entries(settings.security.content.modes).filter(([,v])=>v!=='OFF').map(([k])=>k),edits:settings.security.content.checkEdits,native:nativeStatus},permissions:{manageGuild:bot?.permissions.has(PermissionFlagsBits.ManageGuild)||false,deleteMessages:bot?.permissions.has(PermissionFlagsBits.ManageMessages)||false,timeout:bot?.permissions.has(PermissionFlagsBits.ModerateMembers)||false}}]);
 }
 async function register(){const c=config();if(c.guildId&&client.guilds.cache.has(c.guildId)&&registeredGuild!==c.guildId){const saved=await discordRequest(`/applications/${c.clientId}/guilds/${c.guildId}/commands`,{method:'PUT',body:JSON.stringify(commands.map(({contexts,integration_types,...cmd})=>cmd))});if(!Array.isArray(saved)||saved.length!==commands.length)throw new DomainError('COMMAND_REGISTRATION_FAILED','Komut kaydı doğrulanamadı.');registeredGuild=c.guildId;console.log(`TurkishPix ${saved.length} slash komutu kaydedildi (${entertainmentCommands.length} yeni eğlence komutu).`);}}
 client.on(Events.ClientReady,()=>{appliedPresence='';applyPresence();console.log(`TurkishPix bot hazır: ${client.user?.tag}`);void heartbeat().catch(()=>{});});
@@ -71,6 +72,7 @@ client.on(Events.MessageCreate,async message=>{
  if(message.guildId!==config().guildId||message.author.bot||message.webhookId||!message.guild||message.system)return;
  try{
   const member=message.member;const privileged=config().owners.includes(message.author.id)||message.author.id===message.guild.ownerId||!!member?.permissions.has(PermissionFlagsBits.Administrator)||!!member?.permissions.has(PermissionFlagsBits.ManageGuild);
+  if(await moderateChat(message,settings,privileged))return;
   const violation=guard.evaluate({userId:message.author.id,channelId:message.channelId,content:message.content,mentions:message.mentions.users.size+message.mentions.roles.size+(message.mentions.everyone?settings.security.maxMentions:0),privileged,roles:member?[...member.roles.cache.keys()]:[]},settings.security);
   if(violation){let action='PERMISSION_MISSING';if(message.deletable){try{await message.delete();action='MESSAGE_DELETED';}catch{action='DELETE_FAILED';}}
    if(settings.security.timeoutMinutes&&member?.moderatable){try{await member.timeout(settings.security.timeoutMinutes*60000,'TurkishPix güvenlik: '+violation);action+=' + TIMEOUT';}catch{action+=' + TIMEOUT_FAILED';}}
@@ -86,10 +88,21 @@ client.on(Events.MessageCreate,async message=>{
   try{const answer=await assistantAnswer(message.author.id,text,settings.ai,previous);await message.reply({content:answer.text,allowedMentions:{parse:[],repliedUser:false}});}catch(e){await message.reply({content:e instanceof DomainError?e.message:'Yapay zekâ yanıtı şu anda alınamıyor.',allowedMentions:{parse:[],repliedUser:false}});}
  }catch{console.error('MESSAGE_EVENT_FAILED');}
 });
-let stopped=false,lastRefresh=0,lastPolitical=0,lastEntertainment=0;
+client.on(Events.MessageUpdate,async(oldMessage,newMessage)=>{
+ if(newMessage.guildId!==config().guildId||!settings.security.content.checkEdits)return;
+ try{const message=newMessage.partial?await newMessage.fetch():newMessage;if(message.author.bot||message.webhookId||!message.guild||message.system||(!oldMessage.partial&&oldMessage.content===message.content))return;
+  const member=message.member,privileged=config().owners.includes(message.author.id)||message.author.id===message.guild.ownerId||!!member?.permissions.has(PermissionFlagsBits.Administrator)||!!member?.permissions.has(PermissionFlagsBits.ManageGuild);
+  if(await moderateChat(message,settings,privileged,true))return;
+  // Edited links and mass mentions are checked without counting the edit as another spam message.
+  const violation=guard.evaluate({userId:message.author.id,channelId:message.channelId,content:message.content,mentions:message.mentions.users.size+message.mentions.roles.size+(message.mentions.everyone?settings.security.maxMentions:0),privileged,roles:member?[...member.roles.cache.keys()]:[]},{...settings.security,antiSpam:false});
+  if(violation){let action='DELETE_PERMISSION_MISSING';if(message.deletable)try{await message.delete();action='MESSAGE_DELETED';}catch{action='DELETE_FAILED';}await recordSecurity({id:message.author.id,username:message.author.username,avatar:message.author.avatar},message.channelId,violation,action,settings);}
+ }catch{console.error('MESSAGE_EDIT_MODERATION_FAILED');}
+});
+client.on(Events.AutoModerationActionExecution,execution=>{void nativeModerationExecution(execution,settings,nativeStatus?.ruleId||'').catch(()=>console.error('NATIVE_MODERATION_RECORD_FAILED'));});
+let stopped=false,lastRefresh=0,lastPolitical=0,lastEntertainment=0,lastModeration=0;
 async function worker(){while(!stopped){try{
- const now=Date.now();if(now-lastRefresh>=5000){await loadServerSettings();settings=await communitySettings();applyPresence();await heartbeat();lastRefresh=now;}
- if(client.isReady()&&client.guilds.cache.has(config().guildId)){await register();await communityDeliveryTick();if(now-lastEntertainment>=30000){await entertainmentTick();lastEntertainment=now;}if(now-lastPolitical>=5000&&readiness().ready){await workerTick();lastPolitical=now;}}
+ const now=Date.now();if(now-lastRefresh>=5000){await loadServerSettings();settings=await communitySettings();applyPresence();if(client.isReady()){const bot=client.guilds.cache.get(config().guildId)?.members.me;nativeStatus=await syncNativeModeration(settings.security.content,settings.security.enabled,!!bot?.permissions.has(PermissionFlagsBits.ManageGuild),client.user.id)||nativeStatus;const protection=JSON.stringify({enabled:settings.security.enabled&&settings.security.content.enabled,modes:settings.security.content.modes,edits:settings.security.content.checkEdits,normalize:settings.security.content.normalizeObfuscation,escalation:settings.security.content.escalation,messageContent:enabledIntents.messageContent,deleteMessages:!!bot?.permissions.has(PermissionFlagsBits.ManageMessages),timeout:!!bot?.permissions.has(PermissionFlagsBits.ModerateMembers),native:nativeStatus?.reason});if(protection!==lastProtection){console.log('CHAT_PROTECTION_STATUS',protection);lastProtection=protection;}}await heartbeat();lastRefresh=now;}
+ if(client.isReady()&&client.guilds.cache.has(config().guildId)){await register();if(now-lastModeration>=3600000){await moderationMaintenance(settings);lastModeration=now;}await communityDeliveryTick();if(now-lastEntertainment>=30000){await entertainmentTick();lastEntertainment=now;}if(now-lastPolitical>=5000&&readiness().ready){await workerTick();lastPolitical=now;}}
  }catch(e){console.error('Kuyruk kontrolü başarısız:',e instanceof DomainError?e.code:'INTERNAL');}await new Promise(r=>setTimeout(r,1000));}}
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{stopped=true;await heartbeat(false).catch(()=>{});client.destroy();await closeDatabase();process.exit(0);});
 try{await client.login(initial.botToken);void worker();}catch{console.error('Bot Discord bağlantısını kuramadı. Token, intent izinleri ve Gateway bağlantısını kontrol edin.');await closeDatabase();process.exit(1);}

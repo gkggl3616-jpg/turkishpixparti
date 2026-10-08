@@ -149,3 +149,18 @@ Discord’da `/yardim` kategori menüsü 45 komutu açıklar. Owner panelindeki 
 - Anketlerde 2–5 seçenek, 1–60 dakika ve hesap başına bir oy vardır; anket sahibi veya owner erken kapatabilir. Süre bitince düğmeler en geç 30 saniyelik işçi turunda kapatılır. Bot yeniden başladığında oturumlar veritabanından okunur.
 - `007_entertainment` migration’ı dört tabloyu ve runtime izinlerini ekler. Kapalı oturum ayrıntıları 7 gün sonra temizlenir; toplam puanlar korunur. Botun kanalda Bağlantıları Yerleştir izni gerekir.
 - Otomatik testler 30 komutun bot yönlendirmesini, Discord payload sınırlarını, oyun kurallarını, tüm insan hamlelerinde zor XOX’un yenilmezliğini, puan tekrar korumasını, süreleri ve anket izinlerini kapsar. Gerçek üye komutları test amacıyla tetiklenmez.
+
+
+## v2.3 · Ayrıntılı sohbet koruması
+
+`/guvenlik` panelinde sekiz içerik kategorisi ayrı ayrı **sil**, **incele** veya **kapalı** olarak ayarlanır: MDK (millî), ADK (ailevi), DDK (dinî), ırkçılık, Nazi propagandası, ağır küfür, doğrudan tehdit ve özel ifadeler. Yeni `008_chat_moderation` migration'ı mevcut sunucuda güvenlik anahtarını bir kez açar; diğer modül ayarlarını korur.
+
+Varsayılan profil: tüm kategoriler silme modunda, düzenlenen mesaj kontrolü ve yazım kaçamaklarının normalleştirilmesi açık, yönetici muafiyeti kapalı. 10 dakika içinde 3 ayrı ihlal → 10 dakika susturma. İnceleme kayıtları susturma sayısına girmez; aynı mesaj yeniden gelince ikinci ihlal sayılmaz. Mevcut daha uzun timeout korunur. Kalıcı ban ve sunucudan atma yapılmaz.
+
+Kelime sınırları; Türkçe harfler; sıfır genişlikli karakterler; benzer Unicode harfler; yaygın leet, harf aralığı, sansür ve tekrarlar kontrol edilir. Bir millet, din veya tarihî kişi adı tek başına engellenmez. Açıkça kınanan, tırnak içindeki tarihî alıntılar varsayılan olarak incelemeye gider. Bu kurallar deterministiktir; bağlamı kusursuz anlayan bir yapay zekâ hizmeti kullanılmaz. Görsel, video ve ses dosyalarının içeriği taranmaz.
+
+Owner paneli ayrıca özel yasaklı ifadeleri, tam ifade istisnalarını, içerik filtresine özel kanal/rol muafiyetlerini, hafif hakaret seçeneğini, 7–90 günlük ayrıntı saklamasını ve mesajı göndermeden deneme alanını içerir. Yanlış eşleşme bir kaydı ihlal toplamından çıkarır; silinmiş mesajı geri getirmez ve uygulanmış Discord işlemini değiştirmez.
+
+Botta Message Content Intent ve ilgili kanalda Mesajları Yönet izni gerekir; susturma için Üyeleri Sustur ve uygun rol hiyerarşisi gerekir. Discord AutoMod ek katmanı `Sunucuyu Yönet` varsa botun kendi oluşturduğu bir anahtar kelime kuralını yönetir. Diğer kurallara dokunmaz; sunucunun altı anahtar kelime kuralı doluysa bot filtresi çalışmaya devam eder. Yerleşik kural yalnızca dar kapsamlı ağır kelimeleri ve bağımsız propaganda sloganlarını engeller. Discord bu kurallarda yöneticileri kendi davranışına göre muaf tutar; bot filtresinin yönetici ayarı ayrıdır.
+
+Yeni ve düzenlenen mesajlar ile `AutoModerationActionExecution` olayları test edilir. Kural/işlem/kullanıcı/kanal/mesaj kimliği ve metnin hash'i saklanır; ham mesaj metni loga, audit zincirine veya inceleme tablosuna yazılmaz. Varsayılan ayrıntı saklama 30 gündür; özet güvenlik kayıtları ve imzalı audit geçmişi korunur.

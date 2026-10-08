@@ -14,3 +14,8 @@ export * from './assistant';
 export * from './entertainment';
 export * from './entertainment-catalog';
 export * from './entertainment-games';
+export * from './moderation-catalog';
+export * from './moderation-policy';
+export * from './moderation-engine';
+export * from './moderation-service';
+export * from './moderation-native';

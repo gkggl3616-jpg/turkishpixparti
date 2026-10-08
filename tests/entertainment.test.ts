@@ -9,7 +9,7 @@ import {handleEntertainmentInteraction,entertainmentView} from '../apps/bot/src/
 process.env.DATABASE_URL='postgresql://test.invalid/test';process.env.APP_URL='https://turkishpix.example';process.env.DISCORD_GUILD_ID='888888888888888888';process.env.DEMO_MODE='false';process.env.DISCORD_OWNER_IDS='111111111111111111,222222222222222222,333333333333333333,444444444444444444';
 const actor={id:'555555555555555555',username:'Player@everyone'},friend={id:'666666666666666666',username:'Friend'},owner={id:'111111111111111111',username:'Owner'},channel='999999999999999999',otherChannel='777777777777777777';
 const settings=defaultCommunitySettings().entertainment;let pg:PGlite;
-before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql:string,params:any[]=[])=>{const r=await pg.query(sql,params);return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment'])await pg.exec(await readFile(new URL('../packages/core/sql/'+name+'.sql',import.meta.url),'utf8'));});
+before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql:string,params:any[]=[])=>{const r=await pg.query(sql,params);return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation'])await pg.exec(await readFile(new URL('../packages/core/sql/'+name+'.sql',import.meta.url),'utf8'));});
 beforeEach(async()=>{await pg.exec('DELETE FROM entertainment_sessions; DELETE FROM entertainment_scores; DELETE FROM rate_limits;');});
 after(async()=>{await pg.close();});
 function fakeInteraction(name:string,extra:any={}){

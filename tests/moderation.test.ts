@@ -1,0 +1,84 @@
+import {test,before,beforeEach,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {PGlite} from '@electric-sql/pglite';
+import {Collection} from 'discord.js';
+import {setTestDatabase,defaultCommunitySettings,communitySettingsSchema,defaultContentModeration,contentModerationSchema,inspectContent,normalizeModeration,recordModeration,reviewModeration,moderationOverview,cleanupModeration,nativeModerationRule,syncNativeModeration,NATIVE_RULE_NAME,verifyAudit,config} from '../packages/core/src/index';
+import {moderateChat,nativeModerationExecution} from '../apps/bot/src/moderation';
+process.env.DATABASE_URL='postgresql://test.invalid/test';process.env.APP_URL='https://turkishpix.example';process.env.DISCORD_GUILD_ID='888888888888888888';process.env.DISCORD_BOT_TOKEN='test-only-token';process.env.DEMO_MODE='false';process.env.AUDIT_HMAC_KEY='test-only-audit-key-0123456789012345678901';process.env.DISCORD_OWNER_IDS='111111111111111111,222222222222222222,333333333333333333,444444444444444444';
+const actor={id:'555555555555555555',username:'citizen'},owner={id:'111111111111111111',username:'owner'},channel='999999999999999999';let pg:PGlite;const realFetch=globalThis.fetch;
+before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql:string,params:any[]=[])=>{const r=await pg.query(sql,params);return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation'])await pg.exec(await readFile(new URL('../packages/core/sql/'+name+'.sql',import.meta.url),'utf8'));});
+beforeEach(async()=>{await pg.exec('DELETE FROM moderation_cases; DELETE FROM security_events; DELETE FROM community_deliveries;');globalThis.fetch=realFetch;});
+after(async()=>{globalThis.fetch=realFetch;await pg.close();});
+function settings(){return defaultCommunitySettings();}
+function fakeMessage(content:string,id='message-1',extra:any={}){let removed=0,timeouts:number[]=[];const message:any={id,content,guild:{id:config().guildId},channelId:channel,author:{...actor,bot:false,avatar:null},deletable:true,webhookId:null,system:false,member:{roles:{cache:new Collection()},moderatable:true,communicationDisabledUntilTimestamp:null,timeout:async(n:number)=>{timeouts.push(n);}},delete:async()=>{removed++;},...extra};return {message,deleted:()=>removed,timeouts};}
+test('MDK, ADK, DDK, ırkçılık, Nazi, küfür, tehdit ve özel kurallar ayrı sınıflanır',()=>{
+ const rules=defaultContentModeration();const samples:Record<string,string>={MDK:'Atatürkünü sikeyim',ADK:'Ananı sikeyim',DDK:'Allahını sikeyim',RACISM:'Kürtleri öldürün',NAZI:'Heil Hitler!',PROFANITY:'siktir!',THREAT:'seni öldüreceğim',CUSTOM:'yasak test ifadesi'};rules.customTerms=['yasak test ifadesi'];for(const [category,text] of Object.entries(samples)){const result=inspectContent(text,rules);assert.equal(result?.category,category,text);assert.equal(result.mode,'DELETE');}
+});
+test('Normal tarih, din, milliyet, benzer kelimeler ve sayı bilgileri silinmez',()=>{
+ const safe=['Nazi Almanyası 1945 yılında yenildi.','Hitler haklı değildi.','Hitler haklı mıydı? Hayır.','Naziler haklı değildi.','Holokost yalan değildir.','Atatürk hakkında bir tarih kitabı okuyorum.','Allah’a inanıyorum.','Allah’a inanmıyorum.','Kürtler, Türkler ve Yahudiler aynı sohbete katıldı.','Şık bir müzik, sık sık tekrar eder.','Eski kitapları kütüphaneye koydum.','İstiklal Marşı millî değerimizdir.','1945, 88, 1488, SS ve 18.30 tarih konusunun sayılarıdır.','Bu çizim benim OC karakterim.','Atatürk’ü sık sık anıyoruz.','Annem sık sık kitap okur.','Allah adı sık geçiyor.','Hindu tapınağında 卐 sembolünün dinî anlamını araştırıyorum.'];for(const text of safe)assert.equal(inspectContent(text,defaultContentModeration()),null,text);
+});
+test('Boşluk, leet, Unicode benzerleri, görünmez harf, sansür ve tekrarlarla kaçma yakalanır',()=>{
+ for(const text of ['A M K','a.m.k','s i k t i r','s1kt1r','s!kt!r','s\u200bik\u200btir','ѕiktir','ＳＩＫＴＩＲ','ssiiikkttiiirr','s*k*r*m','Heil.Hitler','h e i l h i t l e r','n i g g e r'])assert.equal(inspectContent(text,defaultContentModeration())?.mode,'DELETE',text);
+ assert.equal(normalizeModeration('amk!'),'amk!');assert.equal(normalizeModeration('1945'),'1945');
+});
+test('Bir kategori kapalıyken diğer eşleşmeler çalışır; inceleme ve tamamıyla kapatma ayarları uygulanır',()=>{
+ const rules=defaultContentModeration();rules.modes.ADK='OFF';assert.equal(inspectContent('Ananı sikeyim',rules)?.category,'PROFANITY');rules.modes.PROFANITY='REVIEW';assert.equal(inspectContent('siktir',rules)?.mode,'REVIEW');rules.modes.NAZI='OFF';assert.equal(inspectContent('Heil Hitler',rules),null);rules.enabled=false;assert.equal(inspectContent('siktir',rules),null);
+});
+test('Kınanan tarihî alıntı incelemeye gider; yalnızca tarih kelimesi eklemek açık propagandayı muaf tutmaz',()=>{
+ const rules=defaultContentModeration();const quoted='Tarih kitabında "Sieg Heil" sloganı Nazi propagandası olarak anlatılır ve bu söylem yasak kabul edilir.';assert.equal(inspectContent(quoted,rules)?.mode,'REVIEW');assert.equal(inspectContent('Sieg Heil tarih kitabı',rules)?.mode,'DELETE');assert.equal(inspectContent('"Sieg Heil" sloganı yasaktır. Heil Hitler!',rules)?.mode,'DELETE');rules.contextReview=false;assert.equal(inspectContent(quoted,rules)?.mode,'DELETE');
+});
+test('İzinli ifade yalnızca kendi parçasını muaf tutar; özel terim regex olarak çalışmaz',()=>{
+ const rules=defaultContentModeration();rules.customTerms=['kötü ifade','a+b'];rules.allowedTerms=['kötü ifade'];assert.equal(inspectContent('kötü ifade',rules),null);assert.equal(inspectContent('kötü ifade siktir',rules)?.mode,'DELETE');assert.equal(inspectContent('a+b',rules)?.category,'CUSTOM');assert.equal(inspectContent('aaab',rules),null);
+});
+test('Eski ayarlar tüm kategorileri açık alır; susturma, sözlük ve rol sınırları doğrulanır',()=>{
+ const old:any=defaultCommunitySettings();delete old.security.content;assert.equal(communitySettingsSchema.parse(old).security.content.modes.MDK,'DELETE');assert.equal(contentModerationSchema.safeParse({...defaultContentModeration(),escalation:{enabled:true,threshold:1,windowMinutes:10,timeoutMinutes:10}}).success,false);assert.equal(contentModerationSchema.safeParse({...defaultContentModeration(),customTerms:['x'.repeat(81)]}).success,false);
+});
+test('Bot gerçek mesaj adapteriyle siler, düzenlemeleri ve istisnaları denetler',async()=>{
+ const s=settings(),normal=fakeMessage('Nazi Almanyası tarihini okuyorum');assert.equal(await moderateChat(normal.message,s,false),false);assert.equal(normal.deleted(),0);const bad=fakeMessage('siktir');assert.equal(await moderateChat(bad.message,s,false),true);assert.equal(bad.deleted(),1);
+ const edited=fakeMessage('Allahını sikeyim','message-edit');await moderateChat(edited.message,s,false,true);assert.equal(edited.deleted(),1);assert.equal((await pg.query<any>("SELECT source FROM moderation_cases WHERE message_id='message-edit'")).rows[0].source,'EDIT');
+ s.security.content.checkEdits=false;const unchecked=fakeMessage('siktir','message-noedit');assert.equal(await moderateChat(unchecked.message,s,false,true),false);assert.equal(unchecked.deleted(),0);
+});
+test('İçerik filtresi varsayılan olarak yöneticilere de uygulanır; kanal ve rol muafiyetleri ayrıdır',async()=>{
+ const s=settings(),privileged=fakeMessage('Heil Hitler');await moderateChat(privileged.message,s,true);assert.equal(privileged.deleted(),1);s.security.content.exemptModerators=true;const skipped=fakeMessage('Heil Hitler','m2');assert.equal(await moderateChat(skipped.message,s,true),false);
+ s.security.content.exemptModerators=false;s.security.content.excludedChannelIds=[channel];assert.equal(await moderateChat(skipped.message,s,false),false);s.security.content.excludedChannelIds=[];s.security.content.excludedRoleIds=['777777777777777777'];skipped.message.member.roles.cache.set('777777777777777777',{});assert.equal(await moderateChat(skipped.message,s,false),false);
+});
+test('Üç farklı mesajda susturma uygulanır; aynı mesajın iki kez gelmesi ek ihlal sayılmaz',async()=>{
+ const s=settings();for(let i=1;i<=3;i++){const m=fakeMessage('siktir','case-'+i);await moderateChat(m.message,s,false);assert.equal(m.timeouts.length,i===3?1:0);if(i===3)assert.equal(m.timeouts[0],600000);}
+ const duplicate=fakeMessage('siktir','case-3');await moderateChat(duplicate.message,s,false);assert.equal(duplicate.timeouts.length,0);assert.equal((await pg.query('SELECT id FROM moderation_cases')).rows.length,3);assert.equal((await verifyAudit()).valid,true);
+});
+test('Sadece inceleme ihlal sayısını artırmaz, metin kaydedilmez ve owner yanlış eşleşmeyi çıkarır',async()=>{
+ const s=settings();s.security.content.modes.PROFANITY='REVIEW';const m=fakeMessage('siktir');await moderateChat(m.message,s,false);assert.equal(m.deleted(),0);assert.equal((await pg.query<any>('SELECT strike FROM moderation_cases')).rows[0].strike,false);
+ const report=await moderationOverview();assert.ok(!JSON.stringify(report).includes('siktir'));await assert.rejects(reviewModeration(actor,{id:report.cases[0].id,status:'DISMISSED'}),/owner/);await reviewModeration(owner,{id:report.cases[0].id,status:'DISMISSED'});await assert.rejects(reviewModeration(owner,{id:report.cases[0].id,status:'CONFIRMED'}),/zaten/);
+ assert.equal((await pg.query<any>('SELECT status FROM moderation_cases')).rows[0].status,'DISMISSED');
+});
+test('İnceleme kaydı aynı metinde silme kuralına yükseltilebilir; eski ihlal zamanları puanı etkilemez',async()=>{
+ const rules=defaultContentModeration(),decision=inspectContent('siktir',rules)!;const first=await recordModeration(actor,{messageId:'upgrade',channelId:channel,content:'siktir',source:'CREATE',decision:{...decision,mode:'REVIEW'},action:'REVIEW_ONLY'},rules);assert.equal(first.hits,0);
+ const upgraded=await recordModeration(actor,{messageId:'upgrade',channelId:channel,content:'siktir',source:'EDIT',decision,action:'MESSAGE_DELETED'},rules);assert.equal(upgraded.hits,1);assert.equal(upgraded.duplicate,false);await pg.query("UPDATE moderation_cases SET created_at=now()-interval '1 hour'");const next=await recordModeration(actor,{messageId:'new',channelId:channel,content:'siktir',source:'CREATE',decision,action:'MESSAGE_DELETED'},rules);assert.equal(next.hits,1);
+});
+test('Uzun mevcut susturma korunur; silme ve hiyerarşi hataları kayda alınır',async()=>{
+ const s=settings();s.security.content.escalation.threshold=2;const first=fakeMessage('siktir','m1',{deletable:false});await moderateChat(first.message,s,false);const second=fakeMessage('siktir','m2');second.message.member.communicationDisabledUntilTimestamp=Date.now()+3600000;await moderateChat(second.message,s,false);assert.equal(second.timeouts.length,0);let cases=(await moderationOverview()).cases;assert.ok(cases.some(c=>c.action==='DELETE_PERMISSION_MISSING'));assert.ok(cases.some(c=>c.action.includes('ALREADY_TIMED_OUT')));
+ const third=fakeMessage('siktir','m3');third.message.member.moderatable=false;await moderateChat(third.message,s,false);cases=(await moderationOverview()).cases;assert.ok(cases.some(c=>c.action.includes('TIMEOUT_PERMISSION_MISSING')));
+});
+test('Discord AutoMod kaynakları sınırları sağlar; başka kurallar korunur ve izin eksikliği bildirilir',async()=>{
+ const rules=defaultContentModeration(),native=nativeModerationRule(rules,true);assert.ok(native.enabled);assert.ok(!native.trigger_metadata.keyword_filter.includes('hitler'));for(const term of native.trigger_metadata.keyword_filter)assert.ok(term.length<=60);for(const regex of native.trigger_metadata.regex_patterns)assert.ok(regex.length<=260);
+ assert.equal(nativeModerationRule({...rules,nativeAutoMod:false},true).enabled,false);const calls:any[]=[];globalThis.fetch=async(input:any,init:any)=>{calls.push({url:String(input),method:init?.method,body:init?.body?JSON.parse(init.body):null});if(init?.method==='POST')return Response.json({id:'new-rule',enabled:true});return Response.json([{id:'other',name:'Other',creator_id:'someone',trigger_type:1}]);};const status=await syncNativeModeration(rules,true,true,'bot');assert.equal(status?.enabled,true);assert.equal(calls.filter(c=>c.method==='POST').length,1);assert.ok(calls.every(c=>!c.url.endsWith('/other')));assert.equal(calls.at(-1).body.name,NATIVE_RULE_NAME);
+ const missing=await syncNativeModeration(rules,true,false,'bot');assert.equal(missing?.reason,'MANAGE_GUILD_MISSING');
+});
+test('Native olaylar yalnızca bu botun kuralında işlenir; ham metin ve tekrarlar loga sızmaz',async()=>{
+ const s=settings(),guild:any={id:config().guildId,members:{cache:new Collection()},client:{users:{fetch:async()=>actor}}};const execution={guild,user:actor,userId:actor.id,ruleId:'our-rule',action:{type:1},channelId:channel,content:'siktir'};
+ await nativeModerationExecution({...execution,ruleId:'foreign'},s,'our-rule');assert.equal((await pg.query('SELECT id FROM moderation_cases')).rows.length,0);await nativeModerationExecution(execution,s,'our-rule');await nativeModerationExecution(execution,s,'our-rule');assert.equal((await pg.query('SELECT id FROM moderation_cases')).rows.length,1);assert.ok(!JSON.stringify((await pg.query('SELECT payload FROM community_deliveries')).rows).includes('siktir'));
+});
+test('Günlük temizlik ayarlanan yaşın üzerindeki ayrıntıları siler, denetim zinciri korunur',async()=>{
+ const rules=defaultContentModeration(),d=inspectContent('siktir',rules)!;await recordModeration(actor,{messageId:'old',channelId:channel,content:'siktir',source:'CREATE',decision:d,action:'MESSAGE_DELETED'},rules);await pg.query("UPDATE moderation_cases SET created_at=now()-interval '31 days'");await cleanupModeration(rules);assert.equal((await pg.query('SELECT id FROM moderation_cases')).rows.length,0);assert.equal((await verifyAudit()).valid,true);
+});
+test('Yeni migration mevcut sunucuda korumayı açar ve diğer modüllerin kayıtlarını korur',async()=>{
+ const local=new PGlite();try{for(const name of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment'])await local.exec(await readFile(new URL('../packages/core/sql/'+name+'.sql',import.meta.url),'utf8'));const existing:any=settings();existing.security.enabled=false;existing.ai.enabled=true;existing.voice.enabled=true;existing.entertainment.disabledCommands=['zar'];await local.query('INSERT INTO community_settings(guild_id,settings) VALUES($1,$2)',[config().guildId,existing]);await local.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));const stored=(await local.query<any>('SELECT settings FROM community_settings')).rows[0].settings;assert.equal(stored.security.enabled,true);assert.equal(stored.ai.enabled,true);assert.equal(stored.voice.enabled,true);assert.deepEqual(stored.entertainment.disabledCommands,['zar']);assert.equal(communitySettingsSchema.parse(stored).security.content.modes.ADK,'DELETE');}finally{await local.close();}
+});
+test('Yazım, sembol ve hafif hakaret anahtarları gerçekten kapatılabilir',()=>{
+ const rules=defaultContentModeration();rules.normalizeObfuscation=false;for(const t of ['s1kt1r','s i k t i r','s*k*r*m'])assert.equal(inspectContent(t,rules),null,t);assert.equal(inspectContent('siktir',rules)?.mode,'DELETE');rules.strictSymbols=false;assert.equal(inspectContent('卐',rules),null);assert.equal(inspectContent('<:nazi_flag:123456789012345678>',rules),null);assert.equal(inspectContent('salak',rules),null);rules.strictInsults=true;assert.equal(inspectContent('salak',rules)?.category,'PROFANITY');
+});
+test('Yerleşik Discord kuralı PATCH ile güncellenir; yabancı kurallar ve dolu kural kapasitesi korunur',async()=>{
+ const rules=defaultContentModeration();rules.strictSymbols=false;const calls:any[]=[];globalThis.fetch=async(input:any,init:any)=>{calls.push({url:String(input),method:init?.method,body:init?.body?JSON.parse(init.body):null});if(init?.method==='PATCH')return Response.json({id:'owned',enabled:false});return Response.json([{id:'owned',name:NATIVE_RULE_NAME,creator_id:'bot',trigger_type:1},{id:'foreign',name:'Other',creator_id:'someone',trigger_type:1}]);};const disabled=await syncNativeModeration(rules,false,true,'bot');assert.equal(disabled?.enabled,false);assert.ok(calls.some(c=>c.method==='PATCH'&&c.url.endsWith('/owned')&&c.body.enabled===false));assert.ok(calls.every(c=>!c.url.endsWith('/foreign')));
+ globalThis.fetch=async()=>Response.json(Array.from({length:6},(_,i)=>({id:String(i),name:'Other'+i,creator_id:'someone',trigger_type:1})));const full=await syncNativeModeration(defaultContentModeration(),true,true,'bot');assert.equal(full?.reason,'NATIVE_RULE_LIMIT');
+});
