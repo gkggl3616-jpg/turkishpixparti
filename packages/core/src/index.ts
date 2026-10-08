@@ -1,4 +1,5 @@
 export * from './config';
+export * from './log-maintenance';
 export * from './db';
 export * from './audit';
 export * from './validation';
