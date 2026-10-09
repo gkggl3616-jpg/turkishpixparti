@@ -1,3 +1,4 @@
+import {releases} from './releases';
 import {brightEmbed,theme} from './presentation';
 import {expansionCommand} from './expansion-policy';
 import {supportCommands} from './support-commands';
@@ -20,11 +21,12 @@ export const commands=[
  {name:'sesdmac',description:'Ses kanalı giriş ve çıkış DM bildirimlerini aç.'},
  {name:'sesdmkapat',description:'Ses kanalı giriş ve çıkış DM bildirimlerini kapat.'},
  {name:'botpanel',description:'Bot yönetim merkezini aç.'},
+ {name:'guncellemeler',description:'Yeni özellikleri, komutları ve önceki sürüm notlarını görüntüle.',options:[{type:3,name:'surum',description:'Görüntülenecek sürüm; boşsa en yeni sürüm',required:false,choices:releases.map(r=>({name:'v'+r.version+' · '+r.title,value:r.version}))}]},
  {name:'yardim',description:'100 komutun kategorilerini ve tüm alt komutları keşfet.'},
  expansionCommand,
  ...musicCommands,
  ...supportCommands,
- ...featureCommands.map(({category,...command})=>command),
+ ...featureCommands.filter(c=>c.name!=='ozellikler').map(({category,...command})=>command),
  ...entertainmentCommands.map(({category,...command})=>command)
 ].map(c=>({...c,type:1,contexts:[0],integration_types:[0]}));
 export function commandReply(name:string){

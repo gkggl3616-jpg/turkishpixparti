@@ -1,0 +1,37 @@
+// Public release notes shared by the website and Discord. Keep this module browser-safe.
+export type ReleaseFeature={title:string;description:string;commands:string[];path:string;note?:string};
+export type Release={version:string;date:string;title:string;summary:string;features:ReleaseFeature[]};
+export const releases:Release[]=[
+ {version:'2.12.0',date:'2026-10-09',title:'Güncellemeler merkezi',summary:'Botta ve sitede nelerin değiştiğini tek yerden keşfet.',features:[
+  {title:'Sürüm notları ve yeni komutlar',description:'Yeni özellikler, kullanım örnekleri, sürüm tarihleri ve ilgili panel bağlantıları artık aynı katalogdan gösterilir. Önceki sürümleri de seçebilirsin.',commands:['/guncellemeler','/guncellemeler surum: 2.11.0','/yardim'],path:'/guncellemeler'},
+  {title:'Komut rehberi bir arada',description:'50 topluluk özelliğinin rehberi /yardim içindeki kategorilerde. Ayrı /ozellikler rehberi bu menüde birleştirildi; özellikler kullanılmaya devam eder.',commands:['/yardim'],path:'/topluluk'},
+  {title:'Bağlantı kontrolü',description:'Güncellemeler sayfasında web sürümünü, bot bağlantısını ve yeni komutların kayıt durumunu görebilirsin.',commands:['/guncellemeler'],path:'/guncellemeler'}
+ ]},
+ {version:'2.11.1',date:'2026-10-09',title:'Sunucu bağlantısı kontrolü',summary:'Botun yapılandırılmış sunucu üyeliği kontrol edilir.',features:[{title:'Bağlantıyı yeniden doğrula',description:'Gateway sunucuyu yükleyemezse bot üyeliği, rolleri ve kanalları REST üzerinden doğrular. Bot sunucuda bulunmuyorsa üye gerektiren işlemler bekletilir.',commands:['/guncellemeler'],path:'/guncellemeler',note:'Bot sunucudan çıkarılmışsa yeniden eklenmesi gerekir.'}]},
+ {version:'2.11.0',date:'2026-10-09',title:'2D & 3D oyun salonu',summary:'Üç tarayıcı oyunu ve topluluğa tek seferlik Bot TL hediyesi.',features:[
+  {title:'Neon Kaçış · 2D',description:'Engellerden kaç ve yıldızları topla. Tur başına giriş 100 Bot TL; klavye ve dokunmatik kontrol desteklenir.',commands:['/yardim'],path:'/oyunlar'},
+  {title:'Hafıza Bahçesi · 2D',description:'Kartları eşleştir ve hafızanı dene. Tur başına giriş 150 Bot TL.',commands:['/yardim'],path:'/oyunlar'},
+  {title:'Yörünge · 3D',description:'WebGL ile üç boyutlu oyun. Tur başına giriş 200 Bot TL. Oyun salonuna Discord hesabınla giriş yap.',commands:['/cuzdan'],path:'/oyunlar',note:'3D oyun için tarayıcında WebGL desteği gerekir.'},
+  {title:'50.000 Bot TL topluluk hediyesi',description:'Kampanyaya alınan mevcut insan üyelerin bakiyesine bir kez 50.000 Bot TL eklenir. Kalıcı ödeme kayıtları aynı hediyenin yeniden verilmesini önler.',commands:['/cuzdan','/transfer'],path:'/oyunlar',note:'Hediye ödeme durumu botun sunucu bağlantısına bağlıdır; bu not ödeme yapıldığının teyidi değildir.'}
+ ]},
+ {version:'2.10.1',date:'2026-10-09',title:'Seviye bildirimi düzeltmesi',summary:'Canlı veritabanındaki seviye bildirimi kurulumu tamamlandı.',features:[
+  {title:'Kalıcı seviye bildirimleri',description:'Seviye duyuruları için gereken veritabanı kurulumu tüm başlatma yollarına eklendi. Yeniden başlatma sırasında bekleyen bildirimler korunur.',commands:['/rank','/seviye'],path:'/topluluk'}
+ ]},
+ {version:'2.10.0',date:'2026-10-09',title:'Topluluk odaları & seviye kutlamaları',summary:'Katılınca oluşan kişisel ses odaları ve fotoğraflı seviye duyuruları.',features:[
+  {title:'Katılınca ses odası oluştur',description:'Yetkili oda giriş kanalını kurar. Üye bu kanala girince kişisel odası açılır ve oraya taşınır. Boş odalar otomatik temizlenir.',commands:['/topluluk oda kur','/topluluk oda ac','/topluluk oda liste'],path:'/topluluk',note:'Botun Kanalları Yönet ve Üyeleri Taşı izinleri gerekir.'},
+  {title:'Odanı yönet',description:'Odayı kilitle, aç, adını veya kapasitesini değiştir; üye davet et, çıkar, sahipliği devret veya kapat.',commands:['/topluluk oda kilitle','/topluluk oda kilitac','/topluluk oda ad ad: Sohbet','/topluluk oda limit adet: 5','/topluluk oda davet uye: @Üye','/topluluk oda devret uye: @Üye'],path:'/topluluk'},
+  {title:'Fotoğraflı seviye atlama mesajı',description:'Üye seviye atlayınca etiketlenir ve profil fotoğraflı seviye kartı gönderilir. Duyuru kanalını Topluluk araçları → Seviye & Ödül ayarlarından seçebilirsin.',commands:['/rank','/siralama'],path:'/topluluk',note:'Seviye duyurusunu aç; botun seçilen kanalda Mesaj Gönder, Bağlantıları Yerleştir ve Dosya Ekle izinlerini kontrol et.'}
+ ]},
+ {version:'2.9.0',date:'2026-10-09',title:'YouTube arama & rank kartları',summary:'Şarkı seçimi, ortak izleme ve sunucu sıralamalı profil kartları.',features:[
+  {title:'YouTube’da ara ve seç',description:'Müzik menüsünden arama formunu aç, şarkıyı yaz ve çıkan sonuçlardan seç. Video görselleri ve favori araçları eklendi.',commands:['/muzik oynat ara: Şarkı adı','/muzik ekran'],path:'/muzik',note:'YouTube araması yapılandırılmış API anahtarı gerektirir. Ses oynatma kaynak erişimine bağlıdır.'},
+  {title:'Birlikte izle',description:'Ses kanalında Watch Together oturumu açarak YouTube videolarını birlikte izleyin.',commands:['/muzik ekran'],path:'/muzik',note:'Botun Davet Oluştur izni gerekir; ortak izleme Discord etkinliği üzerinden açılır.'},
+  {title:'Fotoğraflı /rank',description:'Profil fotoğrafı, seviye, sunucu sırası, mesaj ve ses XP’si ile sonraki seviyeye ilerlemeyi tek kartta gösterir.',commands:['/rank uye: @Üye','/seviye','/siralama'],path:'/topluluk'}
+ ]},
+ {version:'2.8.0',date:'2026-10-09',title:'Gelişmiş topluluk araçları',summary:'Kayıt, rol otomasyonu, ses XP’si ve etkinlik yönetimi.',features:[
+  {title:'Kayıt ve özel komutlar',description:'Üye kaydı, rol otomasyonu ve sunucuya özel yanıt komutları; owner panelinde kanalları ve rolleri adlarıyla seç.',commands:['/topluluk kayit onayla','/topluluk kayit bilgi','/topluluk ozel liste'],path:'/topluluk'},
+  {title:'Etkinlikler ve aktiflik',description:'AFK, doğum günleri, ses XP’si, seviye rolleri, tekrarlanan etkinlikler, katılım kapasitesi ve zamanlı duyurular eklendi.',commands:['/topluluk'],path:'/topluluk'}
+ ]}
+];
+export const currentRelease=releases[0];
+export function findRelease(version:string){return releases.find(release=>release.version===version);}
+export function releaseMatches(release:Release,query:string){const search=query.trim().toLocaleLowerCase('tr-TR');return !search||[release.version,release.title,release.summary,...release.features.flatMap(f=>[f.title,f.description,...f.commands])].join(' ').toLocaleLowerCase('tr-TR').includes(search);}

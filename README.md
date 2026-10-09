@@ -1,4 +1,14 @@
-# TurkishPix Bot Merkezi v2.11.1
+# TurkishPix Bot Merkezi v2.12.0
+
+## v2.12.0 · Güncellemeler merkezi
+
+- `/guncellemeler`: son sürüm notları, eski sürüm seçimi ve sayfalı özellik kartları.
+- `/guncellemeler surum: 2.11.0`: belirli bir sürümde eklenenleri gösterir.
+- `/guncellemeler` web sayfası: arama, sürüm filtresi, komut kopyalama ve ilgili panel bağlantıları.
+- `/yardim` menüsüne Güncellemeler kategorisi eklendi. Ayrı `/ozellikler` rehberi `/yardim` altında birleştirilerek 100 kök komut sınırı korundu.
+- `/api/updates`: herkese açık sürüm notları ve gizli bilgi içermeyen güncel web/bot/komut kayıt durumu.
+- Sunucu Gateway önbelleğinde yoksa yalnızca yapılandırılmış sunucu yeniden alınır; erişim yoksa bağlantı bekliyor görünür.
+
 
 ## v2.11: 2D / 3D oyun salonu ve topluluk cüzdan hediyesi
 
@@ -179,7 +189,7 @@ Dağıtım için `docs/RAILWAY.md`, güvenlik/işletim sınırları için `docs/
 | Mini oyunlar (10) | `/tas-kagit-makas`, `/sayi-tahmin`, `/kelime-tahmin`, `/bilmece`, `/bilgi`, `/tarih-sorusu`, `/matematik`, `/hafiza`, `/refleks`, `/xox` |
 | Topluluk (6) | `/profil`, `/liderlik`, `/avatar`, `/kullanici`, `/sunucu`, `/ping` |
 
-Discord’da `/yardim` kategori menüsü sistem ve eğlence komutlarını; `/ozellikler` 50 yeni topluluk aracını açıklar. Owner panelindeki `/eglence` sayfası modülü, tek tek komutları, izinli metin kanallarını ve 3–60 saniyelik beklemeyi yönetir. Eski ayarlar yeni grubu otomatik olarak açık varsayılanıyla alır.
+Discord’da `/yardim` kategori menüsü sistem ve eğlence komutlarını; `/yardim` 50 yeni topluluk aracını açıklar. Owner panelindeki `/eglence` sayfası modülü, tek tek komutları, izinli metin kanallarını ve 3–60 saniyelik beklemeyi yönetir. Eski ayarlar yeni grubu otomatik olarak açık varsayılanıyla alır.
 
 - Listeleri `|` ile ayırın: `/takim kisiler:Ali | Ayşe | Ece | Mehmet adet:2`. `/anket soru:Ne içelim? secenekler:Çay | Kahve dakika:10`.
 - Her oyun 5 dakika açık kalır; sahibi oynar ve “Turu bitir” ile kapatabilir. Aynı üyeye en fazla üç aktif oturum; toplam 12 komut/dakika; anket başlatırken 5 dakika bekleme uygulanır. Hafıza ve refleks oyunlarını herkes izleyebilir; yalnızca başlatan üye oynar.
@@ -215,7 +225,7 @@ Yeni komutların tam listesi ve seçenekleri `packages/core/src/features-catalog
 - **10 kişisel araç:** `/hatirlat`, `/hatirlatmalar`, `/hatirlatmasil`, `/notekle`, `/notlar`, `/notsil`, `/gorevekle`, `/gorevler`, `/gorevtamamla`, `/gorevsil`.
 - **12 topluluk komutu:** `/cekilis`, `/cekilissonuc`, `/cekiliskapat`, `/etkinlik`, `/etkinlikler`, `/etkinlikkapat`, `/oner`, `/oneriler`, `/oneridurum`, `/destek`, `/destekler`, `/destekkapat`.
 - **9 yetkili aracı:** `/uyar`, `/uyarilar`, `/uyarikaldir`, `/yavasmod`, `/kilitle`, `/kilitac`, `/temizle`, `/duyuru`, `/sabitle`.
-- **7 rol/rehber aracı:** `/rolmenu`, `/rolmenukapat`, `/sss`, `/sssekle`, `/ssssil`, `/kanalbilgi`, `/ozellikler`.
+- **7 rol/rehber aracı:** `/rolmenu`, `/rolmenukapat`, `/sss`, `/sssekle`, `/ssssil`, `/kanalbilgi`, `/yardim`.
 
 XP sadece korunmuş sohbetin uygun katkılarında verilir; en az 8 karakter, varsayılan 60 saniye bekleme, tekrar hash kontrolü ve günlük 500 XP sınırı vardır. Seviye eşiği `100 × seviye²`. Sanal Pix ve rozetlerin nakit veya yetki karşılığı yoktur. Ekonomi hareketleri PostgreSQL kilitleri ve interaction makbuzlarıyla tekrarlara karşı korunur. Günlük ödül/teşekkür Türkiye saatine göre yenilenir. DM hatırlatıcıları kalıcı kuyrukta işlenir ve iptal/modül kontrolleri gönderimden önce tekrarlanır.
 
@@ -250,7 +260,7 @@ Hesaba kurulan uygulamaların yanıtları `interactionMetadata.user` üzerinden 
 
 Bilet panelinde **Ödül Talebi**, **Destek**, **Şikâyet**, **Başvuru** ve **Diğer** düğmeleri bulunur. Konu veya açıklama formu yoktur. `/bilet ac tur:` ve `/destek tur:` aynı beş seçeneği sunar. Kanal adı seçilen konu ve Discord kullanıcı adından oluşur: `odul-talebi-frizz2025`, `destek-musty`. Türkçe ve dekoratif harfler okunabilir kanal adına çevrilir. Ayrıntılar özel kanala yazılır; yalnızca seçilen yetkili rolleri ve talep sahibi etiketlenir. Önceden açılmış UUID adlı özel bilet kanalları ve tek düğmeli panel, botun eşitleme turunda otomatik yenilenir; ikinci bir kanal veya panel açılmaz.
 
-`/yardim` tüm 99 kök komutu 13 kategoride gösterir. Alt komut kullanımları beşerli sayfalara ayrılır; gerekli/isteğe bağlı alanlar, örnekler ve ilgili panel bağlantısı görünür. `/ozellikler` aynı rehberin topluluk kategorilerini açar. Komut kartları ortak canlı renkler ve dekoratif TurkishPix başlığı kullanır. Yapay zekâ, `/sor`, etiket ve mesaj yanıtlarında düz konuşma mesajı gönderir; kart, çerçeve veya robot başlığı eklemez.
+`/yardim` tüm 99 kök komutu 13 kategoride gösterir. Alt komut kullanımları beşerli sayfalara ayrılır; gerekli/isteğe bağlı alanlar, örnekler ve ilgili panel bağlantısı görünür. `/yardim` aynı rehberin topluluk kategorilerini açar. Komut kartları ortak canlı renkler ve dekoratif TurkishPix başlığı kullanır. Yapay zekâ, `/sor`, etiket ve mesaj yanıtlarında düz konuşma mesajı gönderir; kart, çerçeve veya robot başlığı eklemez.
 
 ### Google Gemini ücretsiz API kurulumu
 
@@ -263,6 +273,6 @@ Gemini bağlantısı resmi Interactions API üzerinden çalışır. Anahtar AES-
 
 ## v2.7.1 — Kanala açık komut yanıtları
 
-Yeni `/yardim` ve `/ozellikler` mesajları herkes tarafından görülür; yardım menüsü ve sayfa düğmelerini diğer üyeler de kullanabilir. Eğlence ve oyunlar, üye kartları, seviye/ekonomi, müzik, çekilişler, sunucu rehberi ve siyasi panel bağlantıları kanalda paylaşılır. `/sor` yanıtları da düz mesajla herkese gösterilir.
+Yeni `/yardim` ve `/yardim` mesajları herkes tarafından görülür; yardım menüsü ve sayfa düğmelerini diğer üyeler de kullanabilir. Eğlence ve oyunlar, üye kartları, seviye/ekonomi, müzik, çekilişler, sunucu rehberi ve siyasi panel bağlantıları kanalda paylaşılır. `/sor` yanıtları da düz mesajla herkese gösterilir.
 
 Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve listeleri, uyarı kayıtları, temizlik onayı, kişisel DM tercihleri, katılım onayları ve oy verme bildirimleri üyeye özel kalır. Bilet kanallarının erişim izinleri değişmez. Daha önce gönderilmiş özel mesajların görünürlüğü Discord tarafından sonradan değiştirilemediğinden güncel görünüm için komut yeniden kullanılmalıdır.

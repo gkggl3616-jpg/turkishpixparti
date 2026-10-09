@@ -6,6 +6,7 @@ const supportNames=['bilet','destek','destekler','destekkapat','cekilis','cekili
 const aiNames=['sor','yapayzekaaktif','yapayzekakapat'];
 const preferenceNames=['duyurukatıl','duyuruayril','sesdmac','sesdmkapat','botpanel','yardim'];
 export const helpCategories=[
+ {id:'guncellemeler',name:'✨ Güncellemeler',description:'Yeni özellikler, komutlar ve sürüm geçmişi',path:'/guncellemeler',color:theme.purple},
  {id:'gelismis',name:'✦ Gelişmiş topluluk',description:'Özel odalar, kayıt, otomasyon ve etkinlikler',path:'/topluluk',color:theme.purple},
  {id:'bilet',name:'🎫 Bilet & çekiliş',description:'Özel destek kanalları ve ödüller',path:'/biletler',color:theme.cyan},
  {id:'muzik',name:'🎵 Müzik & ses',description:'Sese katıl, radyo aç ve kuyruğu yönet',path:'/muzik',color:theme.purple},
@@ -16,6 +17,7 @@ export const helpCategories=[
  {id:'tercihler',name:'⚙️ Bot & bildirimler',description:'Panel, yardım ve kişisel bildirimler',path:'/',color:theme.cyan}
 ];
 export function commandCategory(name:string){
+ if(name==='guncellemeler')return 'guncellemeler';
  if(name==='topluluk')return 'gelismis';
  if(supportNames.includes(name))return 'bilet';
  if(['muzik','ses'].includes(name))return 'muzik';

@@ -1,4 +1,5 @@
 export const cardCategories = {
+  updates: {title:'Güncellemeler', subtitle:'Yeni özellikler · Yeni komutlar', accent:'#c291ff', icon:'spark'},
   home: {title:'Komut merkezi', subtitle:'Keşfet. Katıl. Birlikte büyü.', accent:'#53dcff', icon:'compass'},
   music: {title:'Müzik & YouTube', subtitle:'Şarkını bul · Birlikte dinle', accent:'#c291ff', icon:'music'},
   rank: {title:'Seviye & aktiflik', subtitle:'Sohbetin iz bıraksın', accent:'#ffd06c', icon:'star'},
@@ -19,6 +20,7 @@ export const cardCategories = {
 export type CardCategory=keyof typeof cardCategories;
 export function categoryForTitle(title:string):CardCategory {
  const t=title.normalize('NFKC').toLocaleLowerCase('tr-TR');
+ if(/güncelleme|sürüm/.test(t))return 'updates';
  if(/youtube|müzik|ses kanalı|ses bağlantı|radyo/.test(t))return 'music';
  if(/rank|seviye|aktiflik|sohbet sıralama|üye kartı/.test(t))return 'rank';
  if(/çekiliş|kazanan/.test(t))return 'giveaway';
@@ -37,7 +39,7 @@ export function categoryForTitle(title:string):CardCategory {
  return 'community';
 }
 export function helpCardCategory(id:string):CardCategory {
- return ({home:'home',gelismis:'community',bilet:'ticket',muzik:'music',ai:'ai',
+ return ({guncellemeler:'updates',home:'home',gelismis:'community',bilet:'ticket',muzik:'music',ai:'ai',
  'feature-ekonomi':'rank','feature-planlama':'tools','feature-topluluk':'events',
  'feature-yonetim':'security','feature-rehber':'guide','fun-oyun':'games',
  'fun-eglence':'games','fun-topluluk':'community',sistem:'parliament',tercihler:'settings'} as Record<string,CardCategory>)[id]||'home';

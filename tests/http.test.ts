@@ -2,7 +2,7 @@ import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {readFile} from 'node:fs/promises';
-import {setTestDatabase,sha256,oauthStart,cookieValue,resetApplicationCache,defaultContentModeration,inspectContent,addFeatureRecord,getFeatureRecord,recordModeration} from '../packages/core/src/index';
+import {setTestDatabase,RELEASE_VERSION,sha256,oauthStart,cookieValue,resetApplicationCache,defaultContentModeration,inspectContent,addFeatureRecord,getFeatureRecord,recordModeration} from '../packages/core/src/index';
 import {GET,POST} from '../apps/web/src/app/api/[...path]/route';
 process.env.APP_URL='https://turkishpix.example';process.env.DATABASE_URL='postgresql://test.invalid/test';
 process.env.AUDIT_HMAC_KEY='test-only-key-012345678901234567890123456789';
@@ -52,7 +52,7 @@ test('HTTP: çıkış kalıcı session kaydını siler',async()=>{
 });
 
 test('HTTP: health şemayı doğrular; açık kurulum bilgisi gizli anahtar içermez',async()=>{
- const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);const healthBody=await health.json();assert.equal(healthBody.status,'ok');assert.equal(healthBody.version,'2.11.1');
+ const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);const healthBody=await health.json();assert.equal(healthBody.status,'ok');assert.equal(healthBody.version,RELEASE_VERSION);
  const response=await GET(new Request('https://turkishpix.example/api/config'));assert.equal(response.status,200);const body=await response.json();assert.equal(body.redirectUri,'https://turkishpix.example/api/auth/callback');
  for(const name of ['DISCORD_BOT_TOKEN','DISCORD_CLIENT_SECRET','AUDIT_HMAC_KEY'])assert.ok(!JSON.stringify(body).includes(process.env[name]!));
 });
