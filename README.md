@@ -1,4 +1,4 @@
-# TurkishPix Bot Merkezi v2.11.0
+# TurkishPix Bot Merkezi v2.11.1
 
 ## v2.11: 2D / 3D oyun salonu ve topluluk cüzdan hediyesi
 
