@@ -13,7 +13,7 @@ export const expansionSettingsSchema=z.object({
  birthdays:z.object({enabled:z.boolean(),channelId:id}),
  afkEnabled:z.boolean(),
  voiceXP:z.object({enabled:z.boolean(),perMinute:z.number().int().min(1).max(30)}),
- levelRoles:z.array(z.object({level:z.number().int().min(1).max(100),roleId:z.string().regex(/^\d{17,20}$/)})).max(20),
+ levelRoles:z.array(z.object({level:z.number().int().min(1).max(100),roleId:z.string().regex(/^\d{17,20}$/)})).max(50).refine(rows=>new Set(rows.map(r=>r.level+':'+r.roleId)).size===rows.length,'Aynı seviye ve rol iki kez eklenemez.'),
  farewell:z.object({enabled:z.boolean(),channelId:id,message:z.string().trim().min(1).max(1000)})
 });
 export type ExpansionSettings=z.infer<typeof expansionSettingsSchema>;
@@ -25,7 +25,9 @@ export function defaultExpansionSettings():ExpansionSettings{return {
 };}
 export const eventOptionsSchema=z.object({capacity:z.number().int().min(0).max(500).default(0),repeat:z.enum(['OFF','DAILY','WEEKLY']).default('OFF'),reminders:z.array(z.number().int().min(1).max(1440)).max(5).default([15]),requiredRoleId:id.default(''),description:z.string().max(600).default('')});
 export function validBirthday(day:number,month:number){return Number.isInteger(day)&&Number.isInteger(month)&&month>=1&&month<=12&&day>=1&&day<=[31,29,31,30,31,30,31,31,30,31,30,31][month-1];}
-export const AUTOMATIC_ROLE_DANGER_MASK=29714627043518n;
+// Only administrative/moderation powers are unsafe for automatic grants.
+// Creating events/expressions, mentions and read-only analytics are ordinary capabilities.
+export const AUTOMATIC_ROLE_DANGER_MASK=2n|4n|8n|16n|32n|8192n|4194304n|8388608n|16777216n|134217728n|268435456n|536870912n|1073741824n|8589934592n|17179869184n|1099511627776n;
 export const WATCH_TOGETHER_APPLICATION_ID='880218394199220334';
 const text=(name:string,description:string,required=true,max_length=300)=>({type:3,name,description,required,max_length});
 const num=(name:string,description:string,min_value:number,max_value:number,required=true)=>({type:4,name,description,required,min_value,max_value});

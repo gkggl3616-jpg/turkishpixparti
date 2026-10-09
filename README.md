@@ -1,4 +1,13 @@
-# TurkishPix Bot Merkezi v2.14.0
+# TurkishPix Bot Merkezi v2.14.1
+
+## Otorol ve çoklu XP rolleri (2.14.1)
+
+`/topluluk roller otorol rol: @Üye` yeni insan üyelere normal üye rolünü verir. Botun **Rolleri Yönet** izni olmalı ve **TurkishPix** rolü verilen rollerin üstünde bulunmalı. Etkinlik/emoji oluşturma ve kanal erişimi gibi normal izinler kabul edilir; Discord’un yönettiği entegrasyon rolleri ayrı hata gösterir.
+
+`/topluluk roller seviye-panel` ile ödül ekle, seviyeyi forma yaz ve o seviyenin bir veya birden fazla rolünü seç. 1–100 arasında toplam 50 seviye–rol kuralı tutulur. Örneğin `seviye-ekle seviye: 5 rol: @Aktif` ve `seviye-ekle seviye: 10 rol: @Kıdemli` birbirini silmez. `/botpanel` → **Seviye & XP** → **Seviye ödüllerini yönet** aynı ekranı açar.
+
+Hak edilen roller birikir; yeni eşleşmeler eski seviyelere de uygulanır. `/topluluk roller seviye-tara` eksik rolleri yeniden kontrol eder. Kalıcı kuyruk geçici Discord hatalarını yeniden dener. Kural silmek kazanılmış rolleri üyelerden almaz.
+
 
 ## v2.14: Discord kontrol merkezi, denetim ve rol otomasyonları
 

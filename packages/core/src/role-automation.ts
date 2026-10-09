@@ -4,6 +4,31 @@ import {database,transaction} from './db';
 import {communitySettings} from './community';
 import {audit} from './audit';
 import {roleAutomationSchema,type RoleAutomationSettings} from './role-automation-policy';
+import {expansionSettingsSchema} from './expansion-policy';
+import {communitySettingsSchema,type CommunitySettings} from './community';
+import {memberProfile} from './features';
+import {syncUser} from './discord';
+export function eligibleLevelRoles(settings:CommunitySettings,level:number){return settings.expansion.enabled&&settings.features.enabled&&settings.features.xpEnabled?settings.expansion.levelRoles.filter(r=>level>=r.level):[];}
+export async function queueLevelRoleRewards(userId:string,owned:Iterable<string>,settings:CommunitySettings){
+ if(!settings.expansion.levelRoles.length)return;const roles=new Set(owned),profile=await memberProfile(userId);
+ for(const reward of eligibleLevelRoles(settings,profile.level))if(!roles.has(reward.roleId))await queueRoleChange(userId,reward.roleId,true,'LEVEL');
+}
+/** The Discord caller validates fresh ManageRoles permission and role hierarchy first. */
+export async function changeLevelRewards(actor:{id:string;username:string;manageRoles:boolean},level:number,roleIds:string[],remove=false){
+ if(!actor.manageRoles)throw new DomainError('ROLE_PERMISSION','Seviye ödüllerini yönetmek için Rolleri Yönet izni gerekir.',403);
+ const validated=expansionSettingsSchema.shape.levelRoles.parse(roleIds.map(roleId=>({level,roleId})));if(!validated.length)throw new DomainError('ROLE_REQUIRED','En az bir ödül rolü seç.');
+ const fallback=await communitySettings();const result=await transaction(async tx=>{
+  await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['level-rewards:'+config().guildId]);
+  await syncUser(tx,actor);
+  const row=(await tx.query('SELECT settings FROM community_settings WHERE guild_id=$1 FOR UPDATE',[config().guildId])).rows[0];const current=communitySettingsSchema.parse(row?.settings||fallback);
+  const pairs=new Set(validated.map(r=>r.level+':'+r.roleId));const remaining=current.expansion.levelRoles.filter(r=>!pairs.has(r.level+':'+r.roleId));
+  if(!remove&&remaining.length+validated.length>50)throw new DomainError('LEVEL_REWARD_LIMIT','En fazla 50 seviye–rol kuralı ekleyebilirsin. Kullanılmayan bir kuralı kaldır.');
+  const rewards=expansionSettingsSchema.shape.levelRoles.parse(remove?remaining:[...remaining,...validated].sort((a,b)=>a.level-b.level||a.roleId.localeCompare(b.roleId)));
+  current.expansion.levelRoles=rewards;
+  await tx.query('INSERT INTO community_settings(guild_id,settings,updated_by) VALUES($1,$2,$3) ON CONFLICT(guild_id) DO UPDATE SET settings=EXCLUDED.settings,updated_by=EXCLUDED.updated_by,updated_at=now()',[config().guildId,current,actor.id]);
+  await audit(tx,actor.id,remove?'LEVEL_REWARD_REMOVED':'LEVEL_REWARD_SAVED',config().guildId,{rewards:validated});return rewards;
+ });await requestRoleScan();return result;
+}
 export async function roleAutomationSettings():Promise<RoleAutomationSettings>{const row=(await database().query('SELECT settings FROM role_automation_settings WHERE guild_id=$1',[config().guildId])).rows[0];if(row)return roleAutomationSchema.parse(row.settings);const legacy=(await communitySettings()).expansion.autoRoleIds;return roleAutomationSchema.parse({autoEnabled:legacy.length>0,autoRoleIds:legacy});}
 export async function saveRoleAutomation(actor:{id:string;username:string},input:Partial<RoleAutomationSettings>){const fallback=await roleAutomationSettings();const s=await transaction(async tx=>{
  await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['role-settings:'+config().guildId]);
@@ -13,12 +38,12 @@ export async function saveRoleAutomation(actor:{id:string;username:string},input
  await tx.query("UPDATE community_settings SET settings=jsonb_set(settings,'{expansion,autoRoleIds}',$2::jsonb),updated_at=now() WHERE guild_id=$1",[config().guildId,JSON.stringify(s.autoEnabled?s.autoRoleIds:[])]);
  await audit(tx,actor.id,'ROLE_AUTOMATION_SETTINGS_UPDATED',config().guildId,{settings:s});
  return s;});await requestRoleScan();return s;}
-export async function queueRoleChange(userId:string,roleId:string,desired:boolean,source:'AUTO'|'TAG'|'REACTION'|'BULK',metadata:Record<string,any>={}){
+export async function queueRoleChange(userId:string,roleId:string,desired:boolean,source:'AUTO'|'TAG'|'REACTION'|'BULK'|'LEVEL',metadata:Record<string,any>={}){
  await transaction(async tx=>{
   if(source==='BULK'){const campaign=(await tx.query('SELECT status FROM role_bulk_campaigns WHERE id=$1 AND guild_id=$2 FOR UPDATE',[metadata.campaignId,config().guildId])).rows[0];if(!campaign||!['QUEUED','SCANNING'].includes(campaign.status))return;}
   await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['role-job:'+config().guildId+':'+userId+':'+roleId]);
   const old=(await tx.query('SELECT * FROM role_automation_jobs WHERE guild_id=$1 AND user_id=$2 AND role_id=$3 FOR UPDATE',[config().guildId,userId,roleId])).rows[0];
-  if(old?.source==='BULK'&&['QUEUED','RUNNING'].includes(old.status)&&source==='AUTO'&&old.desired===desired)return;
+  if(old?.source==='BULK'&&['QUEUED','RUNNING'].includes(old.status)&&['AUTO','LEVEL'].includes(source)&&old.desired===desired)return;
   if(old?.source==='BULK'&&old.metadata.campaignId!==metadata.campaignId)await tx.query("UPDATE role_bulk_targets SET status='SKIPPED',last_error='SUPERSEDED' WHERE campaign_id=$1 AND user_id=$2 AND status='QUEUED'",[old.metadata.campaignId,userId]);
   if(source==='BULK')await tx.query("INSERT INTO role_bulk_targets(campaign_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[metadata.campaignId,userId]);
   await tx.query("INSERT INTO role_automation_jobs(guild_id,user_id,role_id,desired,source,metadata) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(guild_id,user_id,role_id) DO UPDATE SET desired=EXCLUDED.desired,source=EXCLUDED.source,metadata=EXCLUDED.metadata,revision=role_automation_jobs.revision+1,status='QUEUED',attempts=0,available_at=now(),updated_at=now() WHERE role_automation_jobs.desired<>EXCLUDED.desired OR role_automation_jobs.status IN ('DONE','SKIPPED','FAILED') OR role_automation_jobs.metadata<>EXCLUDED.metadata",[config().guildId,userId,roleId,desired,source,metadata]);

@@ -15,10 +15,13 @@ import {addFeatureRecord,listFeatureRecords} from './features';
 import {inspectContent} from './moderation-engine';
 const snowflake=z.string().regex(/^\d{17,20}$/);
 const dangerousPermissions=AUTOMATIC_ROLE_DANGER_MASK;
-export async function expansionRoleDirectory(){const c=await discordRoleCatalog(),protectedIds=Object.values(await roleMappings()).filter(Boolean);const channels=await discordRequest('/guilds/'+config().guildId+'/channels');return {...c,roles:c.roles.map(r=>({...r,manageable:r.manageable&&!protectedIds.includes(r.id)&&!(BigInt(r.permissions)&dangerousPermissions)&&!channels.some((ch:any)=>(ch.permission_overwrites||[]).some((o:any)=>o.id===r.id&&(BigInt(o.allow)&dangerousPermissions)))}))};}
+export async function expansionRoleDirectory(){const c=await discordRoleCatalog(),protectedIds=Object.values(await roleMappings()).filter(Boolean);const channels=await discordRequest('/guilds/'+config().guildId+'/channels');return {...c,roles:c.roles.map(r=>{
+ const blockedReason=r.id===config().guildId?'@everyone tüm üyelerde zaten bulunur. Ayrı bir Üye rolü seç.':r.managed?'Bu rol Discord veya bağlı uygulaması tarafından yönetiliyor.':protectedIds.includes(r.id)?'Bu siyasi görev rolü kendi görev sisteminden verilir.':BigInt(r.permissions)&dangerousPermissions?'Bu rol yönetim veya moderasyon yetkisi taşıyor.':channels.some((ch:any)=>(ch.permission_overwrites||[]).some((o:any)=>o.id===r.id&&(BigInt(o.allow)&dangerousPermissions)))?'Bu role kanal içinde yönetim veya moderasyon yetkisi verilmiş.':r.blockedReason;
+ return {...r,manageable:!blockedReason,blockedReason};
+ })};}
 export async function validateExpansionSettings(input:ExpansionSettings){
  const s=expansionSettingsSchema.parse(input);const roleIds=[...s.autoRoleIds,...s.levelRoles.map(r=>r.roleId),s.registration.memberRoleId,s.registration.unregisteredRoleId].filter(Boolean);
- if(roleIds.length){const catalog=await expansionRoleDirectory();for(const id of roleIds){const role=catalog.roles.find(r=>r.id===id);if(!role?.manageable)throw new DomainError('UNSAFE_AUTOMATIC_ROLE','Otomatik roller botun altında olmalı ve yönetim yetkisi içermemeli.',403);}}
+ if(roleIds.length){const catalog=await expansionRoleDirectory();for(const id of roleIds){const role=catalog.roles.find(r=>r.id===id);if(!role?.manageable)throw new DomainError('UNSAFE_AUTOMATIC_ROLE',role?'@'+role.name+': '+role.blockedReason:'Seçilen rol artık sunucuda yok.',403);}}
  if(s.registration.memberRoleId&&s.registration.memberRoleId===s.registration.unregisteredRoleId)throw new DomainError('REGISTRATION_ROLES','Kayıtlı ve kayıtsız rolleri farklı olmalı.');
  if(s.rooms.createChannelId){const channel=await discordRequest('/channels/'+s.rooms.createChannelId);if(channel.guild_id!==config().guildId||channel.type!==2)throw new DomainError('ROOM_LOBBY','Bu sunucudan bir oda oluşturma ses kanalı seç.');}
  if(s.rooms.categoryId){const channel=await discordRequest('/channels/'+s.rooms.categoryId);if(channel.guild_id!==config().guildId||channel.type!==4)throw new DomainError('ROOM_CATEGORY','Bu sunucudan bir kanal kategorisi seç.');}

@@ -79,6 +79,7 @@ export async function controlPanelView(i:any,view='home',category='all',page=0,n
   const moduleToggles:Record<string,Array<[string,string,boolean]>>={chat:[['security','Koruma',community.security.enabled]],welcome:[['welcome','Karşılama',community.welcome.enabled]],levels:[['xp','Mesaj XP’si',community.features.xpEnabled],['levelnotice','Seviye bildirimi',community.features.levelUpEnabled]],rooms:[['rooms','Özel odalar',community.expansion.rooms.enabled]],music:[['music','Müzik',community.music.enabled]]};
   if(actor.configuredOwner&&moduleToggles[view])body.push(uiRow(...moduleToggles[view].map(([key,label,on])=>uiButton(custom(id,'module',key),label+' '+(on?'kapat':'aç'),on?4:3))));
   if(view==='welcome'&&actor.configuredOwner){body.push(uiRow(uiButton(custom(id,'welcomemodal'),'✏️ Karşılama metni')));body.push(channelSelect(id,'welcomechannel','Karşılama kanalını seç',revision,community.welcome.channelId));}
+  if(view==='levels')body.push(uiRow(uiButton('rolepanel:'+id+':levels:','⭐ Seviye ödüllerini yönet',3)));
   if(view==='profile'&&actor.configuredOwner)body.push(uiRow(uiButton(custom(id,'presencemodal'),'✏️ Aktivite metni')));
  }
  body.push(uiSeparator(),uiRow({type:3,custom_id:custom(id,'nav'),placeholder:'Başka bir yönetim modülü seç',options:views.map(([value,label])=>({label,value,default:value===view}))}),uiText('-# TurkishPix • Discord Kontrol Merkezi • /botpanel'));

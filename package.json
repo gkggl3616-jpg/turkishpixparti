@@ -1,7 +1,7 @@
 {
   "name": "turkishpix-siyasi-sistem",
   "private": true,
-  "version": "2.14.0",
+  "version": "2.14.1",
   "workspaces": [
     "apps/*",
     "packages/*"
