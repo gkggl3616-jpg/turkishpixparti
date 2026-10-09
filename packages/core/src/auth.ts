@@ -21,7 +21,7 @@ export async function oauthStart(returnPath='/'){
  if(!app.verified)throw new DomainError('APPLICATION_UNAVAILABLE',app.error||'Discord uygulaması doğrulanamadı.',503);
  if(app.redirectRegistered===false)throw new DomainError('OAUTH_REDIRECT_NOT_REGISTERED','Discord Developer Portal’da OAuth yönlendirme adresi kaydedilmeli.',503);
  const state=randomBytes(32).toString('hex');let safePath='/';
- try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&['/','/secim','/guvenlik','/karsilama','/duyurular','/yapay-zeka','/bot-ayarlari','/eglence'].includes(target.pathname)){
+ try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&['/','/secim','/guvenlik','/karsilama','/duyurular','/yapay-zeka','/bot-ayarlari','/eglence','/oyunlar'].includes(target.pathname)){
   const out=new URL(target.pathname,c.appUrl);const view=target.searchParams.get('view'),create=target.searchParams.get('create');
   if(view&&['genel','partiler','basvurular','oylamalar','tbmm','secimler','kayitlar','owner','roller','baglanti','ayarlar','kilavuz'].includes(view))out.searchParams.set('view',view);
   if(create&&['PARTY','BILL'].includes(create))out.searchParams.set('create',create);

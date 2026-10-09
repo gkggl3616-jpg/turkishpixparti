@@ -17,7 +17,7 @@ before(async()=>{
  await pg.exec(await readFile(new URL('../packages/core/sql/003_discord_roles.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/004_server_setup.sql',import.meta.url),'utf8'));
  await pg.exec(await readFile(new URL('../packages/core/sql/005_community.sql',import.meta.url),'utf8'));
- await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/007_entertainment.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/010_music_application_security.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/011_tickets_giveaways.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/012_community_expansion.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/013_level_notifications.sql',import.meta.url),'utf8'));
+ await pg.exec(await readFile(new URL('../packages/core/sql/006_voice_presence.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/007_entertainment.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/008_chat_moderation.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/009_community_features.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/010_music_application_security.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/011_tickets_giveaways.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/012_community_expansion.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/013_level_notifications.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../packages/core/sql/014_arcade_currency.sql',import.meta.url),'utf8'));
  await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[user.id,user.username]);
  await pg.query("INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[sha256(token),user.id,csrf]);
  globalThis.fetch=async(input:any,init:any)=>{
@@ -52,7 +52,7 @@ test('HTTP: çıkış kalıcı session kaydını siler',async()=>{
 });
 
 test('HTTP: health şemayı doğrular; açık kurulum bilgisi gizli anahtar içermez',async()=>{
- const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);const healthBody=await health.json();assert.equal(healthBody.status,'ok');assert.equal(healthBody.version,'2.10.1');
+ const health=await GET(new Request('https://turkishpix.example/api/health'));assert.equal(health.status,200);const healthBody=await health.json();assert.equal(healthBody.status,'ok');assert.equal(healthBody.version,'2.11.0');
  const response=await GET(new Request('https://turkishpix.example/api/config'));assert.equal(response.status,200);const body=await response.json();assert.equal(body.redirectUri,'https://turkishpix.example/api/auth/callback');
  for(const name of ['DISCORD_BOT_TOKEN','DISCORD_CLIENT_SECRET','AUDIT_HMAC_KEY'])assert.ok(!JSON.stringify(body).includes(process.env[name]!));
 });

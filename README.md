@@ -1,4 +1,12 @@
-# TurkishPix Bot Merkezi v2.10.1
+# TurkishPix Bot Merkezi v2.11.0
+
+## v2.11: 2D / 3D oyun salonu ve topluluk cüzdan hediyesi
+
+- `/yardim` eğlence ve oyun kategorileri, eğlence yanıtları ve oyun kartları `/oyunlar` bağlantısını gösterir. Oyun salonu tüm doğrulanmış sunucu üyelerine açıktır; owner hesabı gerekmez. Discord ile giriş, mevcut cüzdanı kullanır.
+- Neon Kaçış (2D): 100 Bot TL/tur. Hafıza Bahçesi (2D): 150 Bot TL/tur. Yörünge 3D: 200 Bot TL/tur; WebGL ile gerçek perspektif ve derinlik tamponu kullanılır. WASD/ok tuşları, dokunmatik ve mobil yön düğmeleri desteklenir.
+- Ücret sunucu kataloğundan hesaplanır ve cüzdanla aynı işlemde kaydedilir. Tek aktif tur, tekrar istek makbuzu ve profil kilidi çift ücreti engeller. Ödenmiş tur 12 dakika içinde tekrar açılabilir; turu kapatmak ücret iadesi yapmaz. Skorlar kişisel kayıttır; skor üzerinden para üretilmez. Önceki Pix cüzdanı Bot TL adıyla aynı bakiyeyi korur.
+- 9 Ekim talebindeki mevcut insan üyelerin tam Discord listesi sayfalanarak bir kez kaydedilir. Her birinin mevcut bakiyesine **50.000 Bot TL** eklenir. Bot hesapları alınmaz. Kalıcı kampanya/üye ödeme anahtarı, yeniden başlatma ve yeni sürümde ikinci ödeme yapılmasını engeller; sonradan gelen üyeler bu eski dağıtıma katılmaz.
+- Migration `014_arcade_currency` oyun oturumlarını ve dağıtım kayıtlarını oluşturur. Üretim, geliştirme ve bootstrap girişleri SQL klasörüyle karşılaştırılan regression kontrolünü kullanır; runtime rolü yeni tablolara erişir.
 
 ## v2.10: Katılınca oda oluşturma ve görselli seviye duyurusu
 
