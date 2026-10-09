@@ -59,7 +59,7 @@ Yalnızca arayüzü görmek için `.env` içinde `DEMO_MODE=true` kullanın. Ör
 4. Discord geliştirici modu açılıp sunucu, oylama kanalı ve log kanalı ID’leri kopyalanır. Dört owner ID’si `.env.example` ve Railway tanımında hazırdır.
 5. `DISCORD_OWNER_IDS` virgülle ayrılmış, birbirinden farklı dört ID olmalıdır. Yetki kullanıcı adına veya girilen form bilgisine göre verilmez.
 6. Bot sunucuya `bot` ve `applications.commands` scope’larıyla eklenir. İzinler: View Channel, Send Messages, Embed Links. Panelden siyasi rollerin atanması için ayrıca Manage Roles gerekir ve botun en üst rolü, atanacak rolün üstünde olmalıdır.
-7. Bot sunucuya eklendiğinde 97 slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
+7. Bot sunucuya eklendiğinde 99 slash komutunu otomatik kaydeder; gerekirse `npm run commands:register` kullanılabilir.
 
 Canlı OAuth callback adresi **`https://turkishpix-web-production.up.railway.app/api/auth/callback`**. OAuth2 → Redirects → Add Redirect alanına eksiksiz eklenir ve **Save Changes** ile kaydedilir. Sitedeki owner giriş ekranı kayıt durumunu Discord API’den kontrol eder. Kayıt yokken giriş isteği Discord’un hata sayfasına gönderilmez.
 
@@ -199,3 +199,9 @@ Hesaba kurulan uygulamaların yanıtları `interactionMetadata.user` üzerinden 
 `/ses` (katil, ayril, durum) ve `/muzik` (oynat, radyo, duraklat, devam, atla, oyla, durdur, kuyruk, simdi, ses, tekrar, karistir, temizle, cikar, tasi, ileri, yardim) 20 işlem ekler. Toplam 97 kök komutla Discord'un 100 komut sınırı korunur. `/muzik oynat dosya:` ile ses dosyası; `baglanti:` ile doğrudan HTTPS ses akışı oynatılır. YouTube/Spotify sayfa bağlantıları desteklenmez. Altı SomaFM istasyonu hazırdır. Kaynaklar DNS yanıtını public IPv4 adresine sabitleyerek, her yönlendirmeyi tekrar denetleyerek alınır; kimlik bilgisi, özel ağ ve 100 MB üstü dosyalar reddedilir. FFmpeg PCM üretir, Opus ve DAVE şifrelemesiyle Discord'a iletilir. Bot konteyneri FFmpeg içerir; @discordjs/voice 0.19.2 DAVE desteğiyle kurulur.
 
 `/muzik` paneli aynı canlı botu kalıcı işlem kuyruğuyla yönetir. İş sonucu görünür; owner ve CSRF gerekir. Slash kontrolleri aynı ses kanalını, DJ/ManageGuild yetkisini veya tek dinleyiciyi denetler. Üyeler kendi parçasını atlayabilir/çıkarabilir; dinleyiciler tekil atlama oyu verir. Üye/kuyruk kotası, ses sınırı, kanal izinleri, boş kanal ve boş kuyruk zaman aşımı uygulanır. Yeniden başlatmada oynatma kuyruğu kapanır; kalıcı panel işlemleri 5 dakika geçince uygulanmaz. İş sonucu 7 gün tutulur.
+
+## v2.6 — Biletler ve çekiliş paneli
+
+`/bilet kur` ile metin kanalı, kategori ve en fazla üç yetkili rolü Discord seçicisinden seçilir. `/bilet ac`, `/bilet kapat` ve `/bilet liste` özel destek kanallarını yönetir; `/destek` ve `/destekkapat` aynı akışı kullanır. Web panelindeki `/biletler` ekranı kanal ve kategori adları ile beş yetkili rolü seçer. Bilet panelindeki form özel kanal açar ve seçilen rolleri etiketler. Talep sahibi ve yetkililer kapatabilir; kapanan bilet görüşmeleri saklanır. Botun Kanalları Yönet, Rolleri Yönet ve metin/mesaj geçmişi izinleri gerekir; etiketlenecek roller etiketlenebilir olmalı veya bot Herkesten Bahset iznine sahip olmalıdır.
+
+`/cekilis` ödül, dakika, isteğe bağlı kanal ve 1–10 kazanan ile katılım düğmesi gönderir. `/cekilisler` ve web `/cekilisler` ekranı listeleme, erken bitirme, iptal ve yeniden seçim sunar. Kazananlar kriptografik rastgele örnekleme ile benzersiz seçilir. Yeniden seçim önceki kazananları dışlar. İşlem makbuzları, kayıt kilitleri, kanal konu işaretleri ve mesaj nonce değerleri tekrar teslimde aynı kaydı/kanalı bulur. Bot kapalıyken süresi dolan çekiliş açılışta sonuçlanır. Migration `011_tickets_giveaways` önce çalıştırılmalıdır.

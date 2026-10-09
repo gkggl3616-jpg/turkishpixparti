@@ -41,7 +41,7 @@ export function effectiveChannelPermissions(base:bigint,roleIds:string[],memberI
 function channelChecks(permissions:bigint){return {view:!!(permissions&1024n),send:!!(permissions&2048n),embed:!!(permissions&16384n),history:!!(permissions&65536n)};}
 export function buildChannelCatalog(channels:any[],roles:any[],member:{id:string;roles:string[]},guildId:string){
  const base=roles.filter(r=>r.id===guildId||member.roles.includes(r.id)).reduce((n:bigint,r:any)=>n|BigInt(r.permissions),0n);
- return channels.filter(ch=>[0,5,2,13].includes(ch.type)).map(ch=>{
+ return channels.filter(ch=>[0,5,2,13,4].includes(ch.type)).map(ch=>{
   const checks=channelChecks(effectiveChannelPermissions(base,member.roles,member.id,ch,guildId));
   return {id:ch.id,name:ch.name,type:ch.type,category:channels.find(c=>c.id===ch.parent_id)?.name||'',position:ch.position||0,checks,usable:checks.view&&checks.send};
  }).filter(ch=>ch.checks.view).sort((a,b)=>a.category.localeCompare(b.category,'tr')||a.position-b.position||a.name.localeCompare(b.name,'tr'));

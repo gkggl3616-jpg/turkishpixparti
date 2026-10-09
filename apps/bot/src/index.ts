@@ -1,3 +1,4 @@
+import {handleSupportInteraction} from './support';
 import 'dotenv/config';
 import {verifyAudioEncoding,verifyRadioSources} from './audio-diagnostics';
 import {MusicManager} from './music';
@@ -37,6 +38,7 @@ client.on(Events.Error,()=>console.error('DISCORD_GATEWAY_ERROR'));
 client.on(Events.InteractionCreate,async interaction=>{
  if(interaction.guildId!==config().guildId){if(interaction.isRepliable())await interaction.reply({content:'Bu bot TurkishPix sunucusuna bağlı.',flags:MessageFlags.Ephemeral});return;}
  if(await music.handle(interaction))return;
+ if(await handleSupportInteraction(interaction,settings))return;
  if(await handleFeatureInteraction(interaction,settings))return;
  if(await handleEntertainmentInteraction(interaction,settings.entertainment))return;
  if(interaction.isChatInputCommand()){

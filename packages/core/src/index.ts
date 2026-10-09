@@ -29,3 +29,6 @@ export * from './features';
 export * from './application-policy';
 export * from './music-policy';
 export * from './music-service';
+
+export * from './tickets';
+export * from './giveaways';
