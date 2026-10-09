@@ -143,7 +143,7 @@ Dağıtım için `docs/RAILWAY.md`, güvenlik/işletim sınırları için `docs/
 Discord’da `/yardim` kategori menüsü sistem ve eğlence komutlarını; `/ozellikler` 50 yeni topluluk aracını açıklar. Owner panelindeki `/eglence` sayfası modülü, tek tek komutları, izinli metin kanallarını ve 3–60 saniyelik beklemeyi yönetir. Eski ayarlar yeni grubu otomatik olarak açık varsayılanıyla alır.
 
 - Listeleri `|` ile ayırın: `/takim kisiler:Ali | Ayşe | Ece | Mehmet adet:2`. `/anket soru:Ne içelim? secenekler:Çay | Kahve dakika:10`.
-- Her oyun 5 dakika açık kalır; sahibi oynar ve “Turu bitir” ile kapatabilir. Aynı üyeye en fazla üç aktif oturum; toplam 12 komut/dakika; anket başlatırken 5 dakika bekleme uygulanır. Hafıza ve refleks oyunları oyuncuya özeldir.
+- Her oyun 5 dakika açık kalır; sahibi oynar ve “Turu bitir” ile kapatabilir. Aynı üyeye en fazla üç aktif oturum; toplam 12 komut/dakika; anket başlatırken 5 dakika bekleme uygulanır. Hafıza ve refleks oyunlarını herkes izleyebilir; yalnızca başlatan üye oynar.
 - Galibiyet 20, beraberlik 5 puan verir. Türkiye saatiyle günlük üst sınır 500 puandır. Puanların parasal değeri yoktur. Sonuçlar tek kez yazılır; eski düğmeler ve başka oyuncuların hamleleri reddedilir.
 - XOX üç seviyelidir; zor seviye minimax kullanır. Tahmin oyunları form, diğer oyunlar düğme kullanır. Refleks ölçümü ağ ve Discord gecikmesini de içerir.
 - Anketlerde 2–5 seçenek, 1–60 dakika ve hesap başına bir oy vardır; anket sahibi veya owner erken kapatabilir. Süre bitince düğmeler en geç 30 saniyelik işçi turunda kapatılır. Bot yeniden başladığında oturumlar veritabanından okunur.
@@ -220,3 +220,10 @@ Bilet panelinde **Ödül Talebi**, **Destek**, **Şikâyet**, **Başvuru** ve **
 3. Anahtarı panelde girip **Bağla ve yapay zekâyı aç** düğmesini kullan; deneme alanında bir soru sor.
 
 Gemini bağlantısı resmi Interactions API üzerinden çalışır. Anahtar AES-256-GCM ile şifrelenir; sohbet geçmişi sağlayıcının sunucusunda saklanması için `store:false` gönderilir. Gemini ücretsiz katmanının hesap kotası ve veri kullanım koşulları geçerlidir; ücretsiz içerikler ürün geliştirmede kullanılabilir. Kota dolunca anlaşılır hata gösterilir; sağlayıcı kendiliğinden değiştirilmez. https://ai.google.dev/gemini-api/docs/pricing . Ortam değişkeni tercih edilirse `GEMINI_API_KEY` ve `GEMINI_MODEL` kullanılabilir; panel bağlantısı önceliklidir. Groq ve OpenAI bağlantıları kullanılmaya devam eder.
+
+
+## v2.7.1 — Kanala açık komut yanıtları
+
+Yeni `/yardim` ve `/ozellikler` mesajları herkes tarafından görülür; yardım menüsü ve sayfa düğmelerini diğer üyeler de kullanabilir. Eğlence ve oyunlar, üye kartları, seviye/ekonomi, müzik, çekilişler, sunucu rehberi ve siyasi panel bağlantıları kanalda paylaşılır. `/sor` yanıtları da düz mesajla herkese gösterilir.
+
+Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve listeleri, uyarı kayıtları, temizlik onayı, kişisel DM tercihleri, katılım onayları ve oy verme bildirimleri üyeye özel kalır. Bilet kanallarının erişim izinleri değişmez. Daha önce gönderilmiş özel mesajların görünürlüğü Discord tarafından sonradan değiştirilemediğinden güncel görünüm için komut yeniden kullanılmalıdır.

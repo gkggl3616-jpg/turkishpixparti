@@ -51,7 +51,7 @@ export async function handleFeatureInteraction(i:any,settings:CommunitySettings)
   }
   const name=i.commandName;checkFeature(policy,name,i.channelId);const definition=featureCommands.find(c=>c.name===name)!;
   if(definition.default_member_permissions)requirePermission(i,BigInt(definition.default_member_permissions));
-  const isPublic=['cekilis','etkinlik','oner','rolmenu'].includes(name);await i.deferReply(isPublic?{}:{flags:MessageFlags.Ephemeral});await featureRate(actor);
+  const isPublic=['cekilis','etkinlik','oner','rolmenu'].includes(name);const privateReply=definition.category==='planlama'||['destek','destekler','destekkapat','uyar','uyarilar','uyarikaldir','temizle'].includes(name);await i.deferReply(privateReply?{flags:MessageFlags.Ephemeral}:{});await featureRate(actor);
   if(!i.appPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new DomainError('BOT_PERMISSION','Bu kanalda botun Bağlantıları Yerleştir iznini aç.');
   const get=(key:string,required=true)=>i.options.getString(key,required),number=(key:string)=>i.options.getInteger(key,true),selected=i.options.getUser('uye')||i.user,target={id:selected.id,username:selected.username,avatar:selected.avatar},key=i.id;
   if(['uyeprofil','seviye','cuzdan','rozetler','itibar','envanter'].includes(name)){const p=await memberProfile(name==='envanter'?actor.id:target.id),bar='▰'.repeat(Math.round(p.percent/10))+'▱'.repeat(10-Math.round(p.percent/10));let description=userTag(p.user_id),fields:any[]=[];

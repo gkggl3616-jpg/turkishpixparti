@@ -1,5 +1,5 @@
 import {createAudioPlayer,createAudioResource,joinVoiceChannel,entersState,VoiceConnectionStatus,AudioPlayerStatus,NoSubscriberBehavior,StreamType,type VoiceConnection,type AudioResource} from '@discordjs/voice';
-import {PermissionFlagsBits,MessageFlags,type Client,type Interaction} from 'discord.js';
+import {PermissionFlagsBits,type Client,type Interaction} from 'discord.js';
 import {spawn,type ChildProcessWithoutNullStreams} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import type {IncomingMessage} from 'node:http';
@@ -95,7 +95,7 @@ export class MusicManager{
  async shutdown(){await this.serial(async()=>this.leave());}
  async handle(interaction:Interaction){
   if(!interaction.isChatInputCommand()||!['ses','muzik'].includes(interaction.commandName))return false;
-  await interaction.deferReply({flags:MessageFlags.Ephemeral});
+  await interaction.deferReply({});
   try{await rateLimit('music:'+interaction.user.id,15,60);const sub=interaction.options.getSubcommand();let text='';
    if(sub==='yardim')text='**Başlat:** /ses katil · /muzik oynat dosya: veya baglanti: · /muzik radyo\n**Kontroller:** duraklat, devam, atla, oyla, durdur, ses, tekrar\n**Kuyruk:** kuyruk, karistir, temizle, cikar, tasi\n**Diğer:** simdi, ileri, /ses durum, /ses ayril\nMP3, OGG, WAV, FLAC, M4A, AAC ve doğrudan HTTPS ses akışları desteklenir. YouTube/Spotify sayfa bağlantıları yerine ses dosyası yükle veya radyo seç. Bot boş kanaldan otomatik ayrılır. Ortak kontroller DJ rolü / Sunucuyu Yönet izni ister; herkes kendi parçasını atlayabilir ve oylayabilir.';
    else if(['durum','simdi','kuyruk'].includes(sub)){const s=this.snapshot();text=sub==='kuyruk'?(s.queue.length?s.queue.slice(0,20).map((t:any,n:number)=>`${n+1}. **${displayText(t.title,100)}** · <@${t.requesterId}>`).join('\n')+(s.queue.length>20?'\n… '+s.queue.length+' parça':''):'Kuyruk boş.'):`${s.connected?'🔊 Bağlı: <#'+s.channelId+'>':'Ses bağlantısı yok.'}\n${s.current?'🎵 **'+displayText(s.current.title,120)+'** · <@'+s.current.requesterId+'>\n'+s.seconds+' sn · '+(s.state==='paused'?'Duraklatıldı':'Çalıyor'):'Çalan parça yok.'}\n🔉 %${s.volume} · 🔁 ${{OFF:'Kapalı',TRACK:'Parça',QUEUE:'Kuyruk'}[s.repeat]} · ${s.listeners} dinleyici`+(s.lastError?'\n'+s.lastError:'');}

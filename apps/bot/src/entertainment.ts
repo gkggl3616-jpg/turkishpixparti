@@ -65,7 +65,7 @@ export async function handleEntertainmentInteraction(interaction:Interaction,set
   }
   if(!slash)return false;
   const name=interaction.commandName,isGame=entertainmentCommands.find(x=>x.name===name)?.category==='oyun';
-  await interaction.deferReply({...(name==='hafiza'||name==='refleks'?{flags:MessageFlags.Ephemeral}:{})});checkEntertainment(settings,name,channelId);
+  await interaction.deferReply({});checkEntertainment(settings,name,channelId);
   if(interaction.appPermissions&&!interaction.appPermissions.has(PermissionFlagsBits.EmbedLinks))throw new DomainError('EMBED_PERMISSION','Bu kanalda botun “Bağlantıları Yerleştir” iznini açın.');
   await entertainmentRate(actor,name,settings);
   if(isGame||name==='anket'){

@@ -9,7 +9,7 @@ export async function handleSupportInteraction(i:any,settings:CommunitySettings)
    if(!row?.settings.enabled||row.panel_channel_id!==i.channelId||row.panel_message_id!==i.message.id)throw new DomainError('TICKET_PANEL','Bu bilet paneli artık etkin değil.');
    await i.reply({embeds:[brightEmbed('🎫 Bilet kategorini seç','Ayrıntıları açılan özel kanala yazabilirsin.')],components:ticketTopicButtons().map(row=>({...row,components:row.components.map(b=>({...b,custom_id:b.custom_id.replace('ticket:open:','ticket:choose:')+':'+actor.id}))})),flags:MessageFlags.Ephemeral,allowedMentions:{parse:[]}});return true;
   }
-  await i.deferReply({flags:MessageFlags.Ephemeral});await featureRate(actor);
+  await i.deferReply(slash&&['cekilis','cekilisler'].includes(i.commandName)?{}:{flags:MessageFlags.Ephemeral});await featureRate(actor);
   let message='';
   if(modal)throw new DomainError('TICKET_TOPIC','Bilet panelindeki kategori düğmelerinden birini seç. Konu yazmana gerek yok.');
   else if(button&&/^ticket:(open|choose):/.test(i.customId)){

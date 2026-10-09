@@ -1,4 +1,3 @@
-import {MessageFlags} from 'discord.js';
 import {config,brightEmbed,theme,featureCommands,featureCategories,entertainmentCommands,entertainmentCategories} from '@turkishpix/core';
 import {commands} from '../../../packages/core/src/commands';
 
@@ -49,7 +48,7 @@ export function commandHelpView(category='home',page=0){
  ],allowedMentions:{parse:[]}};
 }
 export async function handleHelpInteraction(i:any){
- if(i.isChatInputCommand()&&i.commandName==='yardim'){await i.reply({...commandHelpView(),flags:MessageFlags.Ephemeral});return true;}
+ if(i.isChatInputCommand()&&i.commandName==='yardim'){await i.reply(commandHelpView());return true;}
  if(i.isStringSelectMenu()&&['help:category','funhelp:category'].includes(i.customId)){
   const value=i.values[0],category=i.customId==='funhelp:category'&&['eglence','oyun','topluluk'].includes(value)?'fun-'+value:value;
   await i.update(commandHelpView(category));return true;
