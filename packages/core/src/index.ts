@@ -34,3 +34,6 @@ export * from './music-service';
 export * from './tickets';
 export * from './ticket-policy';
 export * from './giveaways';
+export * from './expansion-policy';
+export * from './expansion';
+export * from './youtube';

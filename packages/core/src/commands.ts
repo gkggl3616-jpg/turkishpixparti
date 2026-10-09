@@ -1,4 +1,5 @@
 import {brightEmbed,theme} from './presentation';
+import {expansionCommand} from './expansion-policy';
 import {supportCommands} from './support-commands';
 import {featureCommands} from './features-catalog';
 import {musicCommands} from './music-policy';
@@ -19,7 +20,8 @@ export const commands=[
  {name:'sesdmac',description:'Ses kanalı giriş ve çıkış DM bildirimlerini aç.'},
  {name:'sesdmkapat',description:'Ses kanalı giriş ve çıkış DM bildirimlerini kapat.'},
  {name:'botpanel',description:'Bot yönetim merkezini aç.'},
- {name:'yardim',description:'99 komutun kategorilerini ve kullanımını öğren.'},
+ {name:'yardim',description:'100 komutun kategorilerini ve tüm alt komutları keşfet.'},
+ expansionCommand,
  ...musicCommands,
  ...supportCommands,
  ...featureCommands.map(({category,...command})=>command),

@@ -5,6 +5,7 @@ const supportNames=['bilet','destek','destekler','destekkapat','cekilis','cekili
 const aiNames=['sor','yapayzekaaktif','yapayzekakapat'];
 const preferenceNames=['duyurukatıl','duyuruayril','sesdmac','sesdmkapat','botpanel','yardim'];
 export const helpCategories=[
+ {id:'gelismis',name:'✦ Gelişmiş topluluk',description:'Özel odalar, kayıt, otomasyon ve etkinlikler',path:'/topluluk',color:theme.purple},
  {id:'bilet',name:'🎫 Bilet & çekiliş',description:'Özel destek kanalları ve ödüller',path:'/biletler',color:theme.cyan},
  {id:'muzik',name:'🎵 Müzik & ses',description:'Sese katıl, radyo aç ve kuyruğu yönet',path:'/muzik',color:theme.purple},
  {id:'ai',name:'✦ Yapay zekâ',description:'Soru sor ve bağlantını yönet',path:'/yapay-zeka',color:theme.purple},
@@ -14,6 +15,7 @@ export const helpCategories=[
  {id:'tercihler',name:'⚙️ Bot & bildirimler',description:'Panel, yardım ve kişisel bildirimler',path:'/',color:theme.cyan}
 ];
 export function commandCategory(name:string){
+ if(name==='topluluk')return 'gelismis';
  if(supportNames.includes(name))return 'bilet';
  if(['muzik','ses'].includes(name))return 'muzik';
  if(aiNames.includes(name))return 'ai';
@@ -28,8 +30,8 @@ const examples:Record<string,string>={
  'xox':'/xox zorluk: zor','bilet kur':'/bilet kur kanal: #bilet-ac kategori: Biletler yetkili: @Destek'
 };
 export function helpEntries(category:string){return commands.filter(c=>commandCategory(c.name)===category).flatMap((c:any)=>{
- const subs=(c.options||[]).filter((o:any)=>o.type===1);
- const entries=subs.length?subs.map((s:any)=>({key:c.name+' '+s.name,description:s.description,options:s.options||[],restricted:c.default_member_permissions})): [{key:c.name,description:c.description,options:c.options||[],restricted:c.default_member_permissions}];
+ const subs=(c.options||[]).filter((o:any)=>o.type===1||o.type===2);
+ const entries=subs.length?subs.flatMap((s:any)=>s.type===2?s.options.map((child:any)=>({key:c.name+' '+s.name+' '+child.name,description:child.description,options:child.options||[],restricted:c.default_member_permissions})): [{key:c.name+' '+s.name,description:s.description,options:s.options||[],restricted:c.default_member_permissions}]): [{key:c.name,description:c.description,options:c.options||[],restricted:c.default_member_permissions}];
  return entries.map((entry:any)=>({...entry,usage:'/'+entry.key+entry.options.map((o:any)=>o.required?' <'+o.name+'>':' ['+o.name+']').join('')}));
 });}
 export function commandHelpView(category='home',page=0){

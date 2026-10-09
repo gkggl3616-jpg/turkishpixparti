@@ -33,7 +33,7 @@ export const featureCommands=[
  cmd('cekilis','Ücretsiz katılımlı, düğmeli bir çekiliş başlat.','topluluk',[text('odul','Ödül açıklaması; teslim organizatöre aittir',true,200),num('dakika','Çekiliş süresi (5 dakika–7 gün)',5,10080),channel,num('kazanan','Seçilecek kazanan sayısı',1,10,false)],'32'),
  cmd('cekilissonuc','Çekiliş sonucunu gör; organizatör erken sonuçlandırabilir.','topluluk',[id]),
  cmd('cekiliskapat','Kendi çekilişini sonuçlandırmadan iptal et.','topluluk',[id]),
- cmd('etkinlik','Düğmeyle katılımlı bir sunucu etkinliği planla.','topluluk',[text('baslik','Etkinlik adı',true,100),num('dakika','Kaç dakika sonra başlayacak?',5,43200),text('aciklama','Etkinliğin açıklaması',false,600)],'32'),
+ cmd('etkinlik','Düğmeyle katılımlı bir sunucu etkinliği planla.','topluluk',[text('baslik','Etkinlik adı',true,100),num('dakika','Kaç dakika sonra başlayacak?',5,43200),text('aciklama','Etkinliğin açıklaması',false,600),num('kontenjan','0: sınırsız; dolunca bekleme listesi açılır',0,500,false),{...text('tekrar','Etkinlik tekrar sıklığı',false),choices:[{name:'Tek sefer',value:'OFF'},{name:'Her gün',value:'DAILY'},{name:'Her hafta',value:'WEEKLY'}]},text('hatirlatmalar','Başlamadan önce dakika listesi: 15,60 (en fazla 5)',false,40),{type:8,name:'katilim-rolu',description:'Katılabilecek üyelerin rolü; boşsa herkes',required:false}],'32'),
  cmd('etkinlikler','Yaklaşan etkinlikleri ve katılım sayılarını gör.','topluluk'),
  cmd('etkinlikkapat','Organizatör olarak etkinliği iptal et.','topluluk',[id]),
  cmd('oner','Sunucu için oylanabilir bir öneri gönder.','topluluk',[text('metin','Önerin',true,600)]),

@@ -1,0 +1,10 @@
+'use client';
+import {useEffect,useState} from 'react';
+let directoryRequest:Promise<any>|undefined,lastRequest=0;
+function directory(){if(!directoryRequest||Date.now()-lastRequest>60000){lastRequest=Date.now();directoryRequest=fetch('/api/community/directory',{cache:'no-store'}).then(async r=>{const body=await r.json();if(!r.ok)throw Error(body.error||'Rol listesi alınamadı.');return body;}).catch(e=>{directoryRequest=undefined;throw e;});}return directoryRequest;}
+export default function RolePicker({label,value,onChange,multiple=false,assignable=true}:{label:string;value:string|string[];onChange:(value:any)=>void;multiple?:boolean;assignable?:boolean}){
+ const [roles,setRoles]=useState<any[]>([]),[error,setError]=useState('');
+ useEffect(()=>{let active=true;void directory().then(data=>{if(active)setRoles(data.roles||[]);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[]);
+ const selected=Array.isArray(value)?value:[],available=roles.filter(r=>!assignable||r.manageable);
+ return <div className="form-field channel-picker"><span>{label}</span>{multiple?<details><summary>{selected.length?selected.length+' rol seçildi':'Rol seçilmedi'}</summary><div className="channel-options">{available.map(r=><label key={r.id}><input type="checkbox" checked={selected.includes(r.id)} onChange={e=>onChange(e.target.checked?[...selected,r.id]:selected.filter(id=>id!==r.id))}/><span>@{r.name}</span></label>)}</div><button className="text-link" type="button" onClick={()=>onChange([])}>Seçimi temizle</button></details>:<select value={String(value)} aria-label={label} onChange={e=>onChange(e.target.value)}><option value="">Rol seçilmedi</option>{value&&!available.some(r=>r.id===value)&&<option value={String(value)}>Kayıtlı rol · kontrol ediliyor</option>}{available.map(r=><option key={r.id} value={r.id}>@{r.name}</option>)}</select>}{error&&<small role="alert">{error}</small>}{assignable&&<small>Botun altındaki, yönetim yetkisi içermeyen roller listelenir.</small>}</div>;
+}

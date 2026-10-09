@@ -10,7 +10,7 @@ import {helpCategories,helpEntries,commandCategory,commandHelpView} from '../app
 process.env.DATABASE_URL='postgresql://test.invalid/test';process.env.APP_URL='https://turkishpix.example';process.env.DISCORD_GUILD_ID='888888888888888888';process.env.DEMO_MODE='false';process.env.DISCORD_OWNER_IDS='111111111111111111,222222222222222222,333333333333333333,444444444444444444';
 const actor={id:'555555555555555555',username:'Player@everyone'},friend={id:'666666666666666666',username:'Friend'},owner={id:'111111111111111111',username:'Owner'},channel='999999999999999999',otherChannel='777777777777777777';
 const settings=defaultCommunitySettings().entertainment;let pg:PGlite;
-before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql:string,params:any[]=[])=>{const r=await pg.query(sql,params);return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation','009_community_features','010_music_application_security','011_tickets_giveaways'])await pg.exec(await readFile(new URL('../packages/core/sql/'+name+'.sql',import.meta.url),'utf8'));});
+before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql:string,params:any[]=[])=>{const r=await pg.query(sql,params);return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of ['001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation','009_community_features','010_music_application_security','011_tickets_giveaways','012_community_expansion'])await pg.exec(await readFile(new URL('../packages/core/sql/'+name+'.sql',import.meta.url),'utf8'));});
 beforeEach(async()=>{await pg.exec('DELETE FROM entertainment_sessions; DELETE FROM entertainment_scores; DELETE FROM rate_limits;');});
 after(async()=>{await pg.close();});
 function fakeInteraction(name:string,extra:any={}){
@@ -20,8 +20,8 @@ function fakeInteraction(name:string,extra:any={}){
 }
 function component(session:any,action:string,extra:any={}){return fakeInteraction('',{isChatInputCommand:()=>false,isButton:()=>true,isFromMessage:()=>true,customId:`fun:${session.id}:${session.state.revision}:${action}`,deferUpdate:async function(this:any){this.deferred=true;},showModal:async function(this:any,modal:any){this.modal=modal.toJSON();this.replied=true;},...extra});}
 function validateMessage(message:any){assert.ok(message.embeds.length>0);let total=0;for(const e of message.embeds){assert.ok(e.title.length<=256);assert.ok(e.description.length<=4096);total+=e.title.length+e.description.length;for(const f of e.fields||[]){assert.ok(f.name.length<=256);assert.ok(f.value.length<=1024);total+=f.name.length+f.value.length;}}assert.ok(total<=6000);for(const row of message.components||[]){assert.ok(row.components.length<=5);for(const c of row.components){if(c.custom_id)assert.ok(c.custom_id.length<=100);if(c.label)assert.ok(c.label.length<=80);}}assert.deepEqual(message.allowedMentions,{parse:[]});}
-test('30 eğlence ve 99 toplam komut; Discord ad, seçenek ve zorunlu parametre kuralları sağlanır',()=>{
- assert.equal(entertainmentCommands.length,30);assert.equal(commands.length,99);assert.equal(new Set(commands.map(c=>c.name)).size,99);
+test('30 eğlence ve 100 toplam komut; Discord ad, seçenek ve zorunlu parametre kuralları sağlanır',()=>{
+ assert.equal(entertainmentCommands.length,30);assert.equal(commands.length,100);assert.equal(new Set(commands.map(c=>c.name)).size,100);
  for(const c of commands){assert.ok(c.name.length<=32);assert.ok(c.description.length<=100);assert.ok(/^[\p{Ll}\p{N}_-]+$/u.test(c.name));let optional=false;for(const o of 'options' in c?c.options||[]:[]){assert.ok(o.name.length<=32);if(!o.required)optional=true;else assert.equal(optional,false,'Zorunlu seçenek önce gelmeli: '+c.name);}}
 });
 test('30 komutun gerçek bot yönlendirmesi çalışır; embed ve bileşenler Discord sınırlarına uyar',async()=>{
@@ -85,7 +85,7 @@ test('Gerçek düğme ve modal yönlendirmesi oyunu günceller; başkasına öze
 test('Yardım kategorileri sistem ve eğlence komutlarını kapsar; mevcut siyasi düğmeler eğlence yönlendirmesine girmez',async()=>{
  const help=fakeInteraction('yardim');await handleEntertainmentInteraction(help.interaction,settings);validateMessage(help.calls[0].payload);assert.equal(help.calls[0].payload.flags,undefined);const menu=fakeInteraction('',{isChatInputCommand:()=>false,isStringSelectMenu:()=>true,customId:'funhelp:category',values:['sistem'],update:async(payload:any)=>validateMessage(payload)});assert.equal(await handleEntertainmentInteraction(menu.interaction,settings),true);const other=fakeInteraction('',{isChatInputCommand:()=>false,isButton:()=>true,customId:'vote:test:yes'});assert.equal(await handleEntertainmentInteraction(other.interaction,settings),false);
 });
-test('Rehber 99 komutun tümünü kapsar; alt komutlar, sayfalama ve seçilen panel bağlantıları çalışır',async()=>{
+test('Rehber 100 komutun tümünü kapsar; alt komutlar, sayfalama ve seçilen panel bağlantıları çalışır',async()=>{
  const covered=new Set<string>();
  for(const category of helpCategories){const entries=helpEntries(category.id);assert.ok(entries.length,category.id);for(const entry of entries)covered.add(entry.key.split(' ')[0]);for(let page=0;page<Math.ceil(entries.length/5);page++)validateMessage(commandHelpView(category.id,page));}
  assert.deepEqual([...covered].sort(),commands.map(c=>c.name).sort());assert.equal(commandCategory('destek'),'bilet');assert.equal(commandCategory('sor'),'ai');

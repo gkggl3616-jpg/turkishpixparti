@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import BotShell from '../../components/BotShell';
+import YouTubePlayer from '../../components/YouTubePlayer';
+export const metadata={title:'YouTube · TurkishPix'};
+export default async function Page({searchParams}:{searchParams:Promise<{v?:string}>}){const {v}=await searchParams;return <BotShell active="muzik"><main className="bot-main"><div className="module-heading"><div><span className="eyebrow">YOUTUBE</span><h1>Bir video, ortak bir sohbet.</h1><p>Videoyu aşağıdaki YouTube oynatıcısından başlat.</p></div></div><section className="surface community-card">{v&&/^[A-Za-z0-9_-]{11}$/.test(v)?<><YouTubePlayer videoId={v}/><p>Discord’da aynı anda izleyip dinlemek için ses kanalına katıl ve <code>/muzik birlikte</code> yaz.</p><a className="button ghost" href={'https://www.youtube.com/watch?v='+v} target="_blank" rel="noreferrer">YouTube’da aç ↗</a></>:<p>Discord’da <code>/muzik video baglanti:</code> veya <code>/muzik youtube ara:</code> kullanarak bir video seç.</p>}<Link className="text-link" href="/">TurkishPix’e dön</Link></section></main></BotShell>;}

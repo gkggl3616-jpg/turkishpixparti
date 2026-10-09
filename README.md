@@ -1,6 +1,19 @@
-# TurkishPix Bot Merkezi v2.0.0
+# TurkishPix Bot Merkezi v2.8.0
 
 Discord bot + Next.js web panel + PostgreSQL. Uygulama kimliği ve public key, kullanıcı tarafından verilen ekran görüntülerinden alındı. Gizli anahtarlar kaynak kodda veya bu pakette bulunmaz.
+
+## v2.8: YouTube ve gelişmiş topluluk araçları
+
+- 100 kök slash komutu, `/topluluk` altında 37 yeni kullanım. `/yardim` alt komutları da listeler ve genel yanıtlar herkese görünür.
+- YouTube: `/muzik youtube`, `/muzik video`, `/muzik birlikte`, favoriler ve paylaşılan video geçmişi. Data API araması Müzik panelinde doğrulanıp AES-GCM ile saklanan anahtarla veya `YOUTUBE_API_KEY` ile çalışır. Doğrudan video oynatıcısı ve Discord Watch Together anahtar gerektirmez. Data API, Discord ses akışı sağlamaz; YouTube videoları görünür gömülü oynatıcıyla açılır. Mevcut dosya/radyo motoru sürer.
+- Özel ses odaları: oluşturma, kilit, ad, kapasite, davet, çıkarma, sahiplik devri, boş oda temizliği. Oda kayıtları yeniden başlatmada korunur; kategori izinleri devralınır.
+- Üye kaydı, otomatik üye rolleri, süreli roller, AFK, gönüllü gün/ay doğum günü takvimi, veda mesajları, özel `!komut` cevapları ve ileri zamana kanal duyuruları. Roller ve kanallar panelde adlarıyla seçilir. Kayıt ve otomatik rol için owner rol seçmeli; yönetim yetkili roller otomatik verilemez.
+- Etkinliklerde katılım/belki/ret, kontenjan, FIFO bekleme listesi, 5 hatırlatma, günlük/haftalık tekrar, rol şartı, düzenleme ve `.ics` takvim çıktısı. Yeni tekrar yeni katılım listesiyle başlar.
+- Ses XP’si en az iki aktif üye gerektirir; sessize alınanlar ve AFK kanalı sayılmaz. Sohbetle aynı günlük sınırı paylaşır; seviyeye bağlı güvenli rol ödülleri vardır.
+- Migration `012_community_expansion` iki serviste ortak migration runner ile uygulanır. Yeni ayarlar eski sunucu ayarlarına varsayılanlarla eklenir.
+- Bot izinleri: özel odalar için Kanalları Yönet; kayıt için Rolleri/Takma Adları Yönet; Watch Together daveti için Davet Oluştur; moderasyon işlemleri için karşılık gelen Discord izni.
+
+Apollo’nun etkinlik, ErensiBOT’un ses XP/rol ödülü ve Marpel’in kayıt/özel oda/özel komut sistemleri karşılaştırma için incelendi. Bu sürüm bu alanlardaki eksikleri tamamlar; üçüncü taraf premium ürünlerin tümünü klonladığı iddia edilmez.
 
 ## Durum
 
