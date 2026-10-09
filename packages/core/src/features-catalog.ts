@@ -1,3 +1,4 @@
+import {ticketTopicOption} from './ticket-policy';
 // Pure catalog shared with the owner panel and Discord registration.
 const text=(name:string,description:string,required=true,max_length=300)=>({name,description,type:3,required,max_length});
 const num=(name:string,description:string,min_value:number,max_value:number,required=true)=>({name,description,type:4,required,min_value,max_value});
@@ -38,7 +39,7 @@ export const featureCommands=[
  cmd('oner','Sunucu için oylanabilir bir öneri gönder.','topluluk',[text('metin','Önerin',true,600)]),
  cmd('oneriler','Son topluluk önerilerini ve durumlarını görüntüle.','topluluk'),
  cmd('oneridurum','Bir öneriyi kabul et veya reddet.','topluluk',[id,{...text('durum','Yetkili kararı'),choices:[{name:'Kabul',value:'APPROVED'},{name:'Ret',value:'REJECTED'}]}],'32'),
- cmd('destek','Sana ve yetkililere özel bir destek kanalı aç.','topluluk',[text('konu','Talebin başlığı',true,100),text('mesaj','Talebin ayrıntıları',true,1000)]),
+ cmd('destek','Sana ve yetkililere özel bir destek kanalı aç.','topluluk',[ticketTopicOption()]),
  cmd('destekler','Kendi taleplerini; yetkiliysen tüm talepleri gör.','topluluk'),
  cmd('destekkapat','Kendi destek talebini veya yetkili olarak bir talebi kapat.','topluluk',[id]),
  cmd('uyar','Bir üyeye gerekçeli, kayıtlı yetkili uyarısı ekle.','yonetim',[user(true),text('sebep','Uyarı gerekçesi',true,500)],'1099511627776'),

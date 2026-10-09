@@ -12,6 +12,7 @@ export * from './setup';
 export * from './application';
 export * from './community';
 export * from './assistant';
+export * from './ai-policy';
 export * from './entertainment';
 export * from './entertainment-catalog';
 export * from './entertainment-games';
@@ -31,4 +32,5 @@ export * from './music-policy';
 export * from './music-service';
 
 export * from './tickets';
+export * from './ticket-policy';
 export * from './giveaways';

@@ -17,7 +17,7 @@ Ana sayfa modül seçim ekranıdır. Ayrı paneller: `/secim`, `/guvenlik`, `/ka
 - Güvenlik: spam, etiket, Discord daveti ve izinli alan adı filtreleri; isteğe bağlı susturma; genç hesap ve yoğun giriş uyarıları. Owner, sunucu sahibi, yönetici ve belirlenen muaf roller/kanallar korunur. Varsayılan koruma kapalıdır, panelden etkinleştirilir.
 - Karşılama: yeni üyeye tek mesaj, seçilen kanalda yalnızca o üyeye etiket; `{user}`, `{username}`, `{server}`, `{count}` alanları. `sa`, `selamünaleyküm`, `merhaba`, `selam` mesajlarına rastgele cevap ve kullanıcı başına dakika sınırı.
 - Duyurular: kanal mesajı veya `/duyurukatıl` ile katılan DM aboneleri; `/duyuruayril`, önizleme ve gönderim onayı, 10 dakika kampanya aralığı, iptal ve teslim durumları. Üye listesinden izinsiz toplu DM gönderimi yoktur.
-- Yapay zekâ: `/yapayzekaaktif`, `/yapayzekakapat`, `/sor`, botu etiketleme ve bot mesajını yanıtlama. Aritmetik kod değerlendirmeden yerelde çalışır. Genel sorular için Groq veya OpenAI API anahtarı web panelinden AES-GCM ile şifrelenerek kaydedilir veya iki servisin `OPENAI_API_KEY` değişkenine eklenir. Model `OPENAI_MODEL`; varsayılan `gpt-4.1-mini`. API çağrıları kullanıcı/dakika ve sunucu/gün limitleriyle sınırlanır.
+- Yapay zekâ: `/yapayzekaaktif`, `/yapayzekakapat`, `/sor`, botu etiketleme ve bot mesajını yanıtlama. Aritmetik kod değerlendirmeden yerelde çalışır. Genel sorular için Gemini, Groq veya OpenAI API anahtarı web panelinden AES-GCM ile şifrelenerek kaydedilir veya iki servisin `OPENAI_API_KEY` değişkenine eklenir. Model `OPENAI_MODEL`; varsayılan `gpt-4.1-mini`. API çağrıları kullanıcı/dakika ve sunucu/gün limitleriyle sınırlanır.
 
 Üye olayları için **Server Members Intent**, genel sohbet için **Message Content Intent** gerekir. Bot uygulamasında bu izinler doğrulandı. Güvenlik için Manage Messages ve isteğe bağlı Moderate Members, karşılama/duyuru için View Channel ve Send Messages gerekir. Bot bu izinleri web panelinde raporlar.
 
@@ -205,3 +205,18 @@ Hesaba kurulan uygulamaların yanıtları `interactionMetadata.user` üzerinden 
 `/bilet kur` ile metin kanalı, kategori ve en fazla üç yetkili rolü Discord seçicisinden seçilir. `/bilet ac`, `/bilet kapat` ve `/bilet liste` özel destek kanallarını yönetir; `/destek` ve `/destekkapat` aynı akışı kullanır. Web panelindeki `/biletler` ekranı kanal ve kategori adları ile beş yetkili rolü seçer. Bilet panelindeki form özel kanal açar ve seçilen rolleri etiketler. Talep sahibi ve yetkililer kapatabilir; kapanan bilet görüşmeleri saklanır. Botun Kanalları Yönet, Rolleri Yönet ve metin/mesaj geçmişi izinleri gerekir; etiketlenecek roller etiketlenebilir olmalı veya bot Herkesten Bahset iznine sahip olmalıdır.
 
 `/cekilis` ödül, dakika, isteğe bağlı kanal ve 1–10 kazanan ile katılım düğmesi gönderir. `/cekilisler` ve web `/cekilisler` ekranı listeleme, erken bitirme, iptal ve yeniden seçim sunar. Kazananlar kriptografik rastgele örnekleme ile benzersiz seçilir. Yeniden seçim önceki kazananları dışlar. İşlem makbuzları, kayıt kilitleri, kanal konu işaretleri ve mesaj nonce değerleri tekrar teslimde aynı kaydı/kanalı bulur. Bot kapalıyken süresi dolan çekiliş açılışta sonuçlanır. Migration `011_tickets_giveaways` önce çalıştırılmalıdır.
+
+
+## v2.7 — Kategori biletleri ve yeni komut rehberi
+
+Bilet panelinde **Ödül Talebi**, **Destek**, **Şikâyet**, **Başvuru** ve **Diğer** düğmeleri bulunur. Konu veya açıklama formu yoktur. `/bilet ac tur:` ve `/destek tur:` aynı beş seçeneği sunar. Kanal adı seçilen konu ve Discord kullanıcı adından oluşur: `odul-talebi-frizz2025`, `destek-musty`. Türkçe ve dekoratif harfler okunabilir kanal adına çevrilir. Ayrıntılar özel kanala yazılır; yalnızca seçilen yetkili rolleri ve talep sahibi etiketlenir. Önceden açılmış UUID adlı özel bilet kanalları ve tek düğmeli panel, botun eşitleme turunda otomatik yenilenir; ikinci bir kanal veya panel açılmaz.
+
+`/yardim` tüm 99 kök komutu 13 kategoride gösterir. Alt komut kullanımları beşerli sayfalara ayrılır; gerekli/isteğe bağlı alanlar, örnekler ve ilgili panel bağlantısı görünür. `/ozellikler` aynı rehberin topluluk kategorilerini açar. Komut kartları ortak canlı renkler ve dekoratif TurkishPix başlığı kullanır. Yapay zekâ, `/sor`, etiket ve mesaj yanıtlarında düz konuşma mesajı gönderir; kart, çerçeve veya robot başlığı eklemez.
+
+### Google Gemini ücretsiz API kurulumu
+
+1. https://aistudio.google.com/apikey adresinde Google hesabınla API anahtarı oluştur.
+2. `/yapay-zeka` panelinde **Google Gemini** seç. Varsayılan model `gemini-3.8-flash`.
+3. Anahtarı panelde girip **Bağla ve yapay zekâyı aç** düğmesini kullan; deneme alanında bir soru sor.
+
+Gemini bağlantısı resmi Interactions API üzerinden çalışır. Anahtar AES-256-GCM ile şifrelenir; sohbet geçmişi sağlayıcının sunucusunda saklanması için `store:false` gönderilir. Gemini ücretsiz katmanının hesap kotası ve veri kullanım koşulları geçerlidir; ücretsiz içerikler ürün geliştirmede kullanılabilir. Kota dolunca anlaşılır hata gösterilir; sağlayıcı kendiliğinden değiştirilmez. https://ai.google.dev/gemini-api/docs/pricing . Ortam değişkeni tercih edilirse `GEMINI_API_KEY` ve `GEMINI_MODEL` kullanılabilir; panel bağlantısı önceliklidir. Groq ve OpenAI bağlantıları kullanılmaya devam eder.

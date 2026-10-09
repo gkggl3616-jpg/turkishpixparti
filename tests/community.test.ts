@@ -44,6 +44,15 @@ test('Yapay zekâ yerel matematiği kullanır; dış API yanıtı ve anahtar giz
  const previous=globalThis.fetch;try{globalThis.fetch=async(input:any,init:any)=>{assert.equal(String(input),'https://api.openai.com/v1/responses');const body=JSON.parse(init.body);assert.equal(body.store,false);assert.ok(!JSON.stringify(body).includes('sk-test-private'));return Response.json({output:[{content:[{type:'output_text',text:'Merhaba TurkishPix.'}]}]});};assert.equal((await assistantAnswer(owner.id,'Topluluk nedir?',s)).text,'Merhaba TurkishPix.');}finally{globalThis.fetch=previous;}
  s.enabled=false;await assert.rejects(assistantAnswer(owner.id,'2+2',s),/kapalı/);
 });
+test('Gemini şifreli bağlanır; doğal yanıt ve konuşma bağlamı düşünce metni olmadan döner',async()=>{
+ const key='gemini-test-only-abcdefghijklmnopqrstuvwxyz';await saveAIProvider(owner,{provider:'GEMINI',apiKey:key,activate:true});const status=await aiProviderStatus();assert.equal(status.provider,'GEMINI');assert.equal(status.model,'gemini-3.8-flash');assert.equal((await communitySettings()).ai.enabled,true);
+ assert.ok(!JSON.stringify((await pg.query('SELECT provider FROM community_secrets')).rows).includes(key));
+ await pg.exec('DELETE FROM rate_limits;');const previous=globalThis.fetch;try{globalThis.fetch=async(input:any,init:any)=>{
+  assert.equal(String(input),'https://generativelanguage.googleapis.com/v1beta/interactions');assert.equal(init.headers['x-goog-api-key'],key);assert.equal(init.headers.Authorization,undefined);const body=JSON.parse(init.body);assert.equal(body.store,false);assert.match(body.system_instruction,/Doğal bir sohbet/);assert.match(body.input,/Önceki yanıt/);assert.ok(!JSON.stringify(body).includes(key));
+  return Response.json({steps:[{type:'thought',content:[{type:'text',text:'Gizli düşünce'}]},{type:'model_output',content:[{type:'text',text:'Tabii, birlikte bakalım.'},{type:'thought',text:'Gösterilmemeli'}]}]});
+ };const answer=await assistantAnswer(owner.id,'Daha ayrıntılı anlatır mısın?',(await communitySettings()).ai,'Birlikte bir etkinlik planlayabiliriz.');assert.equal(answer.text,'Tabii, birlikte bakalım.');assert.equal(answer.source,'gemini');}finally{globalThis.fetch=previous;}
+ const panel=await communityOverview(owner);assert.ok(!JSON.stringify(panel).includes(key));assert.equal(panel.ai.provider,'GEMINI');
+});
 
 test('Duyuru modülünü kapatmak kuyruktaki DM’leri gönderilmeden iptal eder',async()=>{
  await pg.query("UPDATE announcement_campaigns SET created_at=now()-interval '20 minutes'");

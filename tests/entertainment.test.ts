@@ -6,6 +6,7 @@ import {Collection,MessageFlags} from 'discord.js';
 import {setTestDatabase,config,defaultCommunitySettings,communitySettingsSchema,entertainmentCommands,entertainmentNames,checkEntertainment,entertainmentRate,startEntertainment,playEntertainment,pollEntertainment,entertainmentProfile,entertainmentLeaderboard,getEntertainmentSession,expireEntertainmentSessions,attachEntertainmentMessage,createGame,advanceGame,botMove,boardWinner,shuffle,listItems,safeText,dailyValue} from '../packages/core/src/index';
 import {commands} from '../packages/core/src/commands';
 import {handleEntertainmentInteraction,entertainmentView} from '../apps/bot/src/entertainment';
+import {helpCategories,helpEntries,commandCategory,commandHelpView} from '../apps/bot/src/help';
 process.env.DATABASE_URL='postgresql://test.invalid/test';process.env.APP_URL='https://turkishpix.example';process.env.DISCORD_GUILD_ID='888888888888888888';process.env.DEMO_MODE='false';process.env.DISCORD_OWNER_IDS='111111111111111111,222222222222222222,333333333333333333,444444444444444444';
 const actor={id:'555555555555555555',username:'Player@everyone'},friend={id:'666666666666666666',username:'Friend'},owner={id:'111111111111111111',username:'Owner'},channel='999999999999999999',otherChannel='777777777777777777';
 const settings=defaultCommunitySettings().entertainment;let pg:PGlite;
@@ -83,6 +84,14 @@ test('Gerçek düğme ve modal yönlendirmesi oyunu günceller; başkasına öze
 });
 test('Yardım kategorileri sistem ve eğlence komutlarını kapsar; mevcut siyasi düğmeler eğlence yönlendirmesine girmez',async()=>{
  const help=fakeInteraction('yardim');await handleEntertainmentInteraction(help.interaction,settings);validateMessage(help.calls[0].payload);const menu=fakeInteraction('',{isChatInputCommand:()=>false,isStringSelectMenu:()=>true,customId:'funhelp:category',values:['sistem'],update:async(payload:any)=>validateMessage(payload)});assert.equal(await handleEntertainmentInteraction(menu.interaction,settings),true);const other=fakeInteraction('',{isChatInputCommand:()=>false,isButton:()=>true,customId:'vote:test:yes'});assert.equal(await handleEntertainmentInteraction(other.interaction,settings),false);
+});
+test('Rehber 99 komutun tümünü kapsar; alt komutlar, sayfalama ve seçilen panel bağlantıları çalışır',async()=>{
+ const covered=new Set<string>();
+ for(const category of helpCategories){const entries=helpEntries(category.id);assert.ok(entries.length,category.id);for(const entry of entries)covered.add(entry.key.split(' ')[0]);for(let page=0;page<Math.ceil(entries.length/5);page++)validateMessage(commandHelpView(category.id,page));}
+ assert.deepEqual([...covered].sort(),commands.map(c=>c.name).sort());assert.equal(commandCategory('destek'),'bilet');assert.equal(commandCategory('sor'),'ai');
+ const ticket=commandHelpView('bilet');assert.ok(JSON.stringify(ticket.embeds).includes('/bilet ac'));assert.ok(JSON.stringify(ticket.embeds).includes('Ödül Talebi'));const ticketLink=ticket.components[1].components[2];assert.ok('url' in ticketLink);assert.equal(ticketLink.url,config().appUrl+'/biletler');
+ const second=fakeInteraction('',{isChatInputCommand:()=>false,isButton:()=>true,customId:'help:page:muzik:1',update:async(payload:any)=>{validateMessage(payload);assert.match(payload.embeds[0].description,/Sayfa \*\*2/);}});assert.equal(await handleEntertainmentInteraction(second.interaction,settings),true);
+ const category=fakeInteraction('',{isChatInputCommand:()=>false,isStringSelectMenu:()=>true,customId:'help:category',values:['bilet'],update:async(payload:any)=>assert.equal(payload.components[1].components[2].url,config().appUrl+'/biletler')});assert.equal(await handleEntertainmentInteraction(category.interaction,settings),true);
 });
 test('Oyun iptali bir oturumu kapatır ve yeni oyun için yer açar; puan verilmez',async()=>{
  const first=await startEntertainment(actor,channel,createGame('xox'));await startEntertainment(actor,channel,createGame('bilgi'));await startEntertainment(actor,channel,createGame('kelime-tahmin'));const ended=await playEntertainment(first.id,actor,channel,0,'cancel','',settings);assert.equal(ended.status,'FINISHED');assert.equal(ended.state.awarded,0);assert.equal((await entertainmentProfile(actor.id)).points,0);await startEntertainment(actor,channel,createGame('bilmece'));

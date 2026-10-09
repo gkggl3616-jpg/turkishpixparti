@@ -1,3 +1,4 @@
+import {brightEmbed,theme} from './presentation';
 import {supportCommands} from './support-commands';
 import {featureCommands} from './features-catalog';
 import {musicCommands} from './music-policy';
@@ -27,5 +28,5 @@ export const commands=[
 export function commandReply(name:string){
  const c=config();const views:Record<string,string>={partikur:'basvurular',partiler:'partiler',oylamalar:'oylamalar',tbmm:'tbmm',secimler:'secimler',teklif:'tbmm',yardim:'kilavuz'};
  const text=name==='partikur'?'Parti adını, kısaltmasını, logosunu, açıklamasını ve hedeflerini panele gir. Lider kendi Discord hesabıyla başvurur. Dört owner onayından sonra halk oylaması açılır.':name==='yardim'?'/partikur · /partiler · /oylamalar · /tbmm · /secimler · /teklif\nOwner onayları ve oylar kaydedilir. Her hesap bir oy kullanabilir.':'İlgili sayfayı panelde açabilirsiniz.';
- return {embeds:[{title:name==='partikur'?'TurkishPix · Parti kuruluşu':'TurkishPix · Cumhuriyet portalı',description:text,color:0xd6ad55,thumbnail:{url:c.appUrl+'/brand/turkishpix-bot.png'},footer:{text:'Dört owner · Ortak irade · Kayıtlı kararlar'}}],components:[{type:1,components:[{type:2,style:5,label:name==='partikur'?'Parti başvurusu yap':'Paneli aç',url:(name==='botpanel'?c.appUrl:c.appUrl+'/?view='+(views[name]||'genel'))+(name==='partikur'?'&create=PARTY':name==='teklif'?'&create=BILL':'')}]}],allowed_mentions:{parse:[]}};
+ return {embeds:[{...brightEmbed(name==='partikur'?'🏛️ Parti kuruluşu':'🏛️ Cumhuriyet portalı',text,[{name:'◆ Sonraki adım',value:'Aşağıdaki düğmeden ilgili sayfayı aç.'}],theme.gold),thumbnail:{url:c.appUrl+'/brand/turkishpix-bot.png'}}],components:[{type:1,components:[{type:2,style:5,label:name==='partikur'?'Parti başvurusu yap':'Paneli aç',url:(name==='botpanel'?c.appUrl:c.appUrl+'/?view='+(views[name]||'genel'))+(name==='partikur'?'&create=PARTY':name==='teklif'?'&create=BILL':'')}]}],allowed_mentions:{parse:[]}};
 }

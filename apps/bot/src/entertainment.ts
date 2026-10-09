@@ -1,18 +1,13 @@
 import {MessageFlags,ModalBuilder,TextInputBuilder,TextInputStyle,ActionRowBuilder,PermissionFlagsBits,type Interaction} from 'discord.js';
-import {userTag,roleTag,featureNames,config,DomainError,entertainmentCommands,entertainmentNames,entertainmentCategories,checkEntertainment,entertainmentRate,startEntertainment,playEntertainment,pollEntertainment,validateEntertainmentSession,getEntertainmentSession,attachEntertainmentMessage,entertainmentProfile,entertainmentLeaderboard,expireEntertainmentSessions,createGame,shuffle,rand,dailyValue,listItems,safeText,discordRequest,type EntertainmentSettings,type EntertainmentSession} from '@turkishpix/core';
-import {commands} from '../../../packages/core/src/commands';
+import {brightEmbed,theme,userTag,roleTag,featureNames,config,DomainError,entertainmentCommands,entertainmentNames,entertainmentCategories,checkEntertainment,entertainmentRate,startEntertainment,playEntertainment,pollEntertainment,validateEntertainmentSession,getEntertainmentSession,attachEntertainmentMessage,entertainmentProfile,entertainmentLeaderboard,expireEntertainmentSessions,createGame,shuffle,rand,dailyValue,listItems,safeText,discordRequest,type EntertainmentSettings,type EntertainmentSession} from '@turkishpix/core';
+import {handleHelpInteraction} from './help';
 // A single bot replica serializes per-message edits; SQL row locks protect persisted state.
 const sessionQueues=new Map<string,Promise<unknown>>();
 async function sessionQueue<T>(id:string,work:()=>Promise<T>):Promise<T>{const previous=sessionQueues.get(id)||Promise.resolve();const next=previous.catch(()=>{}).then(work);sessionQueues.set(id,next);try{return await next;}finally{if(sessionQueues.get(id)===next)sessionQueues.delete(id);}}
-const colors={gold:0xd6ad55,purple:0x9b7ae8,green:0x42b883,red:0xe07878};
-function embed(title:string,description:string,fields:any[]=[],color=colors.purple){return {title:'TurkishPix · '+title,description,color,fields,footer:{text:'TurkishPix • Eğlence & topluluk • /yardim'}};}
+const colors=theme;
+function embed(title:string,description:string,fields:any[]=[],color=colors.purple){return {...brightEmbed(title,description,fields,color),description};}
 const button=(id:string,label:string,style=2,disabled=false)=>({type:2,custom_id:id,label,style,disabled});
 const row=(...components:any[])=>({type:1,components});
-function help(category='eglence'){
- if(!['sistem','muzik',...entertainmentCategories.map(c=>c.id)].includes(category))category='eglence';
- const system=category==='sistem',music=category==='muzik',list=music?commands.filter(x=>['ses','muzik'].includes(x.name)):system?commands.filter(x=>!entertainmentNames.includes(x.name)&&!featureNames.includes(x.name)&&!['ses','muzik'].includes(x.name)):entertainmentCommands.filter(x=>x.category===category);
- return {embeds:[embed(music?'Müzik & ses':system?'Sistem komutları':entertainmentCategories.find(x=>x.id===category)?.name||'Komut rehberi',music?list.flatMap(x=>('options' in x?x.options||[]:[]).map((o:any)=>`**/${x.name} ${o.name}** — ${o.description}`)).join('\n'):list.map(x=>`**/${x.name}** — ${x.description}`).join('\n'))],components:[row({type:3,custom_id:'funhelp:category',placeholder:'Bir komut kategorisi seç',options:[...entertainmentCategories.map(c=>({label:c.name,value:c.id,description:c.description,default:c.id===category})),{label:'Müzik & ses',value:'muzik',description:'20 kontrol · ses, dosya, radyo ve kuyruk',default:music},{label:'Meclis & bot yönetimi',value:'sistem',description:'15 sistem komutu · /ozellikler: 50 yeni araç',default:system}]}),row({type:2,style:5,label:music?'Müzik panelini aç':'Eğlence panelini aç',url:config().appUrl+(music?'/muzik':'/eglence')})],allowedMentions:{parse:[]}};
-}
 export function entertainmentView(session:EntertainmentSession,now=Date.now()){
  const s=session.state,done=session.status!=='ACTIVE'||s.phase==='DONE'||new Date(session.expires_at).getTime()<=now;
  const name=entertainmentCommands.find(x=>x.name===s.kind)?.name||s.kind,id=(action:string)=>`fun:${session.id}:${s.revision}:${action}`;
@@ -46,12 +41,11 @@ const dailyQuotes=['Bir topluluğu güçlü yapan, birbirini dinleyen insanlard�
 function parseId(customId:string){const match=/^fun:([0-9a-f-]{36}):(\d{1,5}):(open|guess|ready|start|hit|close|cancel|[0-8])$/.exec(customId);if(!match||!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/.test(match[1]))throw new DomainError('INVALID_COMPONENT','Bu oyun düğmesi geçerli değil.');return {id:match[1],revision:Number(match[2]),action:match[3]};}
 export async function handleEntertainmentInteraction(interaction:Interaction,settings:EntertainmentSettings):Promise<boolean>{
  const slash=interaction.isChatInputCommand(),component=interaction.isButton()||interaction.isModalSubmit();
- const helpMenu=interaction.isStringSelectMenu()&&interaction.customId==='funhelp:category',helpCommand=slash&&interaction.commandName==='yardim';
+ if(await handleHelpInteraction(interaction))return true;
+ const helpMenu=false,helpCommand=false;
  if(!helpMenu&&!helpCommand&&!(slash&&entertainmentNames.includes(interaction.commandName))&&!(component&&interaction.customId.startsWith('fun:')))return false;
  const actor={id:interaction.user.id,username:interaction.user.username,avatar:interaction.user.avatar},channelId=interaction.channelId!;
  try{
-  if(helpMenu&&interaction.isStringSelectMenu()){await interaction.update(help(interaction.values[0]) as any);return true;}
-  if(helpCommand){await interaction.reply({...help(),flags:MessageFlags.Ephemeral} as any);return true;}
   if(component){
    const parsed=parseId(interaction.customId);
    if(interaction.isButton()&&parsed.action==='open'){

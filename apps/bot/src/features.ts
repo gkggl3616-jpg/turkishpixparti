@@ -1,3 +1,4 @@
+import {commandHelpView} from './help';
 import {MessageFlags,PermissionFlagsBits} from 'discord.js';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {config,DomainError,database,transaction,audit,syncUser,featureCommands,featureNames,featureCategories,shopItems,checkFeature,featureRate,featureMutation,memberProfile,xpLeaderboard,memberBadges,claimDaily,transferCoins,purchaseBadge,giveReputation,addFeatureRecord,getFeatureRecord,listFeatureRecords,updateFeatureRecord,attachFeatureMessage,participateFeature,finishGiveaway,brightEmbed,displayText,userTag,channelTag,roleTag,theme,inspectContent,roleMappings,ticketTick,giveawayTick,giveawayMessage,type CommunitySettings,type FeatureRecord} from '@turkishpix/core';
@@ -92,7 +93,7 @@ export async function handleFeatureInteraction(i:any,settings:CommunitySettings)
   throw new DomainError('FEATURE_NOT_IMPLEMENTED','Komut şu anda kullanılamıyor.');
  }catch(e){const view=screen('⚠️ İşlem tamamlanamadı',e instanceof DomainError?e.message:e instanceof Error&&e.name==='ZodError'?'Alanları ve kayıt kodunu kontrol et.':'Bir bağlantı veya izin sorunu oluştu. Biraz sonra yeniden dene.',[],theme.red);try{if(i.deferred||i.replied)await i.editReply(view);else await i.reply({...view,flags:MessageFlags.Ephemeral});}catch{console.error('FEATURE_REPLY_FAILED');}return true;}
 }
-export function featureHelp(category='ekonomi'){const selected=featureCategories.find(c=>c.id===category)||featureCategories[0];return {...screen(selected.name,featureCommands.filter(c=>c.category===selected.id).map(c=>`**/${c.name}** — ${c.description}`).join('\n'),[],theme.purple),components:[{type:1,components:[{type:3,custom_id:'featurehelp:category',placeholder:'50 yeni özellikten bir kategori seç',options:featureCategories.map(c=>({label:c.name,value:c.id,default:c.id===selected.id}))}]},{type:1,components:[{type:2,style:5,label:'Topluluk araçları paneli',url:config().appUrl+'/topluluk'}]}]};}
+export function featureHelp(category='ekonomi'){return commandHelpView('feature-'+category);}
 export async function featureTick(client:any,settings:CommunitySettings){
  await ticketTick();await giveawayTick();
  const f=settings.features;if(!f.enabled)return;const guild=client.guilds.cache.get(config().guildId);if(!guild)return;
