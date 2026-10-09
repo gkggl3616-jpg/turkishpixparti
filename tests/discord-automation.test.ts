@@ -2,6 +2,7 @@ import {test,before,beforeEach,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
+import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 import {Collection,PermissionsBitField,PermissionFlagsBits,ChannelType} from 'discord.js';
 import {setTestDatabase,defaultCommunitySettings,defaultDiscordAuditSettings,discordAuditSettings,updateDiscordAuditSettings,captureDiscordMessage,recordDiscordAudit,discordAuditEvent,queueBotJoin,claimBotJoin,finishBotJoin,shouldBlockBot,cleanupDiscordAudit,auditEventCard,auditRowToEvent,hasServerTag,reactionEmojiKey,roleAutomationSettings,saveRoleAutomation,queueRoleChange,claimRoleChange,finishRoleChange,createRoleBulk,activateRoleBulk,cancelRoleBulk,roleBulkStatus,COMPONENTS_V2,communityDeliveryTick,botInviteUrl} from '../packages/core/src/index';
@@ -12,8 +13,8 @@ import {commands} from '../packages/core/src/commands';
 const guildId='888888888888888888',ownerId='111111111111111111',userId='555555555555555555',botId='999999999999999999',roleId='777777777777777777',tagRoleId='777777777777777778',channelId='666666666666666666';
 const actor={id:ownerId,username:'owner',manageGuild:true,guardManager:true};
 process.env.DISCORD_GUILD_ID=guildId;process.env.DISCORD_OWNER_IDS=ownerId;process.env.DISCORD_CLIENT_ID=botId;process.env.DISCORD_BOT_TOKEN='test-token';process.env.DEMO_MODE='false';process.env.DATABASE_URL='postgresql://test.invalid/test';process.env.APP_URL='https://turkishpix.example';process.env.AUDIT_HMAC_KEY='test-only-automation-key-012345678901234567890';
-let pg:PGlite;const original=globalThis.fetch;
-before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql,params=[])=>{const r=await pg.query(sql,params);return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of (await readdir(new URL('../packages/core/sql/',import.meta.url))).filter(n=>/^\d+.*\.sql$/.test(n)&&!n.startsWith('002_')).sort())await pg.exec(await readFile(new URL('../packages/core/sql/'+name,import.meta.url),'utf8'));});
+let pg:PGlite;const original=globalThis.fetch;const {prepareValue}=createRequire(import.meta.url)('pg/lib/utils');
+before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql,params=[])=>{const r=await pg.query(sql,params.map(p=>typeof p==='boolean'?p:prepareValue(p)));return {rows:r.rows as any[],rowCount:r.affectedRows||0};}});for(const name of (await readdir(new URL('../packages/core/sql/',import.meta.url))).filter(n=>/^\d+.*\.sql$/.test(n)&&!n.startsWith('002_')).sort())await pg.exec(await readFile(new URL('../packages/core/sql/'+name,import.meta.url),'utf8'));});
 beforeEach(async()=>{await pg.exec('DELETE FROM role_bulk_targets;DELETE FROM role_bulk_campaigns;DELETE FROM role_automation_jobs;DELETE FROM role_reaction_panels;DELETE FROM role_automation_settings;DELETE FROM role_scan_state;DELETE FROM discord_audit_events;DELETE FROM discord_audit_settings;DELETE FROM discord_message_snapshots;DELETE FROM bot_join_jobs;DELETE FROM community_deliveries;DELETE FROM community_settings;');await pg.query('INSERT INTO community_settings(guild_id,settings) VALUES($1,$2)',[guildId,defaultCommunitySettings()]);globalThis.fetch=async()=>Response.json({id:userId,primary_guild:{identity_enabled:true,identity_guild_id:guildId}});});
 after(async()=>{globalThis.fetch=original;await pg.close();});
 function fake(){
@@ -29,7 +30,7 @@ function interaction(guild:any,sub='panel',values:any={},user=ownerId){const rep
 function componentNodes(card:any){const found:any[]=[];const visit=(n:any)=>{found.push(n);for(const c of n.components||[])visit(c);if(n.accessory)visit(n.accessory);};for(const c of card.components)visit(c);return found;}
 const message={id:'444444444444444444',channelId,authorId:userId,authorName:'member',content:'İlk metin @everyone `kod`'};
 test('Mesaj öncesi/sonrası ve silinen içerik kalıcıdır; tekrar aynı mesaj ikinci kayıt açmaz',async()=>{
- const id=await captureDiscordMessage(message,'CREATE');await captureDiscordMessage(message,'CREATE');const edited=await captureDiscordMessage({...message,content:'Yeni metin'},'EDIT');await captureDiscordMessage({...message,content:'Yeni metin'},'EDIT');const deleted=await captureDiscordMessage({...message,content:''},'DELETE');
+ const attachment={name:'ek.png',url:'https://cdn.discordapp.com/attachments/test/ek.png'};const first={...message,attachments:[attachment]};const id=await captureDiscordMessage(first,'CREATE');await captureDiscordMessage(first,'CREATE');assert.deepEqual((await pg.query<any>('SELECT attachments FROM discord_message_snapshots')).rows[0].attachments,[attachment]);const edited=await captureDiscordMessage({...message,content:'Yeni metin'},'EDIT');await captureDiscordMessage({...message,content:'Yeni metin'},'EDIT');const deleted=await captureDiscordMessage({...message,content:''},'DELETE');
  assert.equal((await pg.query('SELECT * FROM discord_audit_events')).rows.length,3);assert.equal((await discordAuditEvent(edited!)).before_content,message.content);assert.equal((await discordAuditEvent(deleted!)).before_content,'Yeni metin');assert.equal((await pg.query('SELECT * FROM discord_message_snapshots')).rows.length,0);
  const card=auditEventCard(auditRowToEvent(await discordAuditEvent(id!)));assert.equal(card.flags,COMPONENTS_V2);assert.ok(JSON.stringify(card).includes('＠everyone'));assert.deepEqual(card.allowedMentions,{parse:[]});assert.ok(!JSON.stringify(card).includes('`kod`'));
 });
