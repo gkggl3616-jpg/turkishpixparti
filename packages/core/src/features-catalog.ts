@@ -8,7 +8,7 @@ const channel={name:'kanal',description:'Bu sunucudan bir metin kanalı seç',ty
 const cmd=(name:string,description:string,category:string,options:any[]=[],permission?:string)=>({name,description,category,options,...(permission?{default_member_permissions:permission}:{})});
 export const featureCategories=[{id:'ekonomi',name:'🪙 Seviye & ekonomi'},{id:'planlama',name:'📝 Kişisel araçlar'},{id:'topluluk',name:'🎉 Topluluk etkinlikleri'},{id:'yonetim',name:'🛡️ Yetkili araçları'},{id:'rehber',name:'📚 Roller & rehber'}];
 export const featureCommands=[
- cmd('uyeprofil','Seviye, sanal bakiye, itibar ve rozet kartını görüntüle.','ekonomi',[user()]),
+ cmd('rank','Fotoğraflı seviye kartı, XP ilerlemesi ve sunucu sıralamanı gör.','ekonomi',[user()]),
  cmd('seviye','Sohbet XP’sini ve sonraki seviyeye ilerlemeyi gör.','ekonomi',[user()]),
  cmd('siralama','Sunucunun sohbet XP sıralamasını görüntüle.','ekonomi'),
  cmd('gunluk','Türkiye saatine göre günlük sanal ödülünü al.','ekonomi'),

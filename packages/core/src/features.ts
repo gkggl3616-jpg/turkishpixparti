@@ -25,6 +25,11 @@ const day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul',year:'
 export function levelInfo(xp:number){const level=Math.floor(Math.sqrt(Math.max(0,xp)/100)),start=level*level*100,end=(level+1)*(level+1)*100;return {level,start,end,remaining:end-xp,percent:Math.floor((xp-start)/(end-start)*100)};}
 export async function memberProfile(userId:string){snowflake.parse(userId);const row=(await database().query('SELECT p.*,u.username FROM member_profiles p JOIN users u ON u.id=p.user_id WHERE p.guild_id=$1 AND p.user_id=$2',[config().guildId,userId])).rows[0]||{user_id:userId,xp:0,coins:0,messages:0,reputation:0,streak:0,inventory:[]};return {...row,...levelInfo(row.xp)};}
 export async function xpLeaderboard(){return (await database().query('SELECT p.user_id,p.xp,u.username FROM member_profiles p JOIN users u ON u.id=p.user_id WHERE p.guild_id=$1 ORDER BY p.xp DESC,p.user_id LIMIT 10',[config().guildId])).rows;}
+export async function memberRank(userId:string){
+ const p=await memberProfile(userId);
+ const result=(await database().query('WITH ranked AS (SELECT user_id,row_number() OVER (ORDER BY xp DESC,user_id) AS place FROM member_profiles WHERE guild_id=$1 AND xp>0) SELECT (SELECT place FROM ranked WHERE user_id=$2)::int AS rank,(SELECT count(*) FROM ranked)::int AS ranked_members',[config().guildId,userId])).rows[0];
+ return {...p,rank:result.rank??null,rankedMembers:result.ranked_members,voice_minutes:p.voice_minutes||0};
+}
 export function memberBadges(profile:any){return [...(profile.level>=10?['🏛️ Sohbet ustası']:profile.level>=5?['✨ Aktif üye']:[]),...(profile.messages>=100?['💬 100 sohbet katkısı']:[]),...(profile.reputation>=10?['🤝 Yardımsever']:[]),...(profile.streak>=7?['🔥 7 günlük seri']:[]),...shopItems.filter(x=>(profile.inventory||[]).includes(x.id)).map(x=>x.name)];}
 export async function awardChatXP(actor:FeatureActor,text:string,settings:FeatureSettings,channelId:string){
  if(!settings.enabled||!settings.economy||!settings.xpEnabled||(settings.channelIds.length&&!settings.channelIds.includes(channelId))||text.replace(/\s/g,'').length<8)return false;

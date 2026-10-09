@@ -7,10 +7,11 @@ const number=(name:string,description:string,min:number,max:number)=>({name,desc
 const sub=(name:string,description:string,options:any[]=[])=>({name,description,type:1,...(options.length?{options}:{})});
 export const musicCommands=[{name:'ses',description:'Botu ses kanalına bağla, ayır veya bağlantıyı kontrol et.',options:[sub('katil','Bulunduğun ses kanalına katıl.'),sub('ayril','Müziği durdur ve kanaldan ayrıl.'),sub('durum','Ses bağlantısını ve izinlerini göster.')]},
  {name:'muzik',description:'YouTube, radyo ve ortak dinleme oturumlarını yönet.',options:[
- sub('oynat','Ses dosyası oynat veya YouTube bağlantısını görüntülü aç.',[string('baglanti','Doğrudan MP3, OGG, WAV veya radyo bağlantısı',{max_length:1500}),{name:'dosya',description:'Ses dosyası yükle',type:11},string('baslik','Parça başlığı',{max_length:120})]),
+ sub('oynat','YouTube’da ara, sonuç seç veya botta ses dosyası oynat.',[string('ara','YouTube’da arayacağın şarkının adı',{max_length:120}),string('baglanti','YouTube videosu veya doğrudan ses bağlantısı',{max_length:1500}),{name:'dosya',description:'Botun ses kanalında çalacağı ses dosyası',type:11},string('baslik','Parça başlığı',{max_length:120})]),
  sub('youtube','YouTube’da video ara ve sonuçlardan seç.',[string('ara','Video veya şarkı adı',{required:true,max_length:120})]),
  sub('video','YouTube videosunu görünür oynatıcıda aç.',[string('baglanti','YouTube video bağlantısı',{required:true,max_length:1500})]),
  sub('birlikte','Ses kanalında YouTube Watch Together oturumu aç.'),
+ sub('ekran','Ses kanalında ortak YouTube görüntülü oynatıcısını aç.'),
  sub('favori','YouTube videosunu favorilerine ekle veya çıkar.',[string('baglanti','YouTube video bağlantısı',{required:true,max_length:1500})]),
  sub('favoriler','Kendi YouTube favorilerini göster.'),sub('gecmis','Sunucuda paylaşılan son YouTube videolarını gör.'),
  sub('radyo','Hazır radyo istasyonunu dinle.',[string('istasyon','İstasyon seç',{required:true,choices:radioStations.map(r=>({name:r.name,value:r.id}))})]),

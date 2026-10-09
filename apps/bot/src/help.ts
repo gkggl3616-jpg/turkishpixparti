@@ -1,5 +1,6 @@
 import {config,brightEmbed,theme,featureCommands,featureCategories,entertainmentCommands,entertainmentCategories} from '@turkishpix/core';
 import {commands} from '../../../packages/core/src/commands';
+import {categoryBannerURL,helpCardCategory} from '@turkishpix/core';
 
 const supportNames=['bilet','destek','destekler','destekkapat','cekilis','cekilisler'];
 const aiNames=['sor','yapayzekaaktif','yapayzekakapat'];
@@ -27,7 +28,8 @@ export function commandCategory(name:string){
 const examples:Record<string,string>={
  'bilet ac':'/bilet ac tur: Ödül Talebi','destek':'/destek tur: Destek','cekilis':'/cekilis odul: Nitro dakika: 60 kazanan: 2',
  'sor':'/sor soru: Bugün ne oynayalım?','muzik radyo':'/muzik radyo istasyon: Groove Salad · Chill','ses katil':'/ses katil','anket':'/anket soru: Ne oynayalım? secenekler: Valorant | Minecraft',
- 'xox':'/xox zorluk: zor','bilet kur':'/bilet kur kanal: #bilet-ac kategori: Biletler yetkili: @Destek'
+ 'xox':'/xox zorluk: zor','bilet kur':'/bilet kur kanal: #bilet-ac kategori: Biletler yetkili: @Destek',
+ 'muzik oynat':'/muzik oynat ara: Şarkı adı','muzik ekran':'/muzik ekran','rank':'/rank uye: @Üye'
 };
 export function helpEntries(category:string){return commands.filter(c=>commandCategory(c.name)===category).flatMap((c:any)=>{
  const subs=(c.options||[]).filter((o:any)=>o.type===1||o.type===2);
@@ -44,6 +46,7 @@ export function commandHelpView(category='home',page=0){
  ];
  const embed=brightEmbed(selected?selected.name:'✦ Komut merkezi',selected?'**'+entries.length+' kullanım** · Sayfa **'+(page+1)+' / '+pages+'**\n`<alan>` gerekli · `[alan]` isteğe bağlı':'**𝙏𝙪𝙧𝙠𝙞𝙨𝙝𝙋𝙞𝙭**\n'+commands.length+' komut · '+helpCategories.length+' kategori\nAşağıdaki menüden ne yapmak istediğini seç.',fields,selected?.color||theme.cyan);
  embed.footer={text:'TurkishPix • /yardim • Kategori menüsüyle keşfet'};
+ embed.image={url:categoryBannerURL(helpCardCategory(category))};
  return {embeds:[embed],components:[
   {type:1,components:[{type:3,custom_id:'help:category',placeholder:selected?.name||'Bir komut kategorisi seç',options:[{label:'✦ Başlangıç',value:'home',default:category==='home'},...helpCategories.map(c=>({label:c.name,value:c.id,description:c.description.slice(0,100),default:c.id===category}))]}]},
   {type:1,components:[{type:2,style:2,custom_id:`help:page:${category}:${page-1}`,label:'Önceki',emoji:{name:'◀️'},disabled:page===0},{type:2,style:2,custom_id:`help:page:${category}:${page+1}`,label:'Sonraki',emoji:{name:'▶️'},disabled:page===pages-1},{type:2,style:5,label:selected?'İlgili paneli aç':'Yönetim panelini aç',url:config().appUrl+(selected?.path||'/')}]}

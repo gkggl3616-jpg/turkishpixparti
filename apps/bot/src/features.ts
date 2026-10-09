@@ -1,5 +1,7 @@
 import {eventOptionsSchema,eventRSVP,eventMaintenance} from '@turkishpix/core';
 import {commandHelpView} from './help';
+import {discordAvatarData,renderRankCard} from '../../../packages/core/src/cards';
+import {memberRank} from '@turkishpix/core';
 import {MessageFlags,PermissionFlagsBits} from 'discord.js';
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {config,DomainError,database,transaction,audit,syncUser,featureCommands,featureNames,featureCategories,shopItems,checkFeature,featureRate,featureMutation,memberProfile,xpLeaderboard,memberBadges,claimDaily,transferCoins,purchaseBadge,giveReputation,addFeatureRecord,getFeatureRecord,listFeatureRecords,updateFeatureRecord,attachFeatureMessage,participateFeature,finishGiveaway,brightEmbed,displayText,userTag,channelTag,roleTag,theme,inspectContent,roleMappings,ticketTick,giveawayTick,giveawayMessage,type CommunitySettings,type FeatureRecord} from '@turkishpix/core';
@@ -57,9 +59,21 @@ export async function handleFeatureInteraction(i:any,settings:CommunitySettings)
   const isPublic=['cekilis','etkinlik','oner','rolmenu'].includes(name);const privateReply=definition.category==='planlama'||['destek','destekler','destekkapat','uyar','uyarilar','uyarikaldir','temizle'].includes(name);await i.deferReply(privateReply?{flags:MessageFlags.Ephemeral}:{});await featureRate(actor);
   if(!i.appPermissions?.has(PermissionFlagsBits.EmbedLinks))throw new DomainError('BOT_PERMISSION','Bu kanalda botun Bağlantıları Yerleştir iznini aç.');
   const get=(key:string,required=true)=>i.options.getString(key,required),number=(key:string)=>i.options.getInteger(key,true),selected=i.options.getUser('uye')||i.user,target={id:selected.id,username:selected.username,avatar:selected.avatar},key=i.id;
-  if(['uyeprofil','seviye','cuzdan','rozetler','itibar','envanter'].includes(name)){const p=await memberProfile(name==='envanter'?actor.id:target.id),bar='▰'.repeat(Math.round(p.percent/10))+'▱'.repeat(10-Math.round(p.percent/10));let description=userTag(p.user_id),fields:any[]=[];
-   if(name==='uyeprofil')fields=[{name:'⭐ Seviye',value:`**${p.level}** · ${p.xp} XP`,inline:true},{name:'🪙 Cüzdan',value:`**${p.coins}** sanal Pix`,inline:true},{name:'🤝 İtibar',value:String(p.reputation),inline:true},{name:'🏅 Rozetler',value:memberBadges(p).join('\n')||'İlk rozetin seni bekliyor.'}];
-   if(name==='seviye')description+=`\n\n**Seviye ${p.level}** · ${p.xp} XP\n${bar} **%${p.percent}**\nSonraki seviye için ${p.remaining} XP.\nSohbet katkıları en az ${policy.xpCooldownSeconds} saniye arayla; günlük ${policy.xpDailyCap} XP sınırıyla sayılır.`;
+  if(['rank','seviye'].includes(name)){
+   const p=await memberRank(target.id),member=await i.guild.members.fetch(target.id).catch(()=>null);
+   const embed=brightEmbed('⭐ '+(member?.displayName||selected.username)+' · Rank',userTag(target.id)+' · **Seviye '+p.level+'** · **'+p.xp+' XP**',[
+    {name:'🏆 Sunucu sırası',value:p.rank?'**#'+p.rank+'** / '+p.rankedMembers+' XP kazanan üye':'Henüz sıralamada değilsin.',inline:true},
+    {name:'📈 İlerleme',value:'**%'+p.percent+'** · Sonraki seviyeye **'+p.remaining+' XP**',inline:true},
+    {name:'💬 Katkılar',value:p.messages+' XP kazandıran mesaj · '+p.voice_minutes+' ses dakikası'},
+    {name:'⭐ XP nasıl kazanılır?',value:policy.xpEnabled?'En az 8 karakterlik farklı sohbet katkıları **'+policy.xpPerMessage+' XP** kazandırır. Bekleme **'+policy.xpCooldownSeconds+' sn**, günlük ortak sınır **'+policy.xpDailyCap+' XP**.':'Sohbet XP’si owner ayarlarından kapalı.'}
+   ],theme.gold);
+   const view:any={embeds:[embed],allowedMentions:{parse:[]}};
+   if(i.appPermissions?.has(PermissionFlagsBits.AttachFiles)){
+    try{const avatarData=await discordAvatarData(target.id,target.avatar);const png=await renderRankCard({username:selected.username,displayName:member?.displayName||selected.username,guildName:i.guild.name||'TurkishPix',xp:p.xp,level:p.level,start:p.start,end:p.end,percent:p.percent,remaining:p.remaining,rank:p.rank,rankedMembers:p.rankedMembers,messages:p.messages,voiceMinutes:p.voice_minutes,avatarData});view.files=[{attachment:png,name:'turkishpix-rank.png'}];embed.image={url:'attachment://turkishpix-rank.png'};}catch{console.error('RANK_CARD_RENDER_FAILED');}
+   }
+   await i.editReply(view);return true;
+  }
+  if(['cuzdan','rozetler','itibar','envanter'].includes(name)){const p=await memberProfile(name==='envanter'?actor.id:target.id);let description=userTag(p.user_id),fields:any[]=[];
    if(name==='cuzdan')description+=`\n\n🪙 **${p.coins} sanal Pix**\n/gunluk ile ödül, /magaza ile rozet. Pix’in parasal değeri yoktur.`;
    if(name==='rozetler')description+='\n\n'+(memberBadges(p).join('\n')||'5. seviyede ilk aktiflik rozeti; 100 sohbet katkısında sohbet rozeti.');
    if(name==='itibar')description+=`\n\n🤝 **${p.reputation}** teşekkür puanı. /tesekkur ile günde bir üyeye puan ver.`;

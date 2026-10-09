@@ -37,3 +37,5 @@ export * from './giveaways';
 export * from './expansion-policy';
 export * from './expansion';
 export * from './youtube';
+
+export * from './visuals';

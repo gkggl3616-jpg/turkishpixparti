@@ -1,4 +1,14 @@
-# TurkishPix Bot Merkezi v2.8.0
+# TurkishPix Bot Merkezi v2.9.0
+
+## v2.9: YouTube seçim ekranı ve fotoğraflı rank
+
+- `/muzik oynat` alan verilmeden açıldığında YouTube arama düğmesi gösterir. `/muzik oynat ara: Şarkı adı` doğrudan arar. Düğme bir modal açar; sonuçlar kapak görseli, kanal ve süreyle seçilir.
+- Seçilen kartta Watch Together daveti, görünür video oynatıcısı, favori ve yeni arama düğmeleri bulunur. `/muzik ekran` ortak YouTube etkinliği açar. Oturuma katılıp seçilen video bağlantısını oynatıcıdaki arama kutusuna yapıştırmak gerekir. Bu bir bot Go Live yayını değildir; YouTube Data API ses akışı veya ses ayırma sağlamaz. Dosya ve radyo botun ses bağlantısında çalınır.
+- `/rank [uye]` ve `/seviye [uye]` profil fotoğrafı, seviye, XP çubuğu, toplam XP, sunucu sırası, XP kazandıran mesajlar ve ses dakikalarını herkese görünür gösterir. Önceki `/uyeprofil` ana komutu `/rank` adıyla devam eder; eski kapatma tercihi otomatik taşınır. Discord'un 100 ana komut sınırı korunur.
+- Sohbet XP'si zaten açıktır: varsayılan 10 XP, 60 saniye bekleme, en az 8 karakter, farklı metin ve günlük 500 ortak XP sınırı. Owner, Topluluk panelinde bu değerleri düzenler. Silinen veya korumaya takılan mesajlar ve bot mesajları XP kazandırmaz.
+- 16 kategori için özgün PNG başlıkları yardım, bot yanıtları ve web panelinde kullanılır. AI'nin sohbet yanıtları düz metin olarak kalır. Profil görseli alınamazsa baş harfler, Dosya Ekle izni yoksa okunabilir metin kartı gösterilir.
+- YouTube arama seçimleri 10 dakika geçerlidir; üye, kanal ve gerçek mesaj kimliğine bağlıdır. Her sürümde bir kez gerçek API aramasıyla bağlantı doğrulanır; anahtar veya ham sağlayıcı hatası loglanmaz.
+
 
 Discord bot + Next.js web panel + PostgreSQL. Uygulama kimliği ve public key, kullanıcı tarafından verilen ekran görüntülerinden alındı. Gizli anahtarlar kaynak kodda veya bu pakette bulunmaz.
 
