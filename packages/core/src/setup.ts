@@ -1,7 +1,7 @@
 import {database,transaction} from './db';
 import {config,readiness,setServerSettings,DomainError} from './config';
 import {serverSettingsSchema} from './validation';
-import {discordRequest,syncUser} from './discord';
+import {discordRequest,discordBotIdentity,syncUser} from './discord';
 import {audit} from './audit';
 import {buildRoleCatalog,roleMappings,ROLE_LABELS} from './roles';
 import {applicationConnection} from './application';
@@ -49,7 +49,7 @@ export function buildChannelCatalog(channels:any[],roles:any[],member:{id:string
 export async function listBotChannels(){
  const c=config();if(!c.botToken||!c.guildId)return {channels:[],error:'Bot ve sunucu bağlantısını tamamlayın.'};
  try{
-  const self=await discordRequest('/users/@me');
+  const self=await discordBotIdentity();
   const [roles,member,channels]=await Promise.all([discordRequest(`/guilds/${c.guildId}/roles`),discordRequest(`/guilds/${c.guildId}/members/${self.id}`),discordRequest(`/guilds/${c.guildId}/channels`)]);
   return {channels:buildChannelCatalog(channels,roles,{...member,id:self.id},c.guildId),error:null};
  }catch{return {channels:[],error:'Kanal listesi alınamadı. Botun sunucuya bağlı olduğunu ve Kanalları Görüntüle iznini kontrol edin.'};}
@@ -61,7 +61,7 @@ export async function detectConnection(actor:Actor){
  const base={application,settings,mappings,labels:ROLE_LABELS,installUrl:botInviteUrl(),redirectUri:c.appUrl+'/api/auth/callback',checks:readiness().checks,heartbeat:heartbeat.rows[0]||null};
  if(!c.botToken)return {...base,bot:{authenticated:false,installed:false,error:'Bot token sunucu değişkenlerine eklenmeli.'},channels:[],roles:[]};
  try{
-  const [self,guilds]=await Promise.all([discordRequest('/users/@me'),discordRequest('/users/@me/guilds')]);
+  const [self,guilds]=await Promise.all([discordBotIdentity(),discordRequest('/users/@me/guilds')]);
   const installed=guilds.some((g:any)=>g.id===c.guildId);
   if(!installed)return {...base,bot:{authenticated:true,installed:false,name:self.username,id:self.id},guilds:guilds.map((g:any)=>({id:g.id,name:g.name})),channels:[],roles:[]};
   const [guild,roles,member,channels]=await Promise.all([discordRequest(`/guilds/${c.guildId}`),discordRequest(`/guilds/${c.guildId}/roles`),discordRequest(`/guilds/${c.guildId}/members/${self.id}`),discordRequest(`/guilds/${c.guildId}/channels`)]);

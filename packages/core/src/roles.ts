@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {type DB,database,transaction} from './db';
 import {config,DomainError,requireOperational} from './config';
-import {discordRequest,guildMember,syncUser} from './discord';
+import {discordRequest,discordBotIdentity,guildMember,syncUser} from './discord';
 import {audit,enqueue} from './audit';
 import {roleMappingSchema,roleRequestSchema} from './validation';
 
@@ -20,7 +20,7 @@ export async function discordRoleCatalog(){
  const c=config();
  if(!c.botToken||!c.guildId)throw new DomainError('NOT_CONFIGURED','Rolleri okumak için bot token ve sunucu ID’si gerekli.',503);
  const [roles,self,guild]=await Promise.all([
-  discordRequest(`/guilds/${c.guildId}/roles`),discordRequest('/users/@me'),discordRequest(`/guilds/${c.guildId}`)
+  discordRequest(`/guilds/${c.guildId}/roles`),discordBotIdentity(),discordRequest(`/guilds/${c.guildId}`)
  ]);
  const botMember=await discordRequest(`/guilds/${c.guildId}/members/${self.id}`);
  return buildRoleCatalog(roles,self,guild,botMember);

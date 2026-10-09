@@ -5,7 +5,7 @@ import {discordAvatarData,renderRankCard} from '../../../packages/core/src/cards
 import {memberRank} from '@turkishpix/core';
 import {MessageFlags,PermissionFlagsBits} from 'discord.js';
 import {createHmac,timingSafeEqual} from 'node:crypto';
-import {config,DomainError,database,transaction,audit,syncUser,featureCommands,featureNames,featureCategories,shopItems,checkFeature,featureRate,featureMutation,memberProfile,xpLeaderboard,memberBadges,claimDaily,transferCoins,purchaseBadge,giveReputation,addFeatureRecord,getFeatureRecord,listFeatureRecords,updateFeatureRecord,attachFeatureMessage,participateFeature,finishGiveaway,brightEmbed,displayText,userTag,channelTag,roleTag,theme,inspectContent,roleMappings,ticketTick,giveawayTick,giveawayMessage,type CommunitySettings,type FeatureRecord} from '@turkishpix/core';
+import {acknowledgeFeatureMessage,config,DomainError,database,transaction,audit,syncUser,featureCommands,featureNames,featureCategories,shopItems,checkFeature,featureRate,featureMutation,memberProfile,xpLeaderboard,memberBadges,claimDaily,transferCoins,purchaseBadge,giveReputation,addFeatureRecord,getFeatureRecord,listFeatureRecords,updateFeatureRecord,attachFeatureMessage,participateFeature,finishGiveaway,brightEmbed,displayText,userTag,channelTag,roleTag,theme,inspectContent,roleMappings,ticketTick,giveawayTick,giveawayMessage,type CommunitySettings,type FeatureRecord} from '@turkishpix/core';
 const buttons=(...items:any[])=>[{type:1,components:items}];
 const button=(id:string,label:string,emoji:string,style=1)=>({type:2,custom_id:id,label,emoji:{name:emoji},style});
 const queues=new Map<string,Promise<unknown>>();
@@ -32,19 +32,19 @@ export function featureRecordView(r:FeatureRecord,participants=0){
 }
 async function refreshRecord(i:any,record:FeatureRecord){return serial('message:'+record.id,async()=>{
  if((refreshRetryAt.get(record.id)||0)>Date.now())return;
- const r=await getFeatureRecord(record.id);if(!r.channel_id||!r.message_id)return;
+ const r=await getFeatureRecord(record.id);if(!r.channel_id||!r.message_id||r.payload.discordMessageMissing)return;
  try{
   const channel=await i.guild.channels.fetch(r.channel_id);
   if(!channel)throw {code:10003};
   const message=await channel.messages.fetch(r.message_id);
   const count=(await database().query("SELECT count(*)::int AS n FROM feature_participants WHERE record_id=$1 AND choice='GOING'",[r.id])).rows[0].n;
   await message.edit(featureRecordView(r,count));
-  await database().query('UPDATE feature_records SET discord_updated_at=$2 WHERE id=$1',[r.id,(r as any).updated_at]);
+  await acknowledgeFeatureMessage(r);
   refreshRetryAt.delete(r.id);
  }catch(e:any){
   if([10003,10008].includes(e?.code)){
    // Do not recreate a card that a moderator deliberately removed.
-   await database().query('UPDATE feature_records SET discord_updated_at=$2 WHERE id=$1',[r.id,(r as any).updated_at]);
+   await acknowledgeFeatureMessage(r,true);
    refreshRetryAt.delete(r.id);
    console.log('FEATURE_MESSAGE_UNAVAILABLE',JSON.stringify({recordId:r.id,kind:r.kind,code:e.code}));
   }else{
@@ -136,12 +136,12 @@ export async function handleFeatureInteraction(i:any,settings:CommunitySettings)
  }catch(e){const view=screen('⚠️ İşlem tamamlanamadı',e instanceof DomainError?e.message:e instanceof Error&&e.name==='ZodError'?'Alanları ve kayıt kodunu kontrol et.':'Bir bağlantı veya izin sorunu oluştu. Biraz sonra yeniden dene.',[],theme.red);try{if(i.deferred||i.replied)await i.editReply(view);else await i.reply({...view,flags:MessageFlags.Ephemeral});}catch{console.error('FEATURE_REPLY_FAILED');}return true;}
 }
 export function featureHelp(category='ekonomi'){return commandHelpView('feature-'+category);}
-export async function featureTick(client:any,settings:CommunitySettings){
- await ticketTick();await giveawayTick();await eventMaintenance(settings);
+export async function featureTick(client:any,settings:CommunitySettings,support=true){
+ if(support){await ticketTick();await giveawayTick();await eventMaintenance(settings);}
  const f=settings.features;if(!f.enabled)return;const guild=client.guilds.cache.get(config().guildId);if(!guild)return;
  if(f.planner){await transaction(async tx=>{const due=(await tx.query("SELECT * FROM feature_records WHERE guild_id=$1 AND kind='REMINDER' AND status='OPEN' AND due_at<=now() ORDER BY due_at LIMIT 25 FOR UPDATE SKIP LOCKED",[guild.id])).rows;for(const r of due)await tx.query("INSERT INTO community_deliveries(id,guild_id,kind,payload,dedupe_key) VALUES(gen_random_uuid(),$1,'REMINDER',$2,$3) ON CONFLICT(dedupe_key) DO NOTHING",[guild.id,{userId:r.owner_id,recordId:r.id,embeds:[brightEmbed('⏰ Hatırlatma zamanı',displayText(r.title),[],theme.gold)]},'reminder:'+r.id]);});}
  const unpublished=(await database().query("SELECT * FROM feature_records WHERE guild_id=$1 AND kind='EVENT' AND status='OPEN' AND message_id IS NULL AND (payload ? 'previousId' OR payload ? 'publishPending') ORDER BY created_at LIMIT 10",[guild.id])).rows;for(const r of unpublished){try{const channel=await guild.channels.fetch(r.channel_id);const message=await channel.send({...featureRecordView(r,0),nonce:BigInt('0x'+r.id.replace(/-/g,'').slice(0,16)).toString(),enforceNonce:true});await attachFeatureMessage(r.id,channel.id,message.id);}catch{console.error('RECURRING_EVENT_POST_PENDING');}}
- const dirty=(await database().query("SELECT * FROM feature_records WHERE guild_id=$1 AND message_id IS NOT NULL AND kind IN ('GIVEAWAY','EVENT','SUGGESTION','ROLE_MENU') AND (discord_updated_at IS NULL OR discord_updated_at<updated_at) ORDER BY updated_at LIMIT 20",[guild.id])).rows;for(const record of dirty)await refreshRecord({guild},record);
+ const dirty=(await database().query("SELECT * FROM feature_records WHERE guild_id=$1 AND message_id IS NOT NULL AND kind IN ('GIVEAWAY','EVENT','SUGGESTION','ROLE_MENU') AND payload->>'discordMessageMissing' IS DISTINCT FROM 'true' AND (discord_updated_at IS NULL OR discord_updated_at<updated_at) ORDER BY updated_at LIMIT 20",[guild.id])).rows;for(const record of dirty)await refreshRecord({guild},record);
  if(f.community){const due=(await database().query("SELECT r.*,u.username FROM feature_records r JOIN users u ON u.id=r.owner_id WHERE guild_id=$1 AND kind='GIVEAWAY' AND status='OPEN' AND due_at<=now() ORDER BY due_at LIMIT 20",[guild.id])).rows;
  for(const r of due){try{const actor={id:r.owner_id,username:r.username},next=r.kind==='GIVEAWAY'?await finishGiveaway(actor,r.id,true,'due:'+r.id):await updateFeatureRecord(actor,r.id,'DONE',true,'due:'+r.id);await refreshRecord({guild},next);}catch{console.error('FEATURE_EXPIRY_FAILED');}}}
 }

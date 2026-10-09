@@ -1,4 +1,12 @@
-# TurkishPix Bot Merkezi v2.14.1
+# TurkishPix Bot Merkezi v2.14.2
+
+## Discord güvenilirlik düzeltmesi (2.14.2)
+
+- `/bilet kur`, silinmiş eski panel nedeniyle yeni kanal kurulumunu durdurmaz. Bilet kurtarma mevcut konu kanalını bulur; silinmiş mesajı aynı kayıtta yeniler.
+- Kart güncelleme onayı PostgreSQL mikrosaniyelerini korur. Eksik eski mesajlara sürekli 404 isteği gönderilmez; çekiliş kimliği, katılım, mesaj ve süre kayıtları korunur.
+- Arka plan modülleri sınırlı eşzamanlı kapasiteyle bağımsız çalışır. Aynı görev üst üste başlamaz; kapanışta işler beklenir. Discord okumaları birleştirilir, 429 ve geçici okuma hataları kontrollü denenir; belirsiz yazma hataları körlemesine tekrarlanmaz.
+- Süresi dolmuş etkileşim ve cevap hataları yakalanır. Toplu rol taramasında geçici ağ hatası kampanyayı kalıcı başarısız saymaz.
+- Yeni veritabanı şeması veya veri sıfırlaması yoktur. 100 katılımcılı çekilişin yeni worker ile aynı kayıt üzerinden sürmesi ve tekrar sonuçlandırmada kazananların korunması test edilir.
 
 ## Otorol ve çoklu XP rolleri (2.14.1)
 

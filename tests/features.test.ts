@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 import {Collection,PermissionsBitField,PermissionFlagsBits,MessageFlags} from 'discord.js';
-import {setTestDatabase,config,defaultCommunitySettings,defaultFeatureSettings,communitySettingsSchema,featureCommands,featureNames,claimDaily,memberProfile,memberRank,transferCoins,purchaseBadge,giveReputation,awardChatXP,levelInfo,addFeatureRecord,listFeatureRecords,updateFeatureRecord,getFeatureRecord,participateFeature,finishGiveaway,attachFeatureMessage,featureOverview,saveAIProvider,aiProviderStatus,assistantAnswer,securityEmbed,communityDeliveryTick,verifyAudit} from '../packages/core/src/index';
+import {setTestDatabase,config,defaultCommunitySettings,defaultFeatureSettings,communitySettingsSchema,featureCommands,featureNames,claimDaily,memberProfile,memberRank,transferCoins,purchaseBadge,giveReputation,awardChatXP,levelInfo,addFeatureRecord,listFeatureRecords,updateFeatureRecord,getFeatureRecord,participateFeature,finishGiveaway,attachFeatureMessage,acknowledgeFeatureMessage,featureOverview,saveAIProvider,aiProviderStatus,assistantAnswer,securityEmbed,communityDeliveryTick,verifyAudit} from '../packages/core/src/index';
 import {levelNotificationTick} from '../apps/bot/src/levels';
 import {commands} from '../packages/core/src/commands';
 import {handleFeatureInteraction,featureTick,featureRecordView} from '../apps/bot/src/features';
@@ -80,4 +80,12 @@ test('Seviye duyurusu kanal seçimini ve kapatma tercihini uygular; izin hatası
  const settings=defaultCommunitySettings();settings.features.levelUpChannel='888888888888888887';await claimDaily(actor,settings.features,'seed');await pg.query('UPDATE member_profiles SET xp=95 WHERE user_id=$1',[actor.id]);await awardChatXP(actor,'Seçili kanala bir katkı',settings.features,channel);assert.equal((await pg.query<any>('SELECT channel_id FROM level_up_notifications')).rows[0].channel_id,settings.features.levelUpChannel);
  const fake=fakeInteraction('rank');fake.ch.id=settings.features.levelUpChannel;fake.i.guild.members.fetch=async()=>({id:actor.id,user:{...actor,bot:false}});fake.ch.permissionsFor=()=>new PermissionsBitField(0n);const client={guilds:{cache:new Collection([[config().guildId,fake.i.guild]])}};await levelNotificationTick(client,settings);assert.equal(fake.calls.filter(c=>c.method==='send').length,0);assert.equal((await pg.query<any>('SELECT status,attempts FROM level_up_notifications')).rows[0].status,'PENDING');
  settings.features.levelUpEnabled=false;await levelNotificationTick(client,settings);assert.equal((await pg.query<any>('SELECT status FROM level_up_notifications')).rows[0].status,'CANCELLED');await pg.query("UPDATE member_profiles SET xp=395,last_xp_at=now()-interval '2 minutes'");await awardChatXP(actor,'Duyuru kapalıyken sonraki seviye',settings.features,channel);assert.equal((await pg.query('SELECT id FROM level_up_notifications')).rows.length,1);
+});
+
+test('Kart güncellemesi PostgreSQL mikrosaniyelerini korur; arada gelen yeni değişiklik kirli kalır',async()=>{
+ const r=await addFeatureRecord(actor,'EVENT','Hassas zaman',{reminders:[]},{minutes:60,channelId:channel},'precise-time');await attachFeatureMessage(r.id,channel,messageId);
+ await pg.query("UPDATE feature_records SET updated_at='2026-10-09 22:00:00.123456+00',discord_updated_at=NULL WHERE id=$1",[r.id]);const snapshot:any=await getFeatureRecord(r.id);snapshot.updated_at=new Date(snapshot.updated_at).toISOString();await acknowledgeFeatureMessage(snapshot);
+ assert.equal((await pg.query<any>('SELECT discord_updated_at=updated_at AS clean FROM feature_records WHERE id=$1',[r.id])).rows[0].clean,true);
+ await pg.query("UPDATE feature_records SET updated_at='2026-10-09 22:00:00.123789+00' WHERE id=$1",[r.id]);await acknowledgeFeatureMessage(snapshot);
+ assert.equal((await pg.query<any>('SELECT discord_updated_at<updated_at AS dirty FROM feature_records WHERE id=$1',[r.id])).rows[0].dirty,true);
 });
