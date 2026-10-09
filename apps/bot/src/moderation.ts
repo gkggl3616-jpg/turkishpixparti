@@ -1,10 +1,10 @@
-import {inspectContent,recordModeration,moderationAction,moderationLabels,config,database,cleanupModeration,sha256,securityEmbed,type CommunitySettings,type ModerationDecision} from '@turkishpix/core';
+import {inspectContent,recordModeration,moderationAction,moderationLabels,config,database,cleanupModeration,sha256,recordDiscordAudit,type CommunitySettings,type ModerationDecision} from '@turkishpix/core';
 const pending=new Map<string,Promise<unknown>>();
 async function serialized<T>(key:string,work:()=>Promise<T>){const previous=pending.get(key)||Promise.resolve(),next=previous.catch(()=>{}).then(work);pending.set(key,next);try{return await next;}finally{if(pending.get(key)===next)pending.delete(key);}}
 async function logCase(actor:any,input:any,result:any,action:string,settings:CommunitySettings){
- if(result.duplicate)return;const channel=settings.security.logChannel||config().logChannel;if(!channel)return;
- const embed=securityEmbed({userId:actor.id,username:actor.username,channelId:input.channelId,rule:moderationLabels[input.decision.category as keyof typeof moderationLabels],action,source:({CREATE:'Yeni mesaj',EDIT:'Düzenlenmiş mesaj',NATIVE:'Discord AutoMod'} as any)[input.source],hits:result.hits,caseId:result.id,roleIds:input.roleIds,avatarUrl:actor.avatar?`https://cdn.discordapp.com/avatars/${actor.id}/${actor.avatar}.png`:undefined},config().appUrl);
- await database().query("INSERT INTO community_deliveries(id,guild_id,kind,payload,dedupe_key) VALUES(gen_random_uuid(),$1,'SECURITY_LOG',$2,$3) ON CONFLICT(dedupe_key) DO NOTHING",[config().guildId,{channelId:channel,embeds:[embed]},'moderation:'+result.id]);
+ if(result.duplicate)return;
+ await recordDiscordAudit({key:'moderation:'+result.id,kind:'BLOCKED_MESSAGE',actorId:actor.id,actorName:actor.username,channelId:input.channelId,messageId:input.messageId,after:input.content,metadata:{reason:moderationLabels[input.decision.category as keyof typeof moderationLabels],action,source:input.source,caseId:result.id}},settings.security.logChannel||config().logChannel).catch(()=>console.error('MODERATION_AUDIT_PENDING'));
+
 }
 async function timeoutMember(member:any,result:any,action:string,settings:CommunitySettings){
  if(!result.shouldTimeout)return action;const duration=settings.security.content.escalation.timeoutMinutes*60000;

@@ -14,7 +14,7 @@ export async function protectApplicationMessage(message:any,settings:CommunitySe
     else action+=' + TIMEOUT_PERMISSION_MISSING';
    }
   }
-  await recordSecurity(user?{id:user.id,username:user.username,avatar:user.avatar,roleIds:member?[...member.roles.cache.keys()].filter(id=>id!==message.guildId) as string[]:[]}:{id:'UNKNOWN_APPLICATION',username:'Tetikleyen üye bilgisi yok'},message.channelId,reason,action,settings,{source:reason==='USER_INSTALLED_APP'?'Hesaba kurulan uygulama':'Mesaj yönlendirme',appName:identity.appId?identity.appName:undefined,appId:identity.appId||undefined});
+  await recordSecurity(user?{id:user.id,username:user.username,avatar:user.avatar,roleIds:member?[...member.roles.cache.keys()].filter(id=>id!==message.guildId) as string[]:[]}:{id:'UNKNOWN_APPLICATION',username:'Tetikleyen üye bilgisi yok'},message.channelId,reason,action,settings,{messageId:message.id,content:message.content||'',source:reason==='USER_INSTALLED_APP'?'Hesaba kurulan uygulama':'Mesaj yönlendirme',appName:identity.appId?identity.appName:undefined,appId:identity.appId||undefined});
   processed.add(message.id);if(processed.size>4096)processed.delete(processed.values().next().value!);
   if(bursts.size>4096)for(const [k,v] of bursts)if(now-v.at(-1)!>300000){bursts.delete(k);lastTimeout.delete(k);}while(bursts.size>4096){const key=bursts.keys().next().value!;bursts.delete(key);lastTimeout.delete(key);}return true;
  })();running.set(message.id,task);try{return await task;}finally{running.delete(message.id);}

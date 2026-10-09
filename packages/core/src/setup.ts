@@ -7,7 +7,7 @@ import {buildRoleCatalog,roleMappings,ROLE_LABELS} from './roles';
 import {applicationConnection} from './application';
 type Actor={id:string;username:string;avatar?:string|null};
 function owner(actor:Actor){if(!config().owners.includes(actor.id))throw new DomainError('FORBIDDEN','Sunucu kurulumu yalnızca owner hesaplarına açık.',403);}
-export function botInviteUrl(){return 'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:config().clientId,integration_type:'0',scope:'bot applications.commands',permissions:'1099934297271',guild_id:config().guildId,disable_guild_select:config().guildId?'true':'false'}).toString();}
+export function botInviteUrl(){return 'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:config().clientId,integration_type:'0',scope:'bot applications.commands',permissions:'1099934330103',guild_id:config().guildId,disable_guild_select:config().guildId?'true':'false'}).toString();}
 export async function loadServerSettings(){
  const row=(await database().query('SELECT settings FROM server_settings WHERE id=1')).rows[0];
  setServerSettings(row?serverSettingsSchema.parse(row.settings):{});

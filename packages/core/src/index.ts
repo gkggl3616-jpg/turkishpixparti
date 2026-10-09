@@ -45,3 +45,8 @@ export * from './arcade';
 export * from './arcade-boards';
 export * from './arcade-discord';
 export * from './room-guide';
+export * from './discord-ui';
+export * from './discord-audit-policy';
+export * from './discord-audit';
+export * from './role-automation-policy';
+export * from './role-automation';

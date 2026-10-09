@@ -32,7 +32,7 @@ const examples:Record<string,string>={
  'sor':'/sor soru: Bugün ne oynayalım?','muzik radyo':'/muzik radyo istasyon: Groove Salad · Chill','ses katil':'/ses katil','anket':'/anket soru: Ne oynayalım? secenekler: Valorant | Minecraft',
  'xox':'/xox zorluk: zor','bilet kur':'/bilet kur kanal: #bilet-ac kategori: Biletler yetkili: @Destek',
  'topluluk oyun salon':'/topluluk oyun salon oyun: Neon Yılan','topluluk oda kur':'/topluluk oda kur kategori: Ses Kanalları',
- 'muzik oynat':'/muzik oynat ara: Şarkı adı','muzik ekran':'/muzik ekran','rank':'/rank uye: @Üye'
+ 'muzik oynat':'/muzik oynat ara: Şarkı adı','muzik ekran':'/muzik ekran','rank':'/rank uye: @Üye','topluluk roller otorol':'/topluluk roller otorol rol: @Üye','topluluk roller herkese':'/topluluk roller herkese rol: @Üye','topluluk roller emoji':'/topluluk roller emoji rol: @Oyuncu emoji: 🎮','topluluk roller tag':'/topluluk roller tag rol: @Taglı','topluluk denetim kur':'/topluluk denetim kur','topluluk botkoruma izinver':'/topluluk botkoruma izinver bot: @İzinliBot'
 };
 export function helpEntries(category:string){return commands.filter(c=>commandCategory(c.name)===category).flatMap((c:any)=>{
  const subs=(c.options||[]).filter((o:any)=>o.type===1||o.type===2);
@@ -47,6 +47,7 @@ export function commandHelpView(category='home',page=0){
   {name:'🎵 Ses ve müzik',value:'`/ses katil` → ses kanalına katıl\n`/muzik radyo` → bir istasyon seç',inline:true},
   {name:'🎮 Oyun ve sohbet',value:'`/xox` · `/anket` · `/sor`\nBir kategori seçerek tüm kullanımları gör.',inline:true}
  ];
+ if(category==='tercihler')fields.push({name:'🎛️ Discord kontrol merkezi',value:'`/botpanel` → Discord içindeki yönetim menüsü.\nDenetim kaydı, bot giriş engeli, otomatik rol, emoji rolü ve tag rolü burada yönetilir.',inline:false});
  if(category.startsWith('fun-'))fields.push({name:'🕹️ 9 oyun · Web & Discord',value:'Neon Yılan · Tuğla Kıran · Uzay Savunması · 2048 · Mayın Tarlası · Dörtlü Bağla ve daha fazlası.\nÜcretsiz dene; kayıtlı turlar **100 / 150 / 200 Bot TL**.\nDiscord: `/topluluk oyun 2048` · `/topluluk oyun mayin` · `/topluluk oyun dortlu`\n[Oyun salonunu aç]('+config().appUrl+'/oyunlar)',inline:false});
  const embed=brightEmbed(selected?selected.name:'✦ Komut merkezi',selected?'**'+entries.length+' kullanım** · Sayfa **'+(page+1)+' / '+pages+'**\n`<alan>` gerekli · `[alan]` isteğe bağlı':'**𝙏𝙪𝙧𝙠𝙞𝙨𝙝𝙋𝙞𝙭**\n'+commands.length+' komut · '+helpCategories.length+' kategori\nAşağıdaki menüden ne yapmak istediğini seç.',fields,selected?.color||theme.cyan);
  embed.footer={text:'TurkishPix • /yardim • Kategori menüsüyle keşfet'};

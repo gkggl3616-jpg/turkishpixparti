@@ -1,4 +1,6 @@
 import {z} from 'zod';
+import {discordAuditCommandGroups} from './discord-audit-policy';
+import {roleAutomationCommandGroup} from './role-automation-policy';
 import {arcadeGames} from './arcade-policy';
 const id=z.union([z.string().regex(/^\d{17,20}$/),z.literal('')]);
 const ids=z.array(z.string().regex(/^\d{17,20}$/)).max(20);
@@ -34,6 +36,8 @@ const record=text('kayit','Etkinlik kartındaki kayıt kodu',true,36);
 const sub=(name:string,description:string,options:any[]=[])=>({type:1,name,description,options});
 const group=(name:string,description:string,options:any[])=>({type:2,name,description,options});
 export const expansionCommand={name:'topluluk',description:'Özel odalar, kayıt, otomasyon, etkinlik ve yetkili araçları.',options:[
+ ...discordAuditCommandGroups,
+ roleAutomationCommandGroup,
  group('oyun','Oyun salonunu aç veya Discord’da düğmelerle oyna.',[
   sub('salon','Dokuz 2D / 3D oyundan birini tarayıcıda aç.',[{type:3,name:'oyun',description:'Açılacak oyun; tur ücretini sitede onaylarsın.',required:false,choices:arcadeGames.map(g=>({name:g.name+' · '+g.cost+' Bot TL',value:g.id}))}]),
   sub('2048','Discord düğmeleriyle 2048 oyna. Tur: 100 Bot TL.'),

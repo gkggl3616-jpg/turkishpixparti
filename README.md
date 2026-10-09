@@ -1,4 +1,33 @@
-# TurkishPix Bot Merkezi v2.13.0
+# TurkishPix Bot Merkezi v2.14.0
+
+## v2.14: Discord kontrol merkezi, denetim ve rol otomasyonları
+
+`/botpanel` artık Discord içinde kişisel Components V2 kartları, modül menüsü, düğmeler, rol ve kanal seçicileri açar. Denetim, bot engeli, karşılama, XP, roller, özel odalar, müzik, etkinlik ve destek aynı menüden bulunur. Yönetim işlemleri her tıklamada güncel üye izinleriyle doğrulanır.
+
+| İşlem | Discord komutu |
+| --- | --- |
+| Rol otomasyon menüsü | `/topluluk roller panel` |
+| Yeni üye ve eksik rolü olan mevcut üyelere otomatik rol | `/topluluk roller otorol rol: @Üye` |
+| Mevcut insan üyelere tek seferlik dağıtım | `/topluluk roller herkese rol: @Üye` |
+| Dağıtım ilerlemesi ve durdurma | `/topluluk roller toplu-durum` |
+| Emojiye basınca rol verme / tepkisini kaldırınca alma | `/topluluk roller emoji rol: @Oyuncu emoji: 🎮` |
+| Gerçek Discord profil sunucu tagı rolü | `/topluluk roller tag rol: @Taglı` |
+| Tag kontrolünü yeniden başlatma | `/topluluk roller tag-tara` |
+| Yetkililere özel denetim kanalı kurma | `/topluluk denetim kur` |
+| Yeni bot girişlerini engelleme | `/topluluk botkoruma ac` |
+| İzinli bot istisnası | `/topluluk botkoruma izinver bot: @Bot` |
+| Bot engelini kapatma | `/topluluk botkoruma kapat` |
+
+- Rol paneli en fazla on giriş rolü seçer. İnsan üyeler doğrulamayı tamamlamadan rol verilmez; mevcut roller silinmez. Botun **Rolleri Yönet** izni ve hedef rollerin üstünde rolü gerekir. Yönetici izinleri içeren roller otomatik verilemez.
+- Toplu dağıtım önizleme ve tek kullanımlık başlatma düğmesi gösterir. Üyeler sayfalı taranır; botlar ve rolü zaten taşıyanlar atlanır. Kalıcı işler, cursor ve sonuç kayıtları yeniden başlatmada korunur. İptal bekleyen işleri durdurur; önceden verilmiş roller korunur.
+- Emoji rol mesajları veritabanında tutulur; bot yeniden başlayınca eski mesajlara gelen tepkiler de işlenir. Unicode ve bu sunucudaki özel emojiler desteklenir. Tag, otorol ve emoji rolleri ayrı seçilir. `/rolmenu` düğmeli rol sistemi de kullanılabilir.
+- Tag `primary_guild.identity_guild_id` ve `identity_enabled` ile doğrulanır. Tagı kaldıran veya başka sunucu tagına geçen üyeden rol alınır. Eksik kimlik bilgisi rol sildirmez. Kontrol döngüsü 5 dakikadır; büyük sunucularda üye tarama süresi eklenir.
+- Denetim yeni mesaj, düzenleme öncesi/sonrası, silinen mesaj, yasaklı içerik, duyuru yazarı, üye, rol, kanal ve bot işlemlerini kaydeder. Botun görmediği eski metin bilinmiyor olarak gösterilir; mesaj yazarı silen kişi diye gösterilmez. Tam içerik yetkililere özel dosyayla açılır, etiketler tetiklenmez.
+- Kategoriler için ayrı özel kanallar, hariç kanallar ve 7 / 30 / 90 günlük saklama seçilebilir. Eski mesaj içerik önbelleği 7 gün tutulur. Mesaj içeriği değiştirilemez işlem zincirine yazılmaz.
+- Yeni yabancı botların giriş engeli varsayılan açık, TurkishPix'in kendi hesabı daima korunur. Mevcut botlar toplu çıkarılmaz. **Üyeleri At** izni ve hedef botun üstünde rol gerekir; hiyerarşi hataları kayıt ve yeniden deneme ile görünür.
+- Migration `016_discord_audit` ve `017_role_automation` tüm dağıtım girişlerinde bulunur. Yeni komutlar `/topluluk` altında olduğundan 100 kök komut sınırı korunur.
+
+
 
 ## v2.13: Dokuz oyun ve Discord arcade
 
