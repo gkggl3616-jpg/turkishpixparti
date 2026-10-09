@@ -1,5 +1,5 @@
 import 'dotenv/config';
-export const RELEASE_VERSION='2.10.0';
+export const RELEASE_VERSION='2.10.1';
 export const APPLICATION_ID = '1557484052133707896';
 export const PUBLIC_KEY = '880bd59730ab7eeb5ba83a147634fd648c729a7cb2a3a87ad427bdae4c54a74d';
 export type ServerSettings={guildId:string;voteChannel:string;logChannel:string};

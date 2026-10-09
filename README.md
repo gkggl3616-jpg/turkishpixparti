@@ -1,4 +1,4 @@
-# TurkishPix Bot Merkezi v2.10.0
+# TurkishPix Bot Merkezi v2.10.1
 
 ## v2.10: Katılınca oda oluşturma ve görselli seviye duyurusu
 
