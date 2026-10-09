@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Install FFmpeg for audio checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
       - run: npm ci
       - run: npm test
       - run: npm run typecheck
