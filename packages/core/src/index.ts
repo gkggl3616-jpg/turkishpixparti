@@ -42,3 +42,6 @@ export * from './visuals';
 
 export * from './arcade-policy';
 export * from './arcade';
+export * from './arcade-boards';
+export * from './arcade-discord';
+export * from './room-guide';

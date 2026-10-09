@@ -39,6 +39,7 @@ test('Herkese açık durum eski heartbeat ile bağlı göstermez ve özel bilgil
  let row={updated_at:new Date(),status:{version:RELEASE_VERSION,connected:true,configuredGuild:true,commandsRegistered:true,registeredVersion:RELEASE_VERSION,botId:'private-id',guilds:['private-guild'],permissions:{secret:'private-data'}}};
  setTestDatabase({query:async()=>({rows:[row] as any[],rowCount:1})});
  try{let response=await GET(),raw=await response.text(),data=JSON.parse(raw);assert.ok(data.bot.connected);assert.ok(data.bot.commandsRegistered);assert.equal(data.releases[0].version,RELEASE_VERSION);assert.ok(!raw.includes('private-'));assert.equal(response.headers.get('cache-control'),'no-store');
+  row.status.configuredGuild=false;data=await(await GET()).json();assert.equal(data.bot.commandsRegistered,false);assert.equal(data.bot.registeredVersion,null);
   row.updated_at=new Date(Date.now()-60000);data=await(await GET()).json();assert.equal(data.bot.connected,false);assert.equal(data.bot.commandsRegistered,false);
  }finally{if(previous===undefined)delete process.env.DATABASE_URL;else process.env.DATABASE_URL=previous;}
 });

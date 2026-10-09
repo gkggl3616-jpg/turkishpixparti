@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {arcadeGames} from './arcade-policy';
 const id=z.union([z.string().regex(/^\d{17,20}$/),z.literal('')]);
 const ids=z.array(z.string().regex(/^\d{17,20}$/)).max(20);
 export const expansionSettingsSchema=z.object({
@@ -33,7 +34,14 @@ const record=text('kayit','Etkinlik kartındaki kayıt kodu',true,36);
 const sub=(name:string,description:string,options:any[]=[])=>({type:1,name,description,options});
 const group=(name:string,description:string,options:any[])=>({type:2,name,description,options});
 export const expansionCommand={name:'topluluk',description:'Özel odalar, kayıt, otomasyon, etkinlik ve yetkili araçları.',options:[
+ group('oyun','Oyun salonunu aç veya Discord’da düğmelerle oyna.',[
+  sub('salon','Dokuz 2D / 3D oyundan birini tarayıcıda aç.',[{type:3,name:'oyun',description:'Açılacak oyun; tur ücretini sitede onaylarsın.',required:false,choices:arcadeGames.map(g=>({name:g.name+' · '+g.cost+' Bot TL',value:g.id}))}]),
+  sub('2048','Discord düğmeleriyle 2048 oyna. Tur: 100 Bot TL.'),
+  sub('mayin','Discord’da dört mayını bul. Tur: 100 Bot TL.'),
+  sub('dortlu','Akıllı bota karşı Dörtlü Bağla. Tur: 150 Bot TL.')
+ ]),
  group('oda','Kendi geçici ses odanı yönet.',[
+  sub('yardim','Oda oluşturma, kilitleme ve davet adımlarını öğren.'),
   sub('kur','Yetkili olarak katılınca oda oluşturan ses kanalını kur.',[{type:7,name:'kategori',description:'Yeni odaların ses kategorisi',required:false,channel_types:[4]}]),
   sub('ac','Sana ait bir ses odası oluştur; boş kalan oda otomatik kapanır.',[text('ad','Odanın adı',false,60)]),
   sub('kilitle','Yeni katılımlara kapat.'),sub('kilitac','Odayı yeni katılımlara aç.'),

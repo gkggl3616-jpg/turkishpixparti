@@ -29,7 +29,7 @@ function orbitRenderer(canvas:HTMLCanvasElement){
  return {draw(objects:Object3D[],x:number,y:number,time:number,lives:number){gl.viewport(0,0,960,540);gl.clearColor(.025,.035,.09,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);for(let i=0;i<18;i++){const z=4-((i*4+time*9)%72);box(-4,-2.7,z,.11,0,[.22,.35,.65]);box(4,-2.7,z,.11,0,[.22,.35,.65]);box(-4,2.7,z,.11,0,[.22,.35,.65]);box(4,2.7,z,.11,0,[.22,.35,.65]);}for(const o of objects)if(!o.hit)box(o.x,o.y,o.z,o.gold?.45:.85,time*(o.gold?2:.6),o.gold?[1,.73,.18]:[.61,.35,.93]);box(x,y,0,.42,time*.7,lives>0?[.3,.88,1]:[1,.2,.3]);},dispose(){gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vertex);gl.deleteShader(fragment);gl.getExtension('WEBGL_lose_context')?.loseContext();}};
 }
 
-export function FlyingRound({game,seed,onEnd}:{game:Exclude<ArcadeGame,'memory'>;seed:number;onEnd:(result:GameResult)=>void}){
+export function FlyingRound({game,seed,onEnd}:{game:'neon'|'orbit';seed:number;onEnd:(result:GameResult)=>void}){
  const canvas=useRef<HTMLCanvasElement>(null),keys=useRef(new Set<string>()),[hud,setHud]=useState({score:0,lives:3,seconds:60}),[error,setError]=useState('');
  useEffect(()=>{
   const surface=canvas.current!,random=seeded(seed),orbit=game==='orbit'?orbitRenderer(surface):null,ctx=game==='neon'?surface.getContext('2d'):null;

@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 import {Collection} from 'discord.js';
-import {setTestDatabase,snapshotCurrencyCampaign,applyCurrencyCampaignBatch,currencyCampaignStatus,arcadeOverview,startArcade,finishArcade,memberProfile,defaultCommunitySettings,verifyAudit,sha256} from '../packages/core/src/index';
+import {setTestDatabase,snapshotCurrencyCampaign,applyCurrencyCampaignBatch,currencyCampaignStatus,arcadeOverview,startArcade,finishArcade,startDiscordArcade,playEntertainment,getEntertainmentSession,arcadeGames,createGame,memberProfile,defaultCommunitySettings,verifyAudit,sha256} from '../packages/core/src/index';
 import {GET,POST} from '../apps/web/src/app/api/[...path]/route';
+import {commands} from '../packages/core/src/commands';
+import {handleArcadeInteraction,discordArcadeView} from '../apps/bot/src/arcade';
 import {commandHelpView} from '../apps/bot/src/help';
 import {runCurrencyGrant} from '../apps/bot/src/currency-grant';
 process.env.APP_URL='https://turkishpix.example';process.env.DISCORD_GUILD_ID='888888888888888888';process.env.DISCORD_BOT_TOKEN='test-bot-token';process.env.DATABASE_URL='postgresql://test.invalid/test';process.env.DEMO_MODE='false';process.env.AUDIT_HMAC_KEY='test-only-audit-key-012345678901234567890';
 const actor={id:'555555555555555555',username:'citizen',avatar:null},friend={id:'666666666666666666',username:'friend',avatar:null},token='ab'.repeat(32),csrf='test-csrf';let pg:PGlite;const original=globalThis.fetch;
 before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql,params=[])=>{const result=await pg.query(sql,params);return {rows:result.rows as any[],rowCount:result.affectedRows||0};}});for(const name of (await readdir(new URL('../packages/core/sql/',import.meta.url))).filter(name=>/^\d+.*\.sql$/.test(name)&&!name.startsWith('002_')).sort())await pg.exec(await readFile(new URL('../packages/core/sql/'+name,import.meta.url),'utf8'));});
-beforeEach(async()=>{await pg.exec('DELETE FROM arcade_sessions;DELETE FROM community_currency_grants;DELETE FROM community_currency_campaigns;DELETE FROM feature_receipts;DELETE FROM member_profiles;DELETE FROM community_settings;DELETE FROM sessions;DELETE FROM rate_limits;');globalThis.fetch=async()=>Response.json({pending:false,user:{bot:false}});});
+beforeEach(async()=>{await pg.exec('DELETE FROM entertainment_sessions;DELETE FROM entertainment_scores;DELETE FROM arcade_sessions;DELETE FROM community_currency_grants;DELETE FROM community_currency_campaigns;DELETE FROM feature_receipts;DELETE FROM member_profiles;DELETE FROM community_settings;DELETE FROM sessions;DELETE FROM rate_limits;');globalThis.fetch=async()=>Response.json({pending:false,user:{bot:false}});});
 after(async()=>{globalThis.fetch=original;await pg.close();});
 async function grant(){await snapshotCurrencyCampaign([actor,friend]);return applyCurrencyCampaignBatch();}
 test('50.000 Bot TL mevcut bakiyeye eklenir; snapshot ve dağıtım tekrarı ikinci ödeme yapmaz',async()=>{
@@ -30,4 +32,30 @@ test('Oyun API’si katalogda herkese açıktır; ödeme giriş ve CSRF ister, n
 });
 test('Dağıtım üye listesinin ikinci sayfasını da okur; bot hesaplarına bakiye vermez',async()=>{
  const first=new Collection<string,any>();for(let i=0;i<1000;i++){const id=String(600000000000000000n+BigInt(i));first.set(id,{id,user:{username:'member'+i,avatar:null,bot:i>=2}});}const id='600000000000001000';let pages=0;await runCurrencyGrant({members:{list:async(options:any)=>{pages++;if(pages===1)return first;assert.equal(options.after,'600000000000000999');return new Collection([[id,{id,user:{username:'last',avatar:null,bot:false}}]]);}}});assert.equal(pages,2);const status=await currencyCampaignStatus();assert.equal(status.paid,3);assert.equal(status.recipients,3);assert.equal((await memberProfile(id)).coins,50000);assert.equal((await memberProfile('600000000000000999')).coins,0);
+});
+test('Dokuz web oyununun ücreti katalogdan alınır ve genişletilmiş SQL kontrolünde kaydedilir',async()=>{
+ await grant();let coins=50000;for(const game of arcadeGames){const round=await startArcade(actor,{game:game.id,requestId:crypto.randomUUID()});coins-=game.cost;assert.equal(round.coins,coins,game.id);await finishArcade(actor,{id:round.id,outcome:'QUIT',score:0});}assert.equal(arcadeGames.length,9);assert.equal((await pg.query('SELECT * FROM arcade_sessions')).rows.length,9);
+});
+test('Discord ücreti ve oyun tek transaction; nonce tekrarı son durumu döndürür, ikinci ödeme olmaz',async()=>{
+ await grant();const nonce=crypto.randomUUID(),channel='999999999999999999';const first=await startDiscordArcade(actor,channel,'mines',nonce);assert.equal(first.coins,49900);assert.equal(first.session.state.entryCost,100);assert.equal(first.session.state.puzzle.armed,false);
+ const moved=await playEntertainment(first.session.id,actor,channel,0,'0','',defaultCommunitySettings().entertainment);assert.equal(moved.state.revision,1);
+ const repeated=await startDiscordArcade(actor,channel,'mines',nonce);assert.equal(repeated.session.id,first.session.id);assert.equal(repeated.session.state.revision,1);assert.equal((await memberProfile(actor.id)).coins,49900);
+ await assert.rejects(playEntertainment(first.session.id,friend,channel,1,'1','',defaultCommunitySettings().entertainment),/üyeye ait/);
+ await assert.rejects(playEntertainment(first.session.id,actor,'777777777777777777',1,'1','',defaultCommunitySettings().entertainment),/başka/);
+ await assert.rejects(playEntertainment(first.session.id,actor,channel,0,'1','',defaultCommunitySettings().entertainment),/ilerledi/);
+ await assert.rejects(startDiscordArcade(actor,'777777777777777777','mines',nonce),/başka/);assert.equal((await memberProfile(actor.id)).coins,49900);
+ assert.equal((await verifyAudit()).valid,true);
+});
+test('Discord düşük bakiye, kapalı ekonomi ve üç açık oyun sınırında ödeme yapmaz',async()=>{
+ const channel='999999999999999999';await assert.rejects(startDiscordArcade(actor,channel,'2048',crypto.randomUUID()),/yetersiz/);assert.equal((await pg.query('SELECT * FROM entertainment_sessions')).rows.length,0);await grant();
+ for(const game of ['2048','mines','connect4'] as const)await startDiscordArcade(actor,channel,game,crypto.randomUUID());assert.equal((await memberProfile(actor.id)).coins,49650);await assert.rejects(startDiscordArcade(actor,channel,'2048',crypto.randomUUID()),/en fazla/);assert.equal((await memberProfile(actor.id)).coins,49650);
+ const settings=defaultCommunitySettings();settings.features.economy=false;await pg.query('INSERT INTO community_settings(guild_id,settings) VALUES($1,$2)',['888888888888888888',settings]);await assert.rejects(startDiscordArcade(friend,channel,'2048',crypto.randomUUID()),/kapalı/);assert.equal((await memberProfile(friend.id)).coins,50000);
+});
+test('Yeni Discord oyunlarının mesajı beş satır sınırında; onay önizlemesi ödeme yapmaz',async()=>{
+ await grant();const settings=defaultCommunitySettings(),channel='999999999999999999';
+ assert.equal(commands.length,100);const group=(commands.find(c=>c.name==='topluluk') as any).options.find((g:any)=>g.name==='oyun');assert.equal(group.options.length,4);
+ for(const game of ['2048','mines','connect4'] as const){const {session}=await startDiscordArcade(actor,channel,game,crypto.randomUUID());for(const view of [discordArcadeView(session),discordArcadeView({...session,status:'EXPIRED'})]){assert.ok(view.components.length<=5);for(const row of view.components){assert.ok(row.components.length<=5);for(const button of row.components)assert.ok(!button.custom_id||button.custom_id.length<=100);}assert.deepEqual(view.allowedMentions,{parse:[]});}}
+ const before=(await memberProfile(actor.id)).coins,calls:any[]=[];const i:any={commandName:'topluluk',guildId:'888888888888888888',channelId:channel,user:actor,appPermissions:{has:()=>true},options:{getSubcommandGroup:()=> 'oyun',getSubcommand:()=> 'mayin'},isChatInputCommand:()=>true,isButton:()=>false,isRepliable:()=>true,reply:async(payload:any)=>{calls.push(payload);i.replied=true;}};
+ assert.equal(await handleArcadeInteraction(i,settings),true);assert.match(calls[0].components[0].components[0].label,/100 Bot TL/);assert.equal((await memberProfile(actor.id)).coins,before);
+ const content:any[]=[];const other:any={...i,user:friend,isChatInputCommand:()=>false,isButton:()=>true,customId:calls[0].components[0].components[0].custom_id,replied:false,reply:async(p:any)=>content.push(p)};assert.equal(await handleArcadeInteraction(other,settings),true);assert.match(content[0].content,/yalnız/);assert.equal((await memberProfile(friend.id)).coins,50000);
 });

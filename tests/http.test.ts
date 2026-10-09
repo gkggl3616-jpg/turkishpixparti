@@ -104,3 +104,8 @@ test('HTTP: müzik durumu ve kalıcı ses işlemleri owner ve CSRF ister',async(
  for(const path of ['youtube-key','youtube','event']){const post=(h:any)=>POST(new Request('https://turkishpix.example/api/community/'+path,{method:'POST',headers:h,body:JSON.stringify({})}));assert.equal((await post({})).status,401);assert.equal((await post(citizenHeaders)).status,403);assert.equal((await post({...ownerHeaders,'x-csrf-token':'wrong'})).status,403);assert.equal((await post(ownerHeaders)).status,400);}
  const get=(h:any)=>GET(new Request('https://turkishpix.example/api/community/calendar',{headers:h}));assert.equal((await get({})).status,401);assert.equal((await get(citizenHeaders)).status,403);const calendar=await get(ownerHeaders);assert.equal(calendar.status,200);assert.match(calendar.headers.get('content-type')||'',/text\/calendar/);assert.ok((await calendar.text()).startsWith('BEGIN:VCALENDAR'));
 });
+test('OAuth oyun seçimini girişten sonra korur; bilinmeyen oyun ve dış adres saklanmaz',async()=>{
+ for(const [path,expected] of [['/oyunlar?oyun=space','/oyunlar?oyun=space'],['/oyunlar?oyun=evil','/oyunlar'],['https://evil.example/oyunlar?oyun=space','/']]){
+  const start=await oauthStart(path),row=(await pg.query<any>('SELECT return_path FROM oauth_states WHERE state_hash=$1',[sha256(start.state)])).rows[0];assert.equal(row.return_path,expected);
+ }
+});

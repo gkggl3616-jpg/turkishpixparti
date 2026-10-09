@@ -4,12 +4,13 @@ import {database,transaction,type DB} from './db';
 import {syncUser} from './discord';
 import {rateLimit} from './auth';
 import {entertainmentNames} from './entertainment-catalog';
+import {isArcadeBoard} from './arcade-policy';
 import {advanceGame,type GameState} from './entertainment-games';
 export type EntertainmentSettings={enabled:boolean;channelIds:string[];disabledCommands:string[];cooldownSeconds:number};
 export const defaultEntertainmentSettings=():EntertainmentSettings=>({enabled:true,channelIds:[],disabledCommands:[],cooldownSeconds:5});
 type Actor={id:string;username:string;avatar?:string|null};
 export type EntertainmentSession={id:string;guild_id:string;channel_id:string;owner_id:string;kind:string;state:GameState;status:'ACTIVE'|'FINISHED'|'EXPIRED';expires_at:Date|string;message_id:string|null};
-export function checkEntertainment(settings:EntertainmentSettings,name:string,channelId:string){if(!entertainmentNames.includes(name))throw new DomainError('UNKNOWN_COMMAND','Komut bulunamadı.');if(!settings.enabled||settings.disabledCommands.includes(name))throw new DomainError('ENTERTAINMENT_DISABLED','Bu eğlence komutu sunucuda kapalı.');if(settings.channelIds.length&&!settings.channelIds.includes(channelId))throw new DomainError('ENTERTAINMENT_CHANNEL','Bu komut için panelde seçilmiş bir eğlence kanalını kullan.');}
+export function checkEntertainment(settings:EntertainmentSettings,name:string,channelId:string){if(!entertainmentNames.includes(name)&&!isArcadeBoard(name))throw new DomainError('UNKNOWN_COMMAND','Komut bulunamadı.');if(!settings.enabled||settings.disabledCommands.includes(name))throw new DomainError('ENTERTAINMENT_DISABLED','Bu eğlence komutu sunucuda kapalı.');if(settings.channelIds.length&&!settings.channelIds.includes(channelId))throw new DomainError('ENTERTAINMENT_CHANNEL','Bu komut için panelde seçilmiş bir eğlence kanalını kullan.');}
 export async function entertainmentRate(actor:Actor,name:string,settings:EntertainmentSettings){await rateLimit(`fun:all:${config().guildId}:${actor.id}`,12,60);await rateLimit(`fun:${config().guildId}:${actor.id}:${name}`,1,name==='anket'?300:settings.cooldownSeconds);}
 export async function startEntertainment(actor:Actor,channelId:string,state:GameState,durationSeconds=300){
  const id=randomUUID();return transaction(async tx=>{await syncUser(tx,actor);await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['fun:'+config().guildId+':'+actor.id]);

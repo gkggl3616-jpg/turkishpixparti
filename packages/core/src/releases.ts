@@ -2,6 +2,12 @@
 export type ReleaseFeature={title:string;description:string;commands:string[];path:string;note?:string};
 export type Release={version:string;date:string;title:string;summary:string;features:ReleaseFeature[]};
 export const releases:Release[]=[
+ {version:'2.13.0',date:'2026-10-09',title:'Dokuz oyun, Discord turları & oda rehberi',summary:'Altı yeni oyun; üçü Discord’da da oynanır. Giriş yapmadan ücretsiz dene.',features:[
+  {title:'Daha büyük oyun salonu',description:'Neon Yılan, Tuğla Kıran, Uzay Savunması, 2048, Mayın Tarlası ve Dörtlü Bağla eklendi. Mobil kontroller, özgün oyun kartları, güçlendirmeler ve bölüm sonu savaşlarıyla dokuz oyun.',commands:['/topluluk oyun salon','/topluluk oyun salon oyun: Uzay Savunması'],path:'/oyunlar'},
+  {title:'Discord mesajında oyna',description:'2048, Mayın Tarlası ve Dörtlü Bağla mesajdaki düğmelerle oynanır. Kurallar bot tarafından uygulanır. Başlat düğmesi bir kez 100 / 100 / 150 Bot TL düşer; oyunlar 12 dakika geçerlidir.',commands:['/topluluk oyun 2048','/topluluk oyun mayin','/topluluk oyun dortlu'],path:'/oyunlar',note:'Gerçek zamanlı 2D / 3D oyunlar komuttaki bağlantıyla tarayıcıda açılır.'},
+  {title:'Ücretsiz deneme',description:'Dokuz oyunun tamamını Discord girişi ve Bot TL harcamadan dene. Deneme skorları geçmişe yazılmaz. Kayıtlı turlar aynı cüzdandan ücret alır.',commands:['/topluluk oyun salon'],path:'/oyunlar'},
+  {title:'Özel oda nasıl çalışır?',description:'➕・Oda Oluştur kanalına katılınca kendi geçici ses odan açılır. Kilitle, davet et ve kapasiteyi ayarla. Bot ve site artık adım adım kullanım rehberi gösterir.',commands:['/topluluk oda yardim','/topluluk oda kur kategori: Ses Kanalları','/topluluk oda kilitle','/topluluk oda davet uye: @Arkadaş'],path:'/oyunlar',note:'Botun sunucuda bulunması, Kanalları Yönet ve Üyeleri Taşı izinleri gerekir.'}
+ ]},
  {version:'2.12.0',date:'2026-10-09',title:'Güncellemeler merkezi',summary:'Botta ve sitede nelerin değiştiğini tek yerden keşfet.',features:[
   {title:'Sürüm notları ve yeni komutlar',description:'Yeni özellikler, kullanım örnekleri, sürüm tarihleri ve ilgili panel bağlantıları artık aynı katalogdan gösterilir. Önceki sürümleri de seçebilirsin.',commands:['/guncellemeler','/guncellemeler surum: 2.11.0','/yardim'],path:'/guncellemeler'},
   {title:'Komut rehberi bir arada',description:'50 topluluk özelliğinin rehberi /yardim içindeki kategorilerde. Ayrı /ozellikler rehberi bu menüde birleştirildi; özellikler kullanılmaya devam eder.',commands:['/yardim'],path:'/topluluk'},

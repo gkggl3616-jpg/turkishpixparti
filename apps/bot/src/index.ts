@@ -1,4 +1,5 @@
 import {handleUpdatesInteraction} from './updates';
+import {handleArcadeInteraction} from './arcade';
 import {runCurrencyGrant} from './currency-grant';
 import {createGuildRecovery} from './guild-recovery';
 import {ensureVoiceRoomLobby,handleRoomVoiceJoin} from './rooms';
@@ -48,6 +49,7 @@ client.on(Events.InteractionCreate,async interaction=>{
  if(interaction.guildId!==config().guildId){if(interaction.isRepliable())await interaction.reply({content:'Bu bot TurkishPix sunucusuna bağlı.',flags:MessageFlags.Ephemeral});return;}
  if(await handleUpdatesInteraction(interaction))return;
  if(await music.handle(interaction))return;
+ if(await handleArcadeInteraction(interaction,settings))return;
  if(await handleExpansionInteraction(interaction,settings))return;
  if(await handleSupportInteraction(interaction,settings))return;
  if(await handleFeatureInteraction(interaction,settings))return;

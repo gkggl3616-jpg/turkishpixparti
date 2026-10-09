@@ -1,4 +1,13 @@
-# TurkishPix Bot Merkezi v2.12.0
+# TurkishPix Bot Merkezi v2.13.0
+
+## v2.13: Dokuz oyun ve Discord arcade
+
+- Altı yeni tarayıcı oyunu: Neon Yılan, Tuğla Kıran (üç dalga ve güçlendirmeler), Uzay Savunması (üç boss), 2048, Mayın Tarlası ve Dörtlü Bağla (alpha-beta bot). Dokuz oyun mobil kontrol ve ücretsiz deneme sunar. Denemeler cüzdana/geçmişe yazılmaz.
+- `/topluluk oyun salon [oyun]` seçilen oyuna bağlantı verir. `/topluluk oyun 2048`, `/topluluk oyun mayin`, `/topluluk oyun dortlu` Discord düğmeleriyle oynanır. Yeni kök komut eklenmez; 100 sınırı korunur. Üç Discord oyununun ücreti onay düğmesinden sonra sırasıyla 100 / 100 / 150 Bot TL’dir.
+- Discord kuralları ve skorları sunucuda hesaplanır; üye/kanal/revizyon kontrolleri yapılır. Ödeme ve oturum tek transaction içindedir; kalıcı nonce receipt tekrar ücretlenmeyi engeller. 12 dakika, aynı anda en fazla üç Discord oyunu; mevcut oyuncu profilinin günlük puan sınırı korunur. Skor Bot TL basmaz.
+- Migration `015_arcade_games` mevcut tur kayıtlarını koruyarak oyun kontrolünü genişletir. Üretim, geliştirme ve bootstrap girişlerine eklendi.
+- `/topluluk oda yardim` ve oyun sayfası kurulum/katılma/kilitleme/davet adımlarını açıklar. Oda kategori izinlerini devralır; kilitleme herkesin yeni girişini kapatır, davet üyeye giriş izni verir. Varsayılan boş oda ömrü 120 saniyedir.
+
 
 ## v2.12.0 · Güncellemeler merkezi
 

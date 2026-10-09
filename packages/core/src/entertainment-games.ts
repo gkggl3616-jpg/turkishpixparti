@@ -1,5 +1,7 @@
 import {randomInt,createHash} from 'node:crypto';
 import {DomainError} from './config';
+import {isArcadeBoard} from './arcade-policy';
+import {createArcadeBoard,advanceArcadeBoard} from './arcade-boards';
 export const rand=(max:number)=>randomInt(max);
 export function shuffle<T>(items:T[],rng=rand){const a=[...items];for(let i=a.length-1;i>0;i--){const j=rng(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 export function dailyValue(key:string,date=new Date()){const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul'}).format(date);return createHash('sha256').update(key+':'+day).digest().readUInt32BE(0);}
@@ -19,6 +21,7 @@ const words=[['CUMHURİYET','Bir yönetim biçimi'],['KÜTÜPHANE','Kitapların 
 function quiz(kind:string,question:string,answer:string,wrong:string[],rng:(n:number)=>number):GameState{const choices=shuffle([answer,...wrong],rng);return {kind,phase:'PLAY',revision:0,message:'Bir seçenek seç.',question,choices,answer:choices.indexOf(answer)};}
 export function createGame(kind:string,difficulty='normal',rng=rand,now=Date.now()):GameState{
  const base={kind,phase:'PLAY',revision:0,message:'Oyun başladı.'};
+ if(isArcadeBoard(kind))return {...base,puzzle:createArcadeBoard(kind,rng)};
  if(kind==='tas-kagit-makas')return {...base,bot:rng(3)};
  if(kind==='sayi-tahmin'){const max=difficulty==='kolay'?20:difficulty==='zor'?500:100;return {...base,max,answer:rng(max)+1,attempts:0,guesses:[],message:`1–${max} arasında bir sayı tuttum. 6 deneme hakkın var.`};}
  if(kind==='kelime-tahmin'){const [answer,hint]=words[rng(words.length)];return {...base,answer,hint,letters:[],errors:0};}
@@ -36,6 +39,7 @@ const finish=(s:GameState,result:GameState['result'],message:string)=>Object.ass
 export function advanceGame(previous:GameState,action:string,value='',now=Date.now(),rng=rand):GameState{
  const s=structuredClone(previous);if(s.phase==='DONE')throw new DomainError('GAME_CLOSED','Bu oyun tamamlandı. Yeni bir oyun başlatabilirsin.');
  s.revision++;if(action==='cancel')return finish(s,'LOSE','Turu bitirdin. İstediğinde yeni bir oyun başlatabilirsin.');const index=Number(action);
+ if(isArcadeBoard(s.kind)){try{s.puzzle=advanceArcadeBoard(s.puzzle,action,rng);}catch(e){throw new DomainError('INVALID_MOVE',e instanceof Error?e.message:'Geçersiz hamle.');}s.message=s.puzzle.done?(s.puzzle.result==='WIN'?'Kazandın!':s.puzzle.result==='DRAW'?'Berabere!':'Bu tur sona erdi.'):'Sıra sende.';return s.puzzle.done?finish(s,s.puzzle.result,s.message):s;}
  if(s.kind==='tas-kagit-makas'){if(!['0','1','2'].includes(action))throw new DomainError('INVALID_MOVE','Geçersiz seçim.');const result=(index-s.bot+3)%3;return finish(s,result===0?'DRAW':result===1?'WIN':'LOSE',`Sen: ${['🪨 Taş','📄 Kâğıt','✂️ Makas'][index]} · Bot: ${['🪨 Taş','📄 Kâğıt','✂️ Makas'][s.bot]}`);}
  if(s.kind==='sayi-tahmin'){if(action!=='guess'||!/^\d{1,3}$/.test(value)||Number(value)<1||Number(value)>s.max)throw new DomainError('INVALID_GUESS',`1–${s.max} arasında tam sayı gir.`);const guess=Number(value);if(s.guesses.includes(guess))throw new DomainError('REPEAT_GUESS','Bu sayıyı zaten denedin.');s.attempts++;s.guesses.push(guess);if(guess===s.answer)return finish(s,'WIN',`${s.attempts}. denemede ${s.answer} sayısını buldun!`);if(s.attempts===6)return finish(s,'LOSE',`Hakların bitti. Gizli sayı: ${s.answer}.`);s.message=`${guess}: daha ${guess<s.answer?'büyük':'küçük'} bir sayı dene. Kalan hak: ${6-s.attempts}.`;return s;}
  if(s.kind==='kelime-tahmin'){const guess=value.trim().toLocaleUpperCase('tr-TR');if(action!=='guess'||!/^[A-ZÇĞİÖŞÜ]{1,20}$/.test(guess))throw new DomainError('INVALID_GUESS','Tek bir Türkçe harf veya kelime gir.');if(s.letters.includes(guess))throw new DomainError('REPEAT_GUESS','Bu harfi zaten denedin.');if(guess===s.answer)return finish(s,'WIN',`Kelimeyi buldun: ${s.answer}!`);s.letters.push(guess);if(guess.length>1||!s.answer.includes(guess))s.errors++;if([...s.answer].every(x=>s.letters.includes(x)))return finish(s,'WIN',`Kelimeyi buldun: ${s.answer}!`);if(s.errors>=6)return finish(s,'LOSE',`Hakların bitti. Kelime: ${s.answer}.`);s.message=`Kalan hata hakkı: ${6-s.errors}.`;return s;}

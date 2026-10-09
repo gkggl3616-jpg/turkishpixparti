@@ -4,6 +4,7 @@ import {config,DomainError} from './config';
 import {sha256,audit} from './audit';
 import {discordRequest,syncUser,guildMember} from './discord';
 import {applicationConnection} from './application';
+import {arcadeGames} from './arcade-policy';
 export const SESSION_COOKIE='tp_session';export const STATE_COOKIE='tp_oauth_state';
 export function cookie(name:string,value:string,hours=24){return `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.round(hours*3600)}${config().appUrl.startsWith('https:')?'; Secure':''}`;}
 export function cookieValue(req:Request,name:string){return (req.headers.get('cookie')||'').split(';').map(x=>x.trim()).find(x=>x.startsWith(name+'='))?.slice(name.length+1);}
@@ -25,6 +26,7 @@ export async function oauthStart(returnPath='/'){
   const out=new URL(target.pathname,c.appUrl);const view=target.searchParams.get('view'),create=target.searchParams.get('create');
   if(view&&['genel','partiler','basvurular','oylamalar','tbmm','secimler','kayitlar','owner','roller','baglanti','ayarlar','kilavuz'].includes(view))out.searchParams.set('view',view);
   if(create&&['PARTY','BILL'].includes(create))out.searchParams.set('create',create);
+  const game=target.searchParams.get('oyun');if(target.pathname==='/oyunlar'&&arcadeGames.some(g=>g.id===game))out.searchParams.set('oyun',game!);
   safePath=out.pathname+out.search;
  }}catch{}
  await database().query('INSERT INTO oauth_states(state_hash,expires_at,return_path) VALUES($1,now()+interval \'10 minutes\',$2)',[sha256(state),safePath]);

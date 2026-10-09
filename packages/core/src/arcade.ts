@@ -7,7 +7,7 @@ import {audit} from './audit';
 import {featureMutation,memberProfile,type FeatureActor} from './features';
 import {communitySettings} from './community';
 import {arcadeGames,COMMUNITY_CURRENCY_CAMPAIGN,COMMUNITY_CURRENCY_AMOUNT} from './arcade-policy';
-async function arcadeMember(actor:FeatureActor){
+export async function arcadeMember(actor:FeatureActor){
  if(config().demo)throw new DomainError('DEMO_READONLY','Oyun salonunda Discord hesabınla giriş yap.');
  const member=await discordRequest('/guilds/'+config().guildId+'/members/'+actor.id);
  if(!member||member.pending||member.user?.bot)throw new DomainError('NOT_MEMBER','Sunucu üyeliğini ve doğrulamayı tamamla.',403);
@@ -19,7 +19,7 @@ export async function arcadeOverview(actor?:FeatureActor|null){
  const history=(await database().query("SELECT game,cost,score,outcome,created_at FROM arcade_sessions WHERE guild_id=$1 AND user_id=$2 AND status='DONE' ORDER BY created_at DESC LIMIT 6",[config().guildId,actor.id])).rows;
  return {games:arcadeGames,me:{id:actor.id,username:actor.username,avatar:actor.avatar,coins:profile.coins},active,history};
 }
-const startSchema=z.object({game:z.enum(['neon','memory','orbit']),requestId:z.uuid()});
+const startSchema=z.object({game:z.enum(arcadeGames.map(g=>g.id) as [string,...string[]]),requestId:z.uuid()});
 export async function startArcade(actor:FeatureActor,input:unknown){
  const data=startSchema.parse(input);await arcadeMember(actor);const game=arcadeGames.find(g=>g.id===data.game)!;
  return featureMutation(actor,'arcade-start:'+data.requestId,async tx=>{
