@@ -8,6 +8,7 @@ import {config,DomainError,database,transaction,audit,syncUser,featureCommands,f
 const buttons=(...items:any[])=>[{type:1,components:items}];
 const button=(id:string,label:string,emoji:string,style=1)=>({type:2,custom_id:id,label,emoji:{name:emoji},style});
 const queues=new Map<string,Promise<unknown>>();
+const refreshRetryAt=new Map<string,number>();
 async function serial<T>(key:string,fn:()=>Promise<T>){const next=(queues.get(key)||Promise.resolve()).catch(()=>{}).then(fn);queues.set(key,next);try{return await next;}finally{if(queues.get(key)===next)queues.delete(key);}}
 const actorOf=(i:any)=>({id:i.user.id,username:i.user.username,avatar:i.user.avatar});
 const staffOf=(i:any)=>!!i.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
@@ -28,7 +29,30 @@ export function featureRecordView(r:FeatureRecord,participants=0){
  if(!closed&&r.kind!=='EVENT')components=buttons(button(`feature:${r.id}:join`,r.kind==='SUGGESTION'?'Öneriyi destekle':'Rolü al / bırak',r.kind==='ROLE_MENU'?'🎭':'✨'));
  const embed=brightEmbed(`${icons[r.kind]||'📌'} TurkishPix · ${({GIVEAWAY:'Çekiliş',EVENT:'Etkinlik',SUGGESTION:'Öneri',ROLE_MENU:'Rol menüsü'} as any)[r.kind]||'Topluluk'}`,description,[{name:'👤 Organizatör',value:userTag(r.owner_id),inline:true},{name:'💬 Kanal',value:channelTag(r.channel_id||''),inline:true}],r.kind==='ROLE_MENU'?theme.purple:theme.cyan);embed.footer={text:'TurkishPix • Kayıt '+r.id};return {embeds:[embed],components,allowedMentions:{parse:[]}};
 }
-async function refreshRecord(i:any,record:FeatureRecord){return serial('message:'+record.id,async()=>{const r=await getFeatureRecord(record.id);if(!r.channel_id||!r.message_id)return;try{const channel=await i.guild.channels.fetch(r.channel_id);const message=await channel?.messages.fetch(r.message_id);const count=(await database().query('SELECT count(*)::int AS n FROM feature_participants WHERE record_id=$1 AND choice=\'GOING\'',[r.id])).rows[0].n;await message.edit(featureRecordView(r,count));await database().query('UPDATE feature_records SET discord_updated_at=$2 WHERE id=$1',[r.id,(r as any).updated_at]);}catch{console.error('FEATURE_MESSAGE_REFRESH_FAILED');}});}
+async function refreshRecord(i:any,record:FeatureRecord){return serial('message:'+record.id,async()=>{
+ if((refreshRetryAt.get(record.id)||0)>Date.now())return;
+ const r=await getFeatureRecord(record.id);if(!r.channel_id||!r.message_id)return;
+ try{
+  const channel=await i.guild.channels.fetch(r.channel_id);
+  if(!channel)throw {code:10003};
+  const message=await channel.messages.fetch(r.message_id);
+  const count=(await database().query("SELECT count(*)::int AS n FROM feature_participants WHERE record_id=$1 AND choice='GOING'",[r.id])).rows[0].n;
+  await message.edit(featureRecordView(r,count));
+  await database().query('UPDATE feature_records SET discord_updated_at=$2 WHERE id=$1',[r.id,(r as any).updated_at]);
+  refreshRetryAt.delete(r.id);
+ }catch(e:any){
+  if([10003,10008].includes(e?.code)){
+   // Do not recreate a card that a moderator deliberately removed.
+   await database().query('UPDATE feature_records SET discord_updated_at=$2 WHERE id=$1',[r.id,(r as any).updated_at]);
+   refreshRetryAt.delete(r.id);
+   console.log('FEATURE_MESSAGE_UNAVAILABLE',JSON.stringify({recordId:r.id,kind:r.kind,code:e.code}));
+  }else{
+   if(refreshRetryAt.size>=500)refreshRetryAt.delete(refreshRetryAt.keys().next().value!);
+   refreshRetryAt.set(r.id,Date.now()+5*60000);
+   console.error('FEATURE_MESSAGE_REFRESH_PENDING',JSON.stringify({recordId:r.id,kind:r.kind,code:typeof e?.code==='number'?e.code:'NETWORK'}));
+  }
+ }
+});}
 
 async function validRole(guild:any,roleId:string,executor?:any){await guild.channels.fetch();const role=await guild.roles.fetch(roleId),bot=guild.members.me;if(!role||role.id===guild.id||role.managed||role.permissions.bitfield!==0n||!role.editable||!bot?.permissions.has(PermissionFlagsBits.ManageRoles))throw new DomainError('ROLE_NOT_SAFE','Rol yönetilmeyen, botun altında ve izinleri sıfır olan kozmetik bir rol olmalı.',403);if(executor&&executor.id!==guild.ownerId&&executor.roles.highest.comparePositionTo(role)<=0)throw new DomainError('ROLE_HIERARCHY','Seçtiğin rol senin en yüksek rolünün altında olmalı.',403);if(guild.channels.cache.some((c:any)=>{const overwrite=c.permissionOverwrites?.cache.get(roleId);return !!overwrite&&overwrite.allow.bitfield!==0n;}))throw new DomainError('ROLE_ACCESS','Kanal erişimi sağlayan roller self-role menüsüne eklenemez.',403);if(Object.values(await roleMappings()).includes(roleId))throw new DomainError('POLITICAL_ROLE','Siyasi görev rolleri self-role menüsüne eklenemez.',403);return role;}
 async function targetChannel(i:any){const channel=i.options.getChannel('kanal')||i.channel;if(!channel||channel.guildId!==i.guildId||![0,5].includes(channel.type))throw new DomainError('CHANNEL_REQUIRED','Bu sunucudan bir metin kanalı seç.');const member=await i.guild.members.fetch(i.user.id);if(!channel.permissionsFor(member)?.has(PermissionFlagsBits.ViewChannel))throw new DomainError('CHANNEL_ACCESS','Bu kanala erişimin yok.',403);return channel;}

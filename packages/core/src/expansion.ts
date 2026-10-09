@@ -4,7 +4,7 @@ import {config,DomainError} from './config';
 import {database,transaction} from './db';
 import {syncUser,discordRequest} from './discord';
 import {audit} from './audit';
-import {featureMutation,getFeatureRecord,type FeatureActor,levelInfo} from './features';
+import {featureMutation,getFeatureRecord,type FeatureActor,levelInfo,queueLevelUp} from './features';
 import {communitySettings,saveCommunitySettings,type CommunitySettings} from './community';
 import {expansionSettingsSchema,eventOptionsSchema,validBirthday,AUTOMATIC_ROLE_DANGER_MASK,type ExpansionSettings} from './expansion-policy';
 import {brightEmbed,displayText,userTag,theme} from './presentation';
@@ -19,6 +19,7 @@ export async function validateExpansionSettings(input:ExpansionSettings){
  const s=expansionSettingsSchema.parse(input);const roleIds=[...s.autoRoleIds,...s.levelRoles.map(r=>r.roleId),s.registration.memberRoleId,s.registration.unregisteredRoleId].filter(Boolean);
  if(roleIds.length){const catalog=await expansionRoleDirectory();for(const id of roleIds){const role=catalog.roles.find(r=>r.id===id);if(!role?.manageable)throw new DomainError('UNSAFE_AUTOMATIC_ROLE','Otomatik roller botun altında olmalı ve yönetim yetkisi içermemeli.',403);}}
  if(s.registration.memberRoleId&&s.registration.memberRoleId===s.registration.unregisteredRoleId)throw new DomainError('REGISTRATION_ROLES','Kayıtlı ve kayıtsız rolleri farklı olmalı.');
+ if(s.rooms.createChannelId){const channel=await discordRequest('/channels/'+s.rooms.createChannelId);if(channel.guild_id!==config().guildId||channel.type!==2)throw new DomainError('ROOM_LOBBY','Bu sunucudan bir oda oluşturma ses kanalı seç.');}
  if(s.rooms.categoryId){const channel=await discordRequest('/channels/'+s.rooms.categoryId);if(channel.guild_id!==config().guildId||channel.type!==4)throw new DomainError('ROOM_CATEGORY','Bu sunucudan bir kanal kategorisi seç.');}
 }
 export async function setAFK(actor:FeatureActor,reason:string|null,key:string){if(reason!==null)reason=z.string().trim().min(1).max(150).parse(reason);return featureMutation(actor,key,async tx=>{await tx.query('INSERT INTO member_utilities(guild_id,user_id,afk_reason,afk_at) VALUES($1,$2,$3,CASE WHEN $3::text IS NULL THEN NULL ELSE now() END) ON CONFLICT(guild_id,user_id) DO UPDATE SET afk_reason=EXCLUDED.afk_reason,afk_at=EXCLUDED.afk_at',[config().guildId,actor.id,reason]);return {reason};});}
@@ -36,7 +37,7 @@ export async function changeCustomCommand(actor:FeatureActor,input:{name:string;
 }
 export async function awardVoiceXP(actor:FeatureActor,settings:CommunitySettings){
  const f=settings.features,e=settings.expansion;if(!e.enabled||!e.voiceXP.enabled||!f.enabled||!f.economy||!f.xpEnabled)return false;
- return transaction(async tx=>{await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['profile:'+config().guildId+':'+actor.id]);await syncUser(tx,actor);await tx.query('INSERT INTO member_profiles(guild_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[config().guildId,actor.id]);const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul'}).format(new Date());return !!(await tx.query(`UPDATE member_profiles SET xp=xp+$3,voice_minutes=voice_minutes+1,last_voice_xp_at=now(),xp_day=$4,xp_today=CASE WHEN xp_day=$4 THEN xp_today+$3 ELSE $3 END WHERE guild_id=$1 AND user_id=$2 AND (last_voice_xp_at IS NULL OR last_voice_xp_at<=now()-interval '60 seconds') AND (xp_day IS DISTINCT FROM $4::date OR xp_today+$3<=$5) RETURNING xp`,[config().guildId,actor.id,e.voiceXP.perMinute,today,f.xpDailyCap])).rows.length;});
+ return transaction(async tx=>{await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['profile:'+config().guildId+':'+actor.id]);await syncUser(tx,actor);await tx.query('INSERT INTO member_profiles(guild_id,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING',[config().guildId,actor.id]);const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Istanbul'}).format(new Date());const result=await tx.query(`UPDATE member_profiles SET xp=xp+$3,voice_minutes=voice_minutes+1,last_voice_xp_at=now(),xp_day=$4,xp_today=CASE WHEN xp_day=$4 THEN xp_today+$3 ELSE $3 END WHERE guild_id=$1 AND user_id=$2 AND (last_voice_xp_at IS NULL OR last_voice_xp_at<=now()-interval '60 seconds') AND (xp_day IS DISTINCT FROM $4::date OR xp_today+$3<=$5) RETURNING xp,last_chat_channel_id`,[config().guildId,actor.id,e.voiceXP.perMinute,today,f.xpDailyCap]);if(result.rows.length)await queueLevelUp(tx,actor.id,result.rows[0].xp,e.voiceXP.perMinute,f,f.levelUpChannel||result.rows[0].last_chat_channel_id);return !!result.rows.length;});
 }
 export async function eventRSVP(actor:FeatureActor,id:string,choice:'GOING'|'MAYBE'|'DECLINED'|'LEAVE'|'TOGGLE',roleIds:string[],key:string){
  return featureMutation(actor,key,async tx=>{const r=await getFeatureRecord(id,tx,true);if(r.kind!=='EVENT'||r.status!=='OPEN'||!r.due_at||new Date(r.due_at).getTime()<=Date.now())throw new DomainError('EVENT_CLOSED','Etkinlik artık katılıma açık değil.');const options=eventOptionsSchema.parse(r.payload);

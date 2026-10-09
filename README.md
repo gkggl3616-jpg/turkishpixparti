@@ -1,4 +1,12 @@
-# TurkishPix Bot Merkezi v2.9.0
+# TurkishPix Bot Merkezi v2.10.0
+
+## v2.10: Katılınca oda oluşturma ve görselli seviye duyurusu
+
+- Bot, `➕・Oda Oluştur` ses kanalını mevcut ses kategorisine bir kez kurar. Bu kanala katılan doğrulanmış üyeye `🔊・kullanıcı adı` odası açılır ve üye oraya taşınır. Mevcut odası varsa aynı oda kullanılır; bot mesajları ve normal ses kanalları bu akışa girmez.
+- `/topluluk oda kur kategori: Ses Kanalları` yetkili kurulum komutudur. Oda kategorisi ve giriş ses kanalı Topluluk panelinde adlarıyla seçilir; ID girmek gerekmez. Katılarak oluşturma ayrı kapatılabilir. Kategori/giriş kanalı izinleri korunur; botta Kanalları Yönet ve Üyeleri Taşı izinleri gerekir. Yalnızca botun kaydettiği boş odalar seçili sürede kapanır.
+- Seviye atlayan üye XP kazandığı sohbet kanalında etiketlenir ve profil fotoğraflı PNG kart paylaşılır. Owner isterse sabit duyuru kanalı seçer veya duyuruyu kapatır. Ses XP’si seviye atlatırsa son XP kazanılan sohbet kullanılır; hiç sohbet yoksa seçili duyuru kanalı gerekir.
+- Seviye sınırı, XP ve bildirim kaydı aynı veritabanı işlemindedir. Üye/seviye benzersizliği ve Discord nonce tekrar koruması kullanılır; yeniden başlatmada bekleyen işler devam eder. Kanal izinleri tekrar denetlenir; silinmiş kanal/ayrılmış üye işleri iptal edilir, geçici hatalar bekletilir.
+- Migration `013_level_notifications` iki servis tarafından ortak runner ile uygulanır; mevcut XP ve oda kayıtları korunur. `/topluluk` artık 38 kullanım sunar, 100 kök komut sınırı korunur. Silinmiş eski etkinlik kartları tekrar gönderilmez; geçici yenileme hataları beş dakika bekler.
 
 ## v2.9: YouTube seçim ekranı ve fotoğraflı rank
 

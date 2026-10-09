@@ -1,7 +1,7 @@
 import {config} from './config';
 import {categoryForTitle,type CardCategory} from './visuals';
 /** Shared Discord presentation. Mentions render as links; callers disable notifications. */
-export const categoryBannerURL=(category:CardCategory)=>config().appUrl+'/api/cards/banner/'+category+'?v=2.9.0';
+export const categoryBannerURL=(category:CardCategory)=>config().appUrl+'/api/cards/banner/'+category+'?v=2.10.0';
 export const theme={cyan:0x35e2ff,gold:0xffca55,green:0x38e8a5,red:0xff557a,purple:0xbd80ff};
 export function displayText(value:string,max=1000){return value.replace(/@/g,'＠').replace(/[\\*_~`|<>]/g,'\\$&').slice(0,max);}
 const snowflake=(id:string)=>/^\d{17,20}$/.test(id);

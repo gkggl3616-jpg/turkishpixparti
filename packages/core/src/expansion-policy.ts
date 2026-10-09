@@ -3,7 +3,7 @@ const id=z.union([z.string().regex(/^\d{17,20}$/),z.literal('')]);
 const ids=z.array(z.string().regex(/^\d{17,20}$/)).max(20);
 export const expansionSettingsSchema=z.object({
  enabled:z.boolean().default(true),
- rooms:z.object({enabled:z.boolean(),categoryId:id,maxRooms:z.number().int().min(1).max(50),defaultLimit:z.number().int().min(0).max(99),emptySeconds:z.number().int().min(30).max(1800)}),
+ rooms:z.object({enabled:z.boolean(),joinToCreate:z.boolean().default(true),createChannelId:id.default(''),categoryId:id,maxRooms:z.number().int().min(1).max(50),defaultLimit:z.number().int().min(0).max(99),emptySeconds:z.number().int().min(30).max(1800)}),
  registration:z.object({enabled:z.boolean(),memberRoleId:id,unregisteredRoleId:id,staffRoleIds:ids,logChannelId:id}),
  autoRoleIds:ids,
  customCommands:z.array(z.object({name:z.string().regex(/^[a-z0-9-]{1,32}$/),response:z.string().trim().min(1).max(1500),channelId:id})).max(50).refine(a=>new Set(a.map(c=>c.name)).size===a.length,'Özel komut adları farklı olmalı.'),
@@ -15,7 +15,7 @@ export const expansionSettingsSchema=z.object({
 });
 export type ExpansionSettings=z.infer<typeof expansionSettingsSchema>;
 export function defaultExpansionSettings():ExpansionSettings{return {
- enabled:true,rooms:{enabled:true,categoryId:'',maxRooms:20,defaultLimit:0,emptySeconds:120},
+ enabled:true,rooms:{enabled:true,joinToCreate:true,createChannelId:'',categoryId:'',maxRooms:20,defaultLimit:0,emptySeconds:120},
  registration:{enabled:true,memberRoleId:'',unregisteredRoleId:'',staffRoleIds:[],logChannelId:''},autoRoleIds:[],customCommands:[],
  birthdays:{enabled:true,channelId:''},afkEnabled:true,voiceXP:{enabled:true,perMinute:5},levelRoles:[],
  farewell:{enabled:false,channelId:'',message:'{username}, {server} topluluğundan ayrıldı. Yeniden görüşmek üzere! 👋'}
@@ -34,6 +34,7 @@ const sub=(name:string,description:string,options:any[]=[])=>({type:1,name,descr
 const group=(name:string,description:string,options:any[])=>({type:2,name,description,options});
 export const expansionCommand={name:'topluluk',description:'Özel odalar, kayıt, otomasyon, etkinlik ve yetkili araçları.',options:[
  group('oda','Kendi geçici ses odanı yönet.',[
+  sub('kur','Yetkili olarak katılınca oda oluşturan ses kanalını kur.',[{type:7,name:'kategori',description:'Yeni odaların ses kategorisi',required:false,channel_types:[4]}]),
   sub('ac','Sana ait bir ses odası oluştur; boş kalan oda otomatik kapanır.',[text('ad','Odanın adı',false,60)]),
   sub('kilitle','Yeni katılımlara kapat.'),sub('kilitac','Odayı yeni katılımlara aç.'),
   sub('ad','Odanın adını değiştir.',[text('ad','Yeni oda adı',true,60)]),sub('limit','Oda kapasitesini ayarla.',[num('adet','0: sınırsız',0,99)]),
