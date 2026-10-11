@@ -1,7 +1,7 @@
 import {randomBytes} from 'node:crypto';
 import {MessageFlags} from 'discord.js';
 import {config,RELEASE_VERSION,database,DomainError,rateLimit,searchYouTube,youtubeStatus,youtubeVideo,youtubeVideoId,recordYouTubeView,saveYouTubeFavourite,youtubeFavourites,youtubeHistory,createWatchTogether,brightEmbed,displayText,theme,type CommunitySettings,type YouTubeVideo} from '@turkishpix/core';
-type Session={userId:string;guildId:string;channelId:string;messageId:string|null;expires:number;videos:YouTubeVideo[];selected?:YouTubeVideo;favourite?:boolean;invite?:string};
+type Session={userId:string;guildId:string;channelId:string;messageId:string|null;expires:number;videos:YouTubeVideo[];selected?:YouTubeVideo;favourite?:boolean;invite?:string;playback?:string;playing?:boolean};
 const sessions=new Map<string,Session>(),ttl=10*60*1000;
 export const youtubeControls=()=>[{type:1,components:[
  {type:2,style:1,custom_id:'yt:search',label:'YouTube’da ara',emoji:{name:'🔎'}},
@@ -28,10 +28,10 @@ function duration(iso:string){
  return (h?h+':'+String(min).padStart(2,'0'):String(min))+':'+String(sec).padStart(2,'0');
 }
 export function youtubeView(videos:YouTubeVideo[]){
- return {embeds:[brightEmbed('▶ YouTube',videos.length?'Videonu seç. Görüntülü oynatıcıda aç veya ses kanalında ortak oturuma katıl.':'Bu aramada video bulunamadı.',videos.map((v,n)=>({name:(n+1)+'. '+displayText(v.title,220),value:displayText(v.channel,120)+'\n[YouTube’da aç]('+v.url+') · [Panelde oynat]('+config().appUrl+'/izle?v='+v.id+')'})),theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
+ return {embeds:[brightEmbed('▶ YouTube',videos.length?'Şarkını seç; bot bulunduğun ses kanalına katılıp çalsın.':'Bu aramada video bulunamadı.',videos.map((v,n)=>({name:(n+1)+'. '+displayText(v.title,220),value:displayText(v.channel,120)+'\n[YouTube’da aç]('+v.url+') · [Panelde oynat]('+config().appUrl+'/izle?v='+v.id+')'})),theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
 }
 export function musicLaunchView(){
- return {embeds:[brightEmbed('🎧 Müzik merkezi','**Ne dinlemek istersin?**\nYouTube’da ara düğmesine bas, şarkı adını yaz ve listeden seç.\n\n**YouTube** · Görüntülü oynatıcı veya ses kanalında Watch Together etkinliği.\n**Botun ses bağlantısı** · Komuta bir ses dosyası ekle, doğrudan ses bağlantısı ver veya /muzik radyo kullan.\n\nYouTube ortak oturumunda herkes aynı oynatma listesini izler ve dinler.',[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
+ return {embeds:[brightEmbed('🎧 Müzik merkezi','**Ne dinlemek istersin?**\nYouTube’da ara düğmesine bas, şarkı adını yaz ve listeden seç.\n\n**YouTube** · Seçtiğin şarkı, bulunduğun ses kanalında botun sesinden çalar.\n**Botun ses bağlantısı** · Komuta bir ses dosyası ekle, doğrudan ses bağlantısı ver veya /muzik radyo kullan.\n\nYouTube ortak oturumunda herkes aynı oynatma listesini izler ve dinler.',[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
 }
 function searchView(id:string,s:Session){
  const list=youtubeView(s.videos);list.embeds[0].title='🔎 YouTube · Şarkını seç';
@@ -43,10 +43,10 @@ function searchView(id:string,s:Session){
  return list;
 }
 function selectedView(id:string,s:Session,note=''){
- const v=s.selected!,embed=brightEmbed('▶ '+displayText(v.title,230),'**Seçildi** · '+displayText(v.channel,120)+(duration(v.duration)?' · '+duration(v.duration):'')+'\n\nSes kanalına katıl ve **Birlikte aç** düğmesine bas. Ortak oturumdaki arama kutusuna bu video bağlantısını yapıştır:\n'+v.url+(s.invite?'\n\n**Ortak oturum hazır.** Oturuma katıl düğmesiyle görüntülü oynatıcıya geç.':'')+(note?'\n\n'+note:''),[{name:'👤 Seçen üye',value:'<@'+s.userId+'>',inline:true},{name:'🎬 Oynatma',value:'YouTube · Watch Together',inline:true}],theme.purple);
+ const v=s.selected!,embed=brightEmbed('▶ '+displayText(v.title,230),'**Seçildi** · '+displayText(v.channel,120)+(duration(v.duration)?' · '+duration(v.duration):'')+'\n\nSes kanalına katıl ve **Şarkıyı çal** düğmesine bas. Bot bulunduğun kanala otomatik girip bu şarkıyı kendi ses bağlantısından çalar:\n'+v.url+(s.invite?'\n\n**Ortak oturum hazır.** Oturuma katıl düğmesiyle görüntülü oynatıcıya geç.':'')+(s.playback?'\n\n'+s.playback:'')+(note?'\n\n'+note:''),[{name:'👤 Seçen üye',value:'<@'+s.userId+'>',inline:true},{name:'🎬 Oynatma',value:'Botun ses kanalında oynatım',inline:true}],theme.purple);
  embed.image={url:v.thumbnail};
  return {embeds:[embed],components:[{type:1,components:[
-  s.invite?{type:2,style:5,label:'Oturuma katıl',url:s.invite,emoji:{name:'▶️'}}:{type:2,style:1,custom_id:'yt:listen:'+id,label:'Ses kanalında birlikte aç',emoji:{name:'▶️'}},
+  s.invite?{type:2,style:5,label:'Oturuma katıl',url:s.invite,emoji:{name:'▶️'}}:{type:2,style:1,custom_id:'yt:listen:'+id,label:s.playback?'Tekrar çal':'Şarkıyı çal',emoji:{name:'▶️'}},
   {type:2,style:5,label:'Videoyu izle',url:config().appUrl+'/izle?v='+v.id},
   {type:2,style:2,custom_id:'yt:fav:'+id,label:s.favourite?'Favoriden çıkar':'Favoriye ekle',emoji:{name:s.favourite?'♥️':'🤍'}},
   {type:2,style:2,custom_id:'yt:search',label:'Yeni arama',emoji:{name:'🔎'}}
@@ -71,7 +71,7 @@ async function activityReply(i:any,settings:CommunitySettings){
  const result=await activity(i,settings);
  await i.editReply({embeds:[brightEmbed('▶ Ortak YouTube ekranı',result.message+'\n\n**1.** Oturuma katıl düğmesine bas.\n**2.** YouTube oynatıcısında şarkı ara veya video bağlantısını yapıştır.\n**3.** Katılımcılar aynı videoyu birlikte izler ve dinler.\n\nBu, Discord’un Watch Together etkinliğidir.',[],theme.purple)],components:[{type:1,components:[{type:2,style:5,label:'Oturuma katıl',url:result.url},{type:2,style:2,custom_id:'yt:search',label:'YouTube’da ara',emoji:{name:'🔎'}}]}],allowedMentions:{parse:[]}});
 }
-export async function handleYouTubeInteraction(i:any,settings:CommunitySettings){
+export async function handleYouTubeInteraction(i:any,settings:CommunitySettings,play?: (i:any,video:YouTubeVideo)=>Promise<string>){
  const slash=!!i.isChatInputCommand?.()&&i.commandName==='muzik',button=!!i.isButton?.()&&i.customId?.startsWith('yt:'),select=!!i.isStringSelectMenu?.()&&i.customId?.startsWith('yt:'),modal=!!i.isModalSubmit?.()&&i.customId==='yt:query';
  if(!slash&&!button&&!select&&!modal)return false;
  const sub=slash?i.options.getSubcommand():'';
@@ -88,11 +88,11 @@ export async function handleYouTubeInteraction(i:any,settings:CommunitySettings)
   if(button&&i.customId==='yt:search'){await i.showModal(queryModal());return true;}
   if(select||button&&/^yt:(listen|fav):/.test(i.customId)){
    const m=/^yt:(pick|listen|fav):([a-f0-9]{24})$/.exec(i.customId);if(!m)throw new DomainError('YOUTUBE_COMPONENT','Geçersiz müzik düğmesi.');
-   const s=sessionFor(i,m[2]);
-   if(m[1]==='pick'){const v=s.videos.find(v=>v.id===i.values?.[0]);if(!v)throw new DomainError('YOUTUBE_SELECTION','Listeden geçerli bir video seç.');await i.deferUpdate();await rateLimit('youtube-select:'+i.user.id,15,60);if(s.selected?.id!==v.id){await recordYouTubeView(actorOf(i),v);s.favourite=undefined;s.invite=undefined;}s.selected=v;await i.editReply(selectedView(m[2],s));return true;}
+   const s=sessionFor(i,m[2]);if(s.playing)throw new DomainError('MUSIC_BUSY','Seçtiğin parça hazırlanıyor. Birkaç saniye bekle.');
+   if(m[1]==='pick'){const v=s.videos.find(v=>v.id===i.values?.[0]);if(!v)throw new DomainError('YOUTUBE_SELECTION','Listeden geçerli bir video seç.');await i.deferUpdate();await rateLimit('youtube-select:'+i.user.id,15,60);if(s.selected?.id===v.id&&s.playback){await i.editReply(selectedView(m[2],s));return true;}if(s.selected?.id!==v.id){s.playback=undefined;await recordYouTubeView(actorOf(i),v);s.favourite=undefined;s.invite=undefined;}s.selected=v;if(play){s.playing=true;try{s.playback=await play(i,v);}finally{s.playing=false;}}await i.editReply(selectedView(m[2],s));return true;}
    if(!s.selected)throw new DomainError('YOUTUBE_SELECTION','Önce listeden şarkını seç.');
    await i.deferUpdate();await rateLimit('youtube-action:'+i.user.id,10,60);
-   if(m[1]==='listen'){s.invite=(await activity(i,settings)).url;await i.editReply(selectedView(m[2],s));}
+   if(m[1]==='listen'){if(!play)throw new DomainError('MUSIC_UNAVAILABLE','Botun ses oynatıcısı şu anda hazır değil.');s.playing=true;try{s.playback=await play(i,s.selected);}finally{s.playing=false;}await i.editReply(selectedView(m[2],s));}
    else {const r=await saveYouTubeFavourite(actorOf(i),s.selected.url);s.favourite=r.saved;await i.editReply(selectedView(m[2],s,r.saved?'Favorilerine eklendi.':'Favorilerinden kaldırıldı.'));}
    return true;
   }
@@ -110,9 +110,9 @@ export async function handleYouTubeInteraction(i:any,settings:CommunitySettings)
   if(sub==='youtube'){await searchReply(i,i.options.getString('ara',true));return true;}
   if(['favoriler','gecmis'].includes(sub)){const rows=sub==='favoriler'?await youtubeFavourites(actor.id):await youtubeHistory();await i.editReply({embeds:[brightEmbed(sub==='favoriler'?'♡ YouTube favorilerin':'◷ Paylaşılan YouTube videoları',rows.map((r,n)=>String(n+1)+'. ['+displayText(r.title,160)+'](https://www.youtube.com/watch?v='+r.video_id+')').join('\n')||'Henüz video yok.',[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});return true;}
   if(sub==='favori'){const result=await saveYouTubeFavourite(actor,i.options.getString('baglanti',true));await i.editReply({embeds:[brightEmbed('♡ YouTube favorisi',displayText(result.video.title)+(result.saved?' favorilerine eklendi.':' favorilerinden kaldırıldı.'),[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});return true;}
-  await selectedReply(i,await youtubeVideo(input||i.options.getString('baglanti',true)));
+  const video=await youtubeVideo(input||i.options.getString('baglanti',true));const {id,s}=newSession(i,[video],video);await recordYouTubeView(actorOf(i),video);if(sub==='oynat'&&play)s.playback=await play(i,video);const message=await i.editReply(selectedView(id,s));s.messageId=message?.id||null;
  }catch(e){
-  const message=e instanceof DomainError?e.message:'YouTube isteği tamamlanamadı. Biraz sonra yeniden dene.';
+  const message=e instanceof Error?e.message:'YouTube isteği tamamlanamadı. Biraz sonra yeniden dene.';
   const view={embeds:[brightEmbed('YouTube bağlantısı',message,[],theme.gold)],components:youtubeControls(),allowedMentions:{parse:[]}};
   if(i.deferred||i.replied)await i.editReply(view);else await i.reply({...view,flags:slash||modal?undefined:MessageFlags.Ephemeral});
  }

@@ -1,3 +1,5 @@
+import {archiveClosedTicket} from './ticket-archive';
+import {discordAuditSettings} from './discord-audit';
 import {z} from 'zod';
 import {config,DomainError} from './config';
 import {database,transaction} from './db';
@@ -8,9 +10,9 @@ import {effectiveChannelPermissions,buildChannelCatalog} from './setup';
 import {addFeatureRecord,getFeatureRecord,featureMutation,type FeatureActor,type FeatureRecord} from './features';
 import {brightEmbed,displayText,userTag,roleTag,theme} from './presentation';
 import {ticketTopic,ticketTopics,ticketChannelName,ticketTopicButtons} from './ticket-policy';
-const PRESENTATION_VERSION=2;
+const PRESENTATION_VERSION=3;
 const snowflake=z.string().regex(/^\d{17,20}$/);
-export const ticketSettingsSchema=z.object({enabled:z.boolean().default(true),channelId:snowflake,categoryId:snowflake,staffRoleIds:z.array(snowflake).min(1).max(5).transform(ids=>[...new Set(ids)]),title:z.string().trim().min(1).max(100).default('Destek merkezi'),description:z.string().trim().min(1).max(1000).default('Aşağıdan talebine uygun kategoriyi seç. Yetkililerle özel bir görüşme kanalı açılacak.').transform(text=>text==='Özel bir destek kanalı açmak için Bilet aç düğmesine bas.'?'Aşağıdan talebine uygun kategoriyi seç. Yetkililerle özel bir görüşme kanalı açılacak.':text)});
+export const ticketSettingsSchema=z.object({enabled:z.boolean().default(true),logChannelId:z.union([snowflake,z.literal('')]).default(''),channelId:snowflake,categoryId:snowflake,staffRoleIds:z.array(snowflake).min(1).max(5).transform(ids=>[...new Set(ids)]),title:z.string().trim().min(1).max(100).default('Destek merkezi'),description:z.string().trim().min(1).max(1000).default('Aşağıdan talebine uygun kategoriyi seç. Yetkililerle özel bir görüşme kanalı açılacak.').transform(text=>text==='Özel bir destek kanalı açmak için Bilet aç düğmesine bas.'?'Aşağıdan talebine uygun kategoriyi seç. Yetkililerle özel bir görüşme kanalı açılacak.':text)});
 export type TicketSettings=z.infer<typeof ticketSettingsSchema>;
 export async function ticketSettings(){const row=(await database().query('SELECT * FROM ticket_settings WHERE guild_id=$1',[config().guildId])).rows[0];return row?{...row,settings:ticketSettingsSchema.parse(row.settings)}:null;}
 async function directory(){const g=config().guildId,self=await discordBotIdentity();const [roles,member,channels]=await Promise.all([discordRequest(`/guilds/${g}/roles`),discordRequest(`/guilds/${g}/members/${self.id}`),discordRequest(`/guilds/${g}/channels`)]);const base=roles.filter((r:any)=>r.id===g||member.roles.includes(r.id)).reduce((n:bigint,r:any)=>n|BigInt(r.permissions),0n);return {self,roles,member,channels,base};}
@@ -31,11 +33,14 @@ export async function publishTicketPanel(){return transaction(async tx=>{
   catch(e){if(!isDiscordMissing(e,10008))throw e;}
  }
  if(!message){const self=await discordBotIdentity(),recent=await discordRequest(`/channels/${s.channelId}/messages?limit=50`);message=recent.find((m:any)=>m.author?.id===self.id&&m.nonce===nonce);if(!message)message=await discordRequest(`/channels/${s.channelId}/messages`,{method:'POST',body:JSON.stringify({...view,nonce,enforce_nonce:true})});}
- await tx.query("UPDATE ticket_settings SET panel_channel_id=$2,panel_message_id=$3,panel_updated_at=updated_at,settings=jsonb_set(settings,'{panelVersion}','2'::jsonb) WHERE guild_id=$1",[config().guildId,s.channelId,message.id]);
+ await tx.query("UPDATE ticket_settings SET panel_channel_id=$2,panel_message_id=$3,panel_updated_at=updated_at,settings=jsonb_set(settings,'{panelVersion}','3'::jsonb) WHERE guild_id=$1",[config().guildId,s.channelId,message.id]);
 });}
-export function ticketOverwrites(guildId:string,botId:string,requesterId:string,roleIds:string[],closed=false){const read=1024n|65536n,write=2048n|16384n;return [{id:guildId,type:0,allow:'0',deny:'1024'},{id:botId,type:1,allow:String(read|write|16n),deny:'0'},{id:requesterId,type:1,allow:String(read|(closed?0n:write)),deny:closed?String(write):'0'},...roleIds.map(id=>({id,type:0,allow:String(read|write),deny:'0'}))];}
-export function ticketMessage(r:FeatureRecord){return {content:r.message_id?'':r.payload.staffRoleIds.map(roleTag).join(' ')+' · '+userTag(r.owner_id),embeds:[brightEmbed(r.status==='OPEN'?'🎫 '+displayText(r.title):'🔒 Bilet kapatıldı',displayText(r.payload.description||'',1000),[{name:'Talep sahibi',value:userTag(r.owner_id)},{name:'Yetkililer',value:r.payload.staffRoleIds.map(roleTag).join(' ')},{name:'Durum',value:r.status==='OPEN'?'Açık':'Kapalı'}],theme.cyan)],components:r.status==='OPEN'?[{type:1,components:[{type:2,style:4,custom_id:'ticket:close:'+r.id,label:'Bileti kapat'}]}]:[],allowed_mentions:r.message_id?{parse:[]}:{parse:[],roles:r.payload.staffRoleIds,users:[r.owner_id]},nonce:r.id.replaceAll('-','').slice(0,24),enforce_nonce:true};}
-export async function materializeTicket(id:string,supplied?:Awaited<ReturnType<typeof directory>>){return transaction(async tx=>{
+export function ticketOverwrites(guildId:string,botId:string,requesterId:string,roleIds:string[],closed=false){const read=1024n|65536n,write=2048n|16384n;return [{id:guildId,type:0,allow:'0',deny:'1024'},{id:botId,type:1,allow:String(read|write|16n),deny:'0'},{id:requesterId,type:1,allow:String(read|(closed?0n:write)),deny:closed?String(write):'0'},...roleIds.map(id=>({id,type:0,allow:String(read|(closed?0n:write)),deny:closed?String(write):'0'}))];}
+export function ticketMessage(r:FeatureRecord){const open=r.status==='OPEN';return {
+ content:r.message_id?'':r.payload.staffRoleIds.map(roleTag).join(' ')+' · '+userTag(r.owner_id),
+ embeds:[brightEmbed(open?'💬 '+displayText(r.title)+' · Özel destek':'🔒 Görüşme tamamlandı',open?'**TurkishPix destek ekibine hoş geldin.**\nTalebini ayrıntılı anlat; ekran görüntüsü ve ilgili bağlantıları ekleyebilirsin.\n\n🔐 Bu görüşme sana ve yetkililere özeldir.':displayText(r.payload.description||'',1000),[{name:'👤 Talep sahibi',value:userTag(r.owner_id),inline:true},{name:'🛡️ Destek ekibi',value:r.payload.staffRoleIds.map(roleTag).join(' '),inline:true},{name:'📌 Durum',value:open?'🟢 Yanıt bekliyor':'🔒 Kapalı',inline:true},{name:'📁 Kapanış',value:'Görüşme TXT olarak log kanalına kaydedilir; ardından bu kanal silinir.'}],theme.purple)],
+ components:open?[{type:1,components:[{type:2,style:4,custom_id:'ticket:close:'+r.id,label:'Görüşmeyi kapat',emoji:{name:'🔒'}}]}]:[],allowed_mentions:r.message_id?{parse:[]}:{parse:[],roles:r.payload.staffRoleIds,users:[r.owner_id]},nonce:r.id.replaceAll('-','').slice(0,24),enforce_nonce:true};}
+export async function materializeTicket(id:string,supplied?:Awaited<ReturnType<typeof directory>>){const before=await getFeatureRecord(id);if(before.status==='CLOSED'&&before.payload.closeRequestedAt)return archiveClosedTicket(id);return transaction(async tx=>{
  await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['ticket-channel:'+id]);
  const r=await getFeatureRecord(id,tx,true);if(r.kind!=='TICKET'||!r.payload.privateChannel)return r;
  const selected=ticketTopic(r.payload.topicId)||ticketTopics.find(t=>r.title.toLocaleLowerCase('tr-TR').includes(t.label.toLocaleLowerCase('tr-TR')))||ticketTopic('support')!;
@@ -67,12 +72,25 @@ export async function openTicket(actor:FeatureActor,topicId:string,key:string){
  const r=await addFeatureRecord(actor,'TICKET',selected.label,{topicId:selected.id,requesterUsername:actor.username,description:'Talebinin ayrıntılarını bu kanala yazabilirsin. Yetkililer birazdan seninle ilgilenecek.',privateChannel:true,settings:row.settings,staffRoleIds:row.settings.staffRoleIds},{},key);
  return materializeTicket(r.id,d);
 }
-export async function closeTicket(actor:FeatureActor,id:string,staff=false,key='close:'+id){const r=await featureMutation(actor,key,async tx=>{const r=await getFeatureRecord(id,tx,true);if(r.kind!=='TICKET')throw new DomainError('TICKET_KIND','Bu kayıt bilet değil.');if(!staff&&r.owner_id!==actor.id)throw new DomainError('FORBIDDEN','Bu bileti kapatamazsın.',403);await tx.query("UPDATE feature_records SET status='CLOSED',updated_at=now() WHERE id=$1",[id]);await audit(tx,actor.id,'TICKET_CLOSED',id);return {...r,status:'CLOSED'};});return materializeTicket(r.id);}
+export async function closeTicket(actor:FeatureActor,id:string,staff=false,key='close:'+id){
+ const before=await getFeatureRecord(id);if(before.kind!=='TICKET')throw new DomainError('TICKET_KIND','Bu kayıt bilet değil.');if(!staff&&before.owner_id!==actor.id)throw new DomainError('FORBIDDEN','Bu bileti kapatamazsın.',403);
+ if(!before.payload.privateChannel)return featureMutation(actor,key,async tx=>{const result=(await tx.query("UPDATE feature_records SET status='CLOSED',updated_at=now() WHERE id=$1 RETURNING *",[id])).rows[0];await audit(tx,actor.id,'TICKET_CLOSED',id);return result as FeatureRecord;});
+ if(before.payload.channelDeletedAt)return before;
+ const logId=before.payload.transcriptChannelId||before.payload.settings?.logChannelId||(await discordAuditSettings()).logChannelId||config().logChannel;
+ if(!logId||logId===before.channel_id)throw new DomainError('TICKET_LOG','TXT dökümü için /bilet kur log: veya /topluluk denetim kur ile ayrı bir log kanalı seç. Bilet silinmedi.');
+ const d=await directory(),ch=d.channels.find((c:any)=>c.id===logId&&[0,5].includes(c.type));if(!ch)throw new DomainError('TICKET_LOG','Log kanalı bulunamadı. Bilet silinmedi.');
+ const everyone=BigInt(d.roles.find((r:any)=>r.id===config().guildId)?.permissions||0);
+ if(effectiveChannelPermissions(everyone,[],'000000000000000000',ch,config().guildId)&1024n)throw new DomainError('TICKET_LOG_PRIVATE','Görüşme dökümü için herkese kapalı, yetkililere özel bir log kanalı seç. Bilet silinmedi.');
+ const required=1024n|2048n|16384n|32768n|65536n;if((effectiveChannelPermissions(d.base,d.member.roles,d.self.id,ch,config().guildId)&required)!==required)throw new DomainError('TICKET_LOG_PERMISSION','Log kanalında botun Görüntüle, Mesaj Gönder, Dosya Ekle, Mesaj Geçmişi ve Embed izinleri gerekli. Bilet silinmedi.');
+ await featureMutation(actor,key,async tx=>{const r=await getFeatureRecord(id,tx,true);if(r.status==='CLOSED'&&r.payload.closeRequestedAt)return r;
+ const payload={...r.payload,closeRequestedAt:new Date().toISOString(),closedBy:actor.id,transcriptChannelId:logId};await tx.query("UPDATE feature_records SET status='CLOSED',payload=$2,updated_at=now() WHERE id=$1",[id,payload]);await audit(tx,actor.id,'TICKET_CLOSED',id);return {...r,status:'CLOSED',payload};});
+ return archiveClosedTicket(id);
+}
 export async function ticketIsStaff(userId:string,r?:FeatureRecord){if(config().owners.includes(userId))return true;const member=await discordRequest(`/guilds/${config().guildId}/members/${userId}`);const s=r?.payload.staffRoleIds||(await ticketSettings())?.settings.staffRoleIds||[];return member.roles.some((id:string)=>s.includes(id));}
 const ticketRetryAt=new Map<string,number>();
 async function retryTicket(key:string,task:()=>Promise<unknown>){if((ticketRetryAt.get(key)||0)>Date.now())return;try{await task();ticketRetryAt.delete(key);}catch(e){if(ticketRetryAt.size>200)ticketRetryAt.delete(ticketRetryAt.keys().next().value!);ticketRetryAt.set(key,Date.now()+5*60000);console.error('TICKET_SYNC_PENDING',JSON.stringify({target:key.startsWith('panel:')?'panel':'ticket',...discordErrorDetails(e)}));}}
 export async function ticketTick(){
- const panel=(await database().query("SELECT updated_at::text AS revision FROM ticket_settings WHERE guild_id=$1 AND (panel_updated_at IS NULL OR panel_updated_at<updated_at OR settings->>'panelVersion' IS DISTINCT FROM '2')",[config().guildId])).rows[0];if(panel)await retryTicket('panel:'+panel.revision,()=>publishTicketPanel());
- const pending=(await database().query("SELECT id,updated_at::text AS revision FROM feature_records WHERE guild_id=$1 AND kind='TICKET' AND payload->>'privateChannel'='true' AND (discord_updated_at IS NULL OR discord_updated_at<updated_at OR payload->>'presentationVersion' IS DISTINCT FROM '2') ORDER BY updated_at LIMIT 5",[config().guildId])).rows;
+ const panel=(await database().query("SELECT updated_at::text AS revision FROM ticket_settings WHERE guild_id=$1 AND (panel_updated_at IS NULL OR panel_updated_at<updated_at OR settings->>'panelVersion' IS DISTINCT FROM '3')",[config().guildId])).rows[0];if(panel)await retryTicket('panel:'+panel.revision,()=>publishTicketPanel());
+ const pending=(await database().query("SELECT id,updated_at::text AS revision FROM feature_records WHERE guild_id=$1 AND kind='TICKET' AND payload->>'privateChannel'='true' AND payload->>'channelDeletedAt' IS NULL AND (discord_updated_at IS NULL OR discord_updated_at<updated_at OR payload->>'presentationVersion' IS DISTINCT FROM '3') ORDER BY updated_at LIMIT 5",[config().guildId])).rows;
  for(const r of pending)await retryTicket(r.id+':'+r.revision,()=>materializeTicket(r.id));
 }

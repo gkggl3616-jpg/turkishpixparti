@@ -12,7 +12,7 @@ export const expansionSettingsSchema=z.object({
  customCommands:z.array(z.object({name:z.string().regex(/^[a-z0-9-]{1,32}$/),response:z.string().trim().min(1).max(1500),channelId:id})).max(50).refine(a=>new Set(a.map(c=>c.name)).size===a.length,'Özel komut adları farklı olmalı.'),
  birthdays:z.object({enabled:z.boolean(),channelId:id}),
  afkEnabled:z.boolean(),
- voiceXP:z.object({enabled:z.boolean(),perMinute:z.number().int().min(1).max(30)}),
+ voiceXP:z.object({enabled:z.boolean(),perMinute:z.number().int().min(1).max(30),perSecond:z.number().int().min(1).max(10).default(1)}),
  levelRoles:z.array(z.object({level:z.number().int().min(1).max(100),roleId:z.string().regex(/^\d{17,20}$/)})).max(50).refine(rows=>new Set(rows.map(r=>r.level+':'+r.roleId)).size===rows.length,'Aynı seviye ve rol iki kez eklenemez.'),
  farewell:z.object({enabled:z.boolean(),channelId:id,message:z.string().trim().min(1).max(1000)})
 });
@@ -20,7 +20,7 @@ export type ExpansionSettings=z.infer<typeof expansionSettingsSchema>;
 export function defaultExpansionSettings():ExpansionSettings{return {
  enabled:true,rooms:{enabled:true,joinToCreate:true,createChannelId:'',categoryId:'',maxRooms:20,defaultLimit:0,emptySeconds:120},
  registration:{enabled:true,memberRoleId:'',unregisteredRoleId:'',staffRoleIds:[],logChannelId:''},autoRoleIds:[],customCommands:[],
- birthdays:{enabled:true,channelId:''},afkEnabled:true,voiceXP:{enabled:true,perMinute:5},levelRoles:[],
+ birthdays:{enabled:true,channelId:''},afkEnabled:true,voiceXP:{enabled:true,perMinute:5,perSecond:1},levelRoles:[],
  farewell:{enabled:false,channelId:'',message:'{username}, {server} topluluğundan ayrıldı. Yeniden görüşmek üzere! 👋'}
 };}
 export const eventOptionsSchema=z.object({capacity:z.number().int().min(0).max(500).default(0),repeat:z.enum(['OFF','DAILY','WEEKLY']).default('OFF'),reminders:z.array(z.number().int().min(1).max(1440)).max(5).default([15]),requiredRoleId:id.default(''),description:z.string().max(600).default('')});

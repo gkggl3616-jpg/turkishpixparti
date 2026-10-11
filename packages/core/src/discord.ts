@@ -12,7 +12,7 @@ const reads=new Map<string,Promise<any>>();let readFetch=globalThis.fetch;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function routeName(path:string){return path.split('?')[0].replace(/(\/webhooks\/\d+)\/[^/]+/,'$1/:token').replace(/\d{17,20}/g,':id');}
 async function request(path:string,init:RequestInit,bearer?:string){
- const method=(init.method||'GET').toUpperCase(),deadline=Date.now()+10000,headers=new Headers(init.headers);if(!headers.has('Content-Type'))headers.set('Content-Type','application/json');if(!headers.has('Authorization'))headers.set('Authorization',bearer?`Bearer ${bearer}`:`Bot ${config().botToken}`);
+ const method=(init.method||'GET').toUpperCase(),deadline=Date.now()+10000,headers=new Headers(init.headers);if(!(init.body instanceof FormData)&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');if(!headers.has('Authorization'))headers.set('Authorization',bearer?`Bearer ${bearer}`:`Bot ${config().botToken}`);
  for(let attempt=0;;attempt++){
   let response:Response;
   try{response=await fetch('https://discord.com/api/v10'+path,{...init,headers,signal:AbortSignal.timeout(Math.max(1,deadline-Date.now()))});}

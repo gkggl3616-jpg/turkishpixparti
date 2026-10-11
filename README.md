@@ -100,7 +100,7 @@ Discord bot + Next.js web panel + PostgreSQL. Uygulama kimliği ve public key, k
 - Özel ses odaları: oluşturma, kilit, ad, kapasite, davet, çıkarma, sahiplik devri, boş oda temizliği. Oda kayıtları yeniden başlatmada korunur; kategori izinleri devralınır.
 - Üye kaydı, otomatik üye rolleri, süreli roller, AFK, gönüllü gün/ay doğum günü takvimi, veda mesajları, özel `!komut` cevapları ve ileri zamana kanal duyuruları. Roller ve kanallar panelde adlarıyla seçilir. Kayıt ve otomatik rol için owner rol seçmeli; yönetim yetkili roller otomatik verilemez.
 - Etkinliklerde katılım/belki/ret, kontenjan, FIFO bekleme listesi, 5 hatırlatma, günlük/haftalık tekrar, rol şartı, düzenleme ve `.ics` takvim çıktısı. Yeni tekrar yeni katılım listesiyle başlar.
-- Ses XP’si en az iki aktif üye gerektirir; sessize alınanlar ve AFK kanalı sayılmaz. Sohbetle aynı günlük sınırı paylaşır; seviyeye bağlı güvenli rol ödülleri vardır.
+- Ses XP’si insan üyelere her saniye varsayılan 1 XP verir; tek başına veya mikrofon kapalıyken de çalışır. AFK kanalı sayılmaz. Sohbetle aynı günlük sınırı paylaşır; seviyeye bağlı güvenli rol ödülleri vardır.
 - Migration `012_community_expansion` iki serviste ortak migration runner ile uygulanır. Yeni ayarlar eski sunucu ayarlarına varsayılanlarla eklenir.
 - Bot izinleri: özel odalar için Kanalları Yönet; kayıt için Rolleri/Takma Adları Yönet; Watch Together daveti için Davet Oluştur; moderasyon işlemleri için karşılık gelen Discord izni.
 
@@ -282,7 +282,7 @@ Yeni komutların tam listesi ve seçenekleri `packages/core/src/features-catalog
 - **9 yetkili aracı:** `/uyar`, `/uyarilar`, `/uyarikaldir`, `/yavasmod`, `/kilitle`, `/kilitac`, `/temizle`, `/duyuru`, `/sabitle`.
 - **7 rol/rehber aracı:** `/rolmenu`, `/rolmenukapat`, `/sss`, `/sssekle`, `/ssssil`, `/kanalbilgi`, `/yardim`.
 
-XP sadece korunmuş sohbetin uygun katkılarında verilir; en az 8 karakter, varsayılan 60 saniye bekleme, tekrar hash kontrolü ve günlük 500 XP sınırı vardır. Seviye eşiği `100 × seviye²`. Sanal Pix ve rozetlerin nakit veya yetki karşılığı yoktur. Ekonomi hareketleri PostgreSQL kilitleri ve interaction makbuzlarıyla tekrarlara karşı korunur. Günlük ödül/teşekkür Türkiye saatine göre yenilenir. DM hatırlatıcıları kalıcı kuyrukta işlenir ve iptal/modül kontrolleri gönderimden önce tekrarlanır.
+XP sadece korunmuş sohbetin uygun katkılarında verilir; en az 8 karakter, varsayılan 5 saniye bekleme, tekrar hash kontrolü ve günlük 500 XP sınırı vardır. Seviye eşiği `100 × seviye²`. Sanal Pix ve rozetlerin nakit veya yetki karşılığı yoktur. Ekonomi hareketleri PostgreSQL kilitleri ve interaction makbuzlarıyla tekrarlara karşı korunur. Günlük ödül/teşekkür Türkiye saatine göre yenilenir. DM hatırlatıcıları kalıcı kuyrukta işlenir ve iptal/modül kontrolleri gönderimden önce tekrarlanır.
 
 Çekiliş tek sefer, Node kriptografik rastgele sayı üreteciyle sonuçlanır; bedelsiz katılım ve organizatör teslimi. Etkinlik ve öneri düğmeleri tekil üyelik tutar. Rol menüsü izinleri sıfır, entegrasyon tarafından yönetilmeyen, botun altında olan kozmetik rollerle sınırlıdır; kanal izin overwrite'larında erişim sağlayan veya siyasi görevle eşleşen roller reddedilir. Rol her tıklamada yeniden doğrulanır. Uyarı, temizlik, yavaş mod, kilit ve duyuru komutları gerçek Discord izinlerini kontrol eder. Temizlik onayı 60 saniyelik HMAC düğmesine bağlıdır, bir kere siler; 14 günden eski mesajları atlar. Kanal kilidi @everyone yazma alanlarını kapatır; özel rol izinleri korunur ve açmada önceki üç durumlu değerler geri getirilir.
 
@@ -331,3 +331,11 @@ Gemini bağlantısı resmi Interactions API üzerinden çalışır. Anahtar AES-
 Yeni `/yardim` ve `/yardim` mesajları herkes tarafından görülür; yardım menüsü ve sayfa düğmelerini diğer üyeler de kullanabilir. Eğlence ve oyunlar, üye kartları, seviye/ekonomi, müzik, çekilişler, sunucu rehberi ve siyasi panel bağlantıları kanalda paylaşılır. `/sor` yanıtları da düz mesajla herkese gösterilir.
 
 Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve listeleri, uyarı kayıtları, temizlik onayı, kişisel DM tercihleri, katılım onayları ve oy verme bildirimleri üyeye özel kalır. Bilet kanallarının erişim izinleri değişmez. Daha önce gönderilmiş özel mesajların görünürlüğü Discord tarafından sonradan değiştirilemediğinden güncel görünüm için komut yeniden kullanılmalıdır.
+
+
+### 2.15.0 — Ses, XP, destek ve davetler
+- YouTube seçim menüsü doğrudan MusicManager kuyruğunu kullanır. Şarkı her başlangıçta yt-dlp + Node EJS ile çözümlenir; kısa ömürlü ses adresleri kalıcı kayda yazılmaz. FFmpeg sesi PCM’ye, ses kitaplığı Opus’a dönüştürür. Kaynak erişim hataları ve bağlantı izinleri gerçek nedenleriyle gösterilir.
+- Sohbet beklemesi mevcut ayarlarda da 5 saniyeye yükseltilir. Ses süresi saniye olarak tutulur; bağımsız saniyelik iş, yinelenen tur engeli ve ortak günlük sınır kullanılır.
+- Yeni çekiliş kartının Katılımcılar düğmesi, her tıklamada güncel sunucu yöneticisi yetkisini doğrular. Liste ephemeral ve sayfalıdır. Ödül seçimi, katılımcılar ve bitiş zamanı değiştirilmez.
+- `/bilet kur log:` özel TXT arşiv kanalını seçer; boşsa denetim/genel log kullanılır. Kapanışta yazma kilitlenir, tam mesaj geçmişi ve ek bağlantıları kalıcı arşive alınır, loga gönderilir; sonra kanal silinir. Her dosya için kalıcı makbuz ve nonce vardır. Gönderim/silme hataları tekrar denenir. Daha önce kapatılmış kanallar yükseltmeyle topluca silinmez.
+- `/inv [uye]` mevcut davet kullanımını ve takip başlangıcından sonraki giriş/çıkış/yeniden girişleri gösterir. Mevcut üyeler başlangıç görüntüsüne alınır; eski hareketler uydurulmaz. Birden çok olası davet veya silinmiş davet bilinmeyen olarak tutulur. 100 guild komutu korunur; /inv ayrı global kotada, yalnızca sunucu bağlamında kayıtlıdır ve yapılandırılmış sunucu dışında çalışmaz.

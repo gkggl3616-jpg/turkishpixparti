@@ -4,7 +4,7 @@ import {categoryBannerURL,helpCardCategory} from '@turkishpix/core';
 
 const supportNames=['bilet','destek','destekler','destekkapat','cekilis','cekilisler'];
 const aiNames=['sor','yapayzekaaktif','yapayzekakapat'];
-const preferenceNames=['duyurukatıl','duyuruayril','sesdmac','sesdmkapat','botpanel','yardim'];
+const preferenceNames=['duyurukatıl','duyuruayril','sesdmac','sesdmkapat','botpanel','yardim','inv'];
 export const helpCategories=[
  {id:'guncellemeler',name:'✨ Güncellemeler',description:'Yeni özellikler, komutlar ve sürüm geçmişi',path:'/guncellemeler',color:theme.purple},
  {id:'gelismis',name:'✦ Gelişmiş topluluk',description:'Özel odalar, kayıt, otomasyon ve etkinlikler',path:'/topluluk',color:theme.purple},
