@@ -19,7 +19,8 @@ export async function resolveYouTubeAudio(input:string,maxMinutes:number){
   if(e instanceof DomainError)throw e;
   const error=e as any,detail=String(error.stderr||'');
   const code=error.code==='ENOENT'?'YOUTUBE_AUDIO_UNAVAILABLE':/sign in|confirm.*bot|403|429/i.test(detail)?'YOUTUBE_AUDIO_BLOCKED':error.killed?'YOUTUBE_AUDIO_TIMEOUT':'YOUTUBE_AUDIO_FAILED';
-  console.error('MUSIC_SOURCE_FAILED',JSON.stringify({source:'youtube',code}));
+  const reason=/confirm.*(?:bot|human)|not a bot/i.test(detail)?'BOT_VERIFICATION':/sign in|login|account/i.test(detail)?'ACCOUNT_REQUIRED':/429|too many requests/i.test(detail)?'RATE_LIMIT':/403|forbidden/i.test(detail)?'HTTP_FORBIDDEN':error.code==='ENOENT'?'RUNTIME_MISSING':error.killed?'TIMEOUT':'EXTRACTION_FAILED';
+  console.error('MUSIC_SOURCE_FAILED',JSON.stringify({source:'youtube',code,reason}));
   throw new DomainError(code,code==='YOUTUBE_AUDIO_BLOCKED'?'YouTube sunucudan ses erişimini şu anda reddediyor. Başka video veya /muzik radyo dene.':code==='YOUTUBE_AUDIO_TIMEOUT'?'Şarkı kaynağı zamanında yanıt vermedi. Yeniden dene.':'YouTube ses kaynağı açılamadı. Başka şarkı dene.');
  }
 }
