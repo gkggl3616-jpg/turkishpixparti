@@ -21,7 +21,7 @@ export type CardCategory=keyof typeof cardCategories;
 export function categoryForTitle(title:string):CardCategory {
  const t=title.normalize('NFKC').toLocaleLowerCase('tr-TR');
  if(/güncelleme|sürüm/.test(t))return 'updates';
- if(/youtube|müzik|ses kanalı|ses bağlantı|radyo/.test(t))return 'music';
+ if(/youtube|soundcloud|müzik|şarkı|🎧|ses kanalı|ses bağlantı|radyo/.test(t))return 'music';
  if(/rank|seviye|aktiflik|sohbet sıralama|üye kartı/.test(t))return 'rank';
  if(/çekiliş|kazanan/.test(t))return 'giveaway';
  if(/bilet|destek|talep/.test(t))return 'ticket';

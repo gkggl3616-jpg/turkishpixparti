@@ -11,9 +11,11 @@ export const musicControlRows=()=>[{type:1,components:[
  {type:2,style:4,custom_id:'music:durdur',label:'Durdur',emoji:{name:'⏹️'}}
 ]}];
 export const youtubeControls=()=>[{type:1,components:[
+ {type:2,style:3,custom_id:'sc:search',label:'SoundCloud’da ara',emoji:{name:'🎧'}},
  {type:2,style:1,custom_id:'yt:search',label:'YouTube’da ara',emoji:{name:'🔎'}},
  {type:2,style:3,custom_id:'music:radyo',label:'Radyo',emoji:{name:'📻'}},
- {type:2,style:2,custom_id:'music:tani',label:'Ses kontrolü',emoji:{name:'🩺'}},
+ {type:2,style:2,custom_id:'music:tani',label:'Ses kontrolü',emoji:{name:'🩺'}}
+]},{type:1,components:[
  {type:2,style:2,custom_id:'yt:activity',label:'Ortak YouTube ekranı',emoji:{name:'▶️'}},
  {type:2,style:5,label:'Müzik paneli',url:config().appUrl+'/muzik'}
 ]},...musicControlRows()];
@@ -40,7 +42,7 @@ export function youtubeView(videos:YouTubeVideo[]){
  return {embeds:[brightEmbed('▶ YouTube',videos.length?'Şarkını seç; bot bulunduğun ses kanalına katılıp çalsın.':'Bu aramada video bulunamadı.',videos.map((v,n)=>({name:(n+1)+'. '+displayText(v.title,220),value:displayText(v.channel,120)+'\n[YouTube’da aç]('+v.url+') · [Panelde oynat]('+config().appUrl+'/izle?v='+v.id+')'})),theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
 }
 export function musicLaunchView(){
- return {embeds:[brightEmbed('🎧 Müzik merkezi','**Ne dinlemek istersin?**\nYouTube’da ara düğmesine bas, şarkı adını yaz ve listeden seç.\n\n**YouTube** · Seçtiğin şarkı, bulunduğun ses kanalında botun sesinden çalar.\n**Botun ses bağlantısı** · Komuta bir ses dosyası ekle, doğrudan ses bağlantısı ver veya /muzik radyo kullan.\n\nYouTube ortak oturumunda herkes aynı oynatma listesini izler ve dinler.',[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
+ return {embeds:[brightEmbed('🎧 Müzik merkezi','**Ne dinlemek istersin?**\n🎵 **SoundCloud’da ara** düğmesine bas, şarkı adını yaz ve listeden seç. Bot bulunduğun ses kanalına otomatik katılıp çalsın.\n\n▶️ **YouTube** · YouTube’da ara düğmesinden video seçebilirsin. Kaynak erişimi gerektiğinde ses kontrolünden durumunu gör.\n📻 **Radyo** · Hazır istasyonlardan seç.\n📎 **Ses dosyası** · /muzik oynat dosya: ile yükle veya doğrudan ses bağlantısı ver.\n\n*Ortak YouTube ekranında birlikte izleyip dinleyebilirsin.*',[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}};
 }
 function searchView(id:string,s:Session){
  const list=youtubeView(s.videos);list.embeds[0].title='🔎 YouTube · Şarkını seç';
@@ -58,7 +60,8 @@ function selectedView(id:string,s:Session,note=''){
   s.invite?{type:2,style:5,label:'Oturuma katıl',url:s.invite,emoji:{name:'▶️'}}:{type:2,style:1,custom_id:'yt:listen:'+id,label:s.playback?'Tekrar çal':'Şarkıyı çal',emoji:{name:'▶️'}},
   {type:2,style:5,label:'Videoyu izle',url:config().appUrl+'/izle?v='+v.id},
   {type:2,style:2,custom_id:'yt:fav:'+id,label:s.favourite?'Favoriden çıkar':'Favoriye ekle',emoji:{name:s.favourite?'♥️':'🤍'}},
-  {type:2,style:2,custom_id:'yt:search',label:'Yeni arama',emoji:{name:'🔎'}}
+  {type:2,style:2,custom_id:'yt:search',label:'Yeni arama',emoji:{name:'🔎'}},
+  {type:2,style:3,custom_id:'sc:search',label:'SoundCloud’da ara',emoji:{name:'🎧'}}
  ]},...musicControlRows()],allowedMentions:{parse:[]}};
 }
 async function searchReply(i:any,query:string){

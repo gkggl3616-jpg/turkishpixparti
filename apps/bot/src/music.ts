@@ -1,4 +1,6 @@
 import {resolveYouTubeAudio,openYouTubeFragments,fragmentedYouTubeAudio} from './youtube-audio';
+import {resolveSoundCloudAudio,soundCloudURL} from './soundcloud-audio';
+import {handleSoundCloudInteraction} from './soundcloud';
 import {handleYouTubeInteraction,youtubeControls} from './youtube';
 import {createAudioPlayer,createAudioResource,joinVoiceChannel,entersState,VoiceConnectionStatus,AudioPlayerStatus,NoSubscriberBehavior,StreamType,type VoiceConnection,type AudioResource} from '@discordjs/voice';
 import {PermissionFlagsBits,type Client,type Interaction} from 'discord.js';
@@ -36,13 +38,15 @@ export class MusicManager{
  private async start(seconds=0){
   const track=this.queue.current;if(!track)return;this.cleanup();this.offset=seconds;this.dirty=true;
   let videoId:string|null=null;try{videoId=youtubeVideoId(track.url);}catch{}
-  const resolved=videoId?await resolveYouTubeAudio(track.url,this.settings.music.maxTrackMinutes):null;
+  let soundcloud=false;try{soundCloudURL(track.url);soundcloud=true;}catch{}
+  const resolved=videoId?await resolveYouTubeAudio(track.url,this.settings.music.maxTrackMinutes):soundcloud?await resolveSoundCloudAudio(track.url,this.settings.music.maxTrackMinutes):null;
+  if(soundcloud&&resolved&&'title' in resolved)track.title=resolved.title;
   const input=resolved&&fragmentedYouTubeAudio(resolved)?openYouTubeFragments(track.url,this.settings.music.maxTrackMinutes):await openAudio(resolved?.url||track.url,0,resolved?.headers);this.input=input;
   const child=spawn('ffmpeg',['-hide_banner','-loglevel','error','-i','pipe:0',...(seconds?['-ss',String(seconds)]:[]),'-t',String(Math.max(1,this.settings.music.maxTrackMinutes*60-seconds)),'-vn','-f','s16le','-ar','48000','-ac','2','pipe:1'],{stdio:['pipe','pipe','pipe']});this.ffmpeg=child;
   const resource=createAudioResource(child.stdout,{inputType:StreamType.Raw,inlineVolume:true,metadata:{trackId:track.id}});this.resource=resource;resource.volume?.setVolume(this.queue.volume/100);
   child.once('error',()=>{child.stdout.destroy(Error('Ses dönüştürücü başlatılamadı.'));});child.stdin.on('error',()=>{});child.stderr.resume();input.once('error',()=>child.stdout.destroy(Error('Ses kaynağı kesildi.')));input.pipe(child.stdin);
   this.player.play(resource);try{await entersState(this.player,AudioPlayerStatus.Playing,20000);}catch{this.cleanup();this.player.stop(true);throw Error('Ses dosyası çözümlenemedi veya kaynak yanıt vermedi.');}
-  console.log('MUSIC_PLAYBACK_STARTED',JSON.stringify({source:videoId?'youtube':track.radio?'radio':'audio',voiceReady:this.connection?.state.status===VoiceConnectionStatus.Ready,codec:'opus'}));this.limitTimer=setTimeout(()=>{if(this.resource===resource)void this.serial(()=>this.next(true)).catch(()=>{this.lastError='Parça süre sınırında durdu.';this.dirty=true;});},this.settings.music.maxTrackMinutes*60000);this.limitTimer.unref();this.lastError='';this.idleSince=0;this.dirty=true;
+  console.log('MUSIC_PLAYBACK_STARTED',JSON.stringify({source:videoId?'youtube':soundcloud?'soundcloud':track.radio?'radio':'audio',voiceReady:this.connection?.state.status===VoiceConnectionStatus.Ready,codec:'opus'}));this.limitTimer=setTimeout(()=>{if(this.resource===resource)void this.serial(()=>this.next(true)).catch(()=>{this.lastError='Parça süre sınırında durdu.';this.dirty=true;});},this.settings.music.maxTrackMinutes*60000);this.limitTimer.unref();this.lastError='';this.idleSince=0;this.dirty=true;
  }
  private async next(skipped:boolean){
   this.cleanup();this.queue.advance(skipped);this.dirty=true;
@@ -61,7 +65,7 @@ export class MusicManager{
   if(action==='katil'){if(this.channelId&&this.channelId!==channelId)requireControl();await this.join(channelId);return '🔊 Ses kanalına katıldım.';}
   if(['oynat','radyo'].includes(action)){
    let url=payload.url||'',title=payload.title||'',radio=false;if(action==='radyo'){const station=radioStations.find(s=>s.id===payload.station);if(!station)throw Error('Bir radyo istasyonu seç.');url=station.url;title=station.name;radio=true;}
-   let videoId:string|null=null;try{videoId=youtubeVideoId(url);}catch{}const parsed=videoId?new URL('https://www.youtube.com/watch?v='+videoId):audioURL(url);if(!title)title=videoId?'YouTube şarkısı':decodeURIComponent(parsed.pathname.split('/').pop()||'Ses kaydı').slice(0,120);if(!this.connection)await this.join(channelId);
+   let videoId:string|null=null,soundcloud:string|null=null;try{videoId=youtubeVideoId(url);}catch{}try{soundcloud=soundCloudURL(url);}catch{}const parsed=videoId?new URL('https://www.youtube.com/watch?v='+videoId):soundcloud?new URL(soundcloud):audioURL(url);if(!title)title=videoId?'YouTube şarkısı':decodeURIComponent(parsed.pathname.split('/').pop()||'Ses kaydı').slice(0,120);if(!this.connection)await this.join(channelId);
    this.queue.add({id:randomUUID(),url:parsed.href,title,requesterId:actorId,radio});this.dirty=true;
    if(!this.queue.current){await this.next(true);if(!this.queue.current)throw Error(this.lastError||'Ses kaynağı oynatılamadı. Başka parça veya /muzik radyo dene.');return '▶️ Çalıyor: '+displayText((this.queue.current as MusicTrack).title,120);}return '🎵 Kuyruğa eklendi: '+displayText(title,120)+' · Sıra '+this.queue.tracks.length;
   }
@@ -97,7 +101,7 @@ export class MusicManager{
   await database().query("UPDATE music_jobs SET status='FAILED',result=$2,updated_at=now() WHERE id=$1",[job.id,e instanceof Error?e.message.slice(0,400):'İşlem tamamlanamadı.']);}this.dirty=true;
  }
  async shutdown(){await this.serial(async()=>this.leave());}
- async playYouTube(i:any,video:YouTubeVideo){
+ async playYouTube(i:any,video:Pick<YouTubeVideo,'url'|'title'>){
   const member=await this.guild().members.fetch(i.user.id),channelId=member.voice.channelId;if(!channelId)throw Error('Şarkıyı çalmak için önce bir ses kanalına katıl.');
   return this.serial(()=>this.execute('oynat',{url:video.url,title:video.title},i.user.id,channelId));
  }
@@ -109,12 +113,15 @@ export class MusicManager{
     const action=diagnose?'tani':select?'radyo':i.customId.split(':')[1];
     if(action==='tani'){
      const member=await this.guild().members.fetch(i.user.id),channel:any=member.voice.channelId?await this.guild().channels.fetch(member.voice.channelId):null,perms=channel?.permissionsFor(this.guild().members.me!);
-     const audio=(await database().query("SELECT status FROM integration_status WHERE name='youtube-audio'")).rows[0]?.status,s=this.snapshot();
+     const sources=(await database().query("SELECT name,status FROM integration_status WHERE name IN ('youtube-audio','soundcloud-audio')")).rows;
+     const audio=sources.find(r=>r.name==='youtube-audio')?.status,soundcloud=sources.find(r=>r.name==='soundcloud-audio')?.status,s=this.snapshot();
      await i.editReply({embeds:[brightEmbed('🩺 Ses sistemi kontrolü','*Arama, kaynak ve Discord ses bağlantısı ayrı ayrı kontrol edilir.*',[
       {name:'🎙️ Bulunduğun kanal',value:channel?'<#'+channel.id+'>':'Önce normal bir ses kanalına katıl.',inline:true},
       {name:'🔐 Kanal izinleri',value:channel?(perms?.has([PermissionFlagsBits.ViewChannel,PermissionFlagsBits.Connect,PermissionFlagsBits.Speak])?'✅ Gör / Bağlan / Konuş hazır.':'❌ Botun Gör / Bağlan / Konuş izinlerini aç.'):'Kanal seçilmedi.',inline:true},
       {name:'🔊 Bot bağlantısı',value:s.connected?'✅ Bağlı · '+s.state:'⚪ Henüz bağlı değil. /ses katil kullan.'},
-      {name:'▶️ YouTube ses kaynağı',value:audio?.ready?'✅ Son canlı ses örnekleri çözümlendi.':audio?'⚠️ Son ses kontrolü başarısız. YouTube kaynağı açılamadı; Radyo düğmesini veya bir ses dosyasını kullan.':'Kontrol hazırlanıyor.'},
+      {name:'🎧 SoundCloud ses kaynağı',value:soundcloud?.ready?'✅ Şarkı araması ve gerçek ses örneği doğrulandı.':soundcloud?'⚠️ Son ses kontrolü başarısız. Başka şarkı, radyo veya ses dosyası dene.':'Kontrol hazırlanıyor.'},
+      {name:'▶️ YouTube ses kaynağı',value:audio?.ready?'✅ Son canlı ses örnekleri çözümlendi.':audio?'⚠️ YouTube kaynağı açılamadı. SoundCloud aramasını veya Radyo düğmesini kullan.':'Kontrol hazırlanıyor.'},
+      {name:'🎧 Şarkı araması',value:'SoundCloud’da ara düğmesini kullan veya /muzik oynat ara: Şarkı kaynak: SoundCloud seç. YouTube ses erişimi kapalıysa şarkı adı araması otomatik SoundCloud sonuçlarını getirir.'},
       {name:'📻 Alternatif ses',value:'Radyo düğmesinden istasyon seç veya /muzik oynat dosya: ile bir ses dosyası yükle.'},
       ...(s.lastError?[{name:'⚠️ Son hata',value:displayText(s.lastError,900)}]:[])
      ],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});return true;
@@ -127,11 +134,12 @@ export class MusicManager{
    }catch(e){await i.editReply({embeds:[brightEmbed('⚠️ Müzik kontrolü',e instanceof Error?e.message:'İşlem tamamlanamadı.',[],theme.gold)],components:youtubeControls(),allowedMentions:{parse:[]}});}
    return true;
   }
+  if(await handleSoundCloudInteraction(interaction,this.settings,(i,track)=>this.playYouTube(i,track)))return true;
   if(await handleYouTubeInteraction(interaction,this.settings,(i,video)=>this.playYouTube(i,video)))return true;
   if(!interaction.isChatInputCommand()||!['ses','muzik'].includes(interaction.commandName))return false;
   await interaction.deferReply({});
   try{await rateLimit('music:'+interaction.user.id,15,60);const sub=interaction.options.getSubcommand();let text='';
-   if(sub==='yardim')text='**Başlat:** /muzik oynat → YouTube’da ara · /muzik oynat ara: Şarkı adı · /ses katil · /muzik radyo\n**Kontroller:** duraklat, devam, atla, oyla, durdur, ses, tekrar\n**Kuyruk:** kuyruk, karistir, temizle, cikar, tasi\n**Diğer:** simdi, ileri, /ses durum, /ses ayril\nMP3, OGG, WAV, FLAC, M4A, AAC ve doğrudan HTTPS ses akışları desteklenir. YouTube: /muzik youtube ara: · /muzik video baglanti: · /muzik birlikte · /muzik ekran. Seçim kartında favori ve ortak oturuma katılma düğmeleri vardır. YouTube aramasından seçtiğin şarkı otomatik olarak bulunduğun ses kanalında bot tarafından çalınır. /muzik birlikte ile ayrıca Watch Together açabilirsin. Bot boş kanaldan otomatik ayrılır. Ortak kontroller DJ rolü / Sunucuyu Yönet izni ister; herkes kendi parçasını atlayabilir ve oylayabilir.';
+   if(sub==='yardim')text='**Başlat:** /muzik oynat → SoundCloud’da ara · /muzik oynat ara: Şarkı adı · /ses katil · /muzik radyo\n**Kaynak:** Otomatik, SoundCloud veya YouTube. YouTube ses erişimi kapalıysa otomatik arama SoundCloud sonuçlarını getirir. Listeden seçilen şarkı bulunduğun ses kanalında çalar.\n**Kontroller:** duraklat, devam, atla, oyla, durdur, ses, tekrar\n**Kuyruk:** kuyruk, karistir, temizle, cikar, tasi\n**Diğer:** simdi, ileri, /ses durum, /ses ayril\nMP3, OGG, WAV, FLAC, M4A, AAC ve doğrudan HTTPS ses akışları desteklenir. SoundCloud tek şarkı bağlantısı da /muzik oynat baglanti: ile açılır. YouTube: /muzik youtube ara: · /muzik video baglanti: · /muzik birlikte · /muzik ekran. /muzik birlikte ile Watch Together açabilirsin. Bot boş kanaldan otomatik ayrılır. Ortak kontroller DJ rolü / Sunucuyu Yönet izni ister; herkes kendi parçasını atlayabilir ve oylayabilir.';
    else if(['durum','simdi','kuyruk'].includes(sub)){const s=this.snapshot();text=sub==='kuyruk'?(s.queue.length?s.queue.slice(0,20).map((t:any,n:number)=>`${n+1}. **${displayText(t.title,100)}** · <@${t.requesterId}>`).join('\n')+(s.queue.length>20?'\n… '+s.queue.length+' parça':''):'Kuyruk boş.'):`${s.connected?'🔊 Bağlı: <#'+s.channelId+'>':'Ses bağlantısı yok.'}\n${s.current?'🎵 **'+displayText(s.current.title,120)+'** · <@'+s.current.requesterId+'>\n'+s.seconds+' sn · '+(s.state==='paused'?'Duraklatıldı':'Çalıyor'):'Çalan parça yok.'}\n🔉 %${s.volume} · 🔁 ${{OFF:'Kapalı',TRACK:'Parça',QUEUE:'Kuyruk'}[s.repeat]} · ${s.listeners} dinleyici`+(s.lastError?'\n'+s.lastError:'');}
    else {const member=await this.guild().members.fetch(interaction.user.id),channelId=member.voice.channelId;if(!channelId)throw Error('Önce bir ses kanalına katıl.');const attachment=interaction.options.getAttachment('dosya');if(attachment&&attachment.size>100*1024*1024)throw Error('Dosya sınırı 100 MB.');text=await this.serial(()=>this.execute(sub,{url:attachment?.url||interaction.options.getString('baglanti')||undefined,title:interaction.options.getString('baslik')||attachment?.name||undefined,station:interaction.options.getString('istasyon')||undefined,index:interaction.options.getInteger('sira')||undefined,target:interaction.options.getInteger('hedef')||undefined,volume:interaction.options.getInteger('yuzde')||undefined,mode:interaction.options.getString('mod') as any,seconds:interaction.options.getInteger('saniye')??undefined},interaction.user.id,channelId));}
    await interaction.editReply({embeds:[brightEmbed('🎧 TurkishPix müzik',text,[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});
