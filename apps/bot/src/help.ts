@@ -17,6 +17,7 @@ export const helpCategories=[
  {id:'tercihler',name:'⚙️ Bot & bildirimler',description:'Panel, yardım ve kişisel bildirimler',path:'/',color:theme.cyan}
 ];
 export function commandCategory(name:string){
+ if(['kick','ban'].includes(name))return 'feature-yonetim';
  if(name==='guncellemeler')return 'guncellemeler';
  if(name==='topluluk')return 'gelismis';
  if(supportNames.includes(name))return 'bilet';
@@ -28,6 +29,7 @@ export function commandCategory(name:string){
  return 'sistem';
 }
 const examples:Record<string,string>={
+ 'kick':'/kick uye: @Üye reason: Sunucu kuralları','ban':'/ban uye: @Üye reason: Tekrarlanan ihlal',
  'bilet ac':'/bilet ac tur: Ödül Talebi','destek':'/destek tur: Destek','cekilis':'/cekilis odul: Nitro dakika: 60 kazanan: 2',
  'sor':'/sor soru: Bugün ne oynayalım?','muzik radyo':'/muzik radyo istasyon: Groove Salad · Chill','ses katil':'/ses katil','anket':'/anket soru: Ne oynayalım? secenekler: Valorant | Minecraft',
  'xox':'/xox zorluk: zor','bilet kur':'/bilet kur kanal: #bilet-ac kategori: Biletler yetkili: @Destek',

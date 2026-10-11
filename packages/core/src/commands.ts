@@ -6,7 +6,9 @@ import {featureCommands} from './features-catalog';
 import {musicCommands} from './music-policy';
 import {config} from './config';
 import {entertainmentCommands} from './entertainment-catalog';
+import {moderationCommands} from './moderation-commands';
 export const commands=[
+ ...moderationCommands,
  {name:'inv',description:'Davet sayıları, giriş, çıkış, tekrar katılım ve sıralamayı gör.',options:[{type:6,name:'uye',description:'Davet raporunu göreceğin üye',required:false}]},
  {name:'partikur',description:'Parti kuruluş başvurusunu web panelinde başlat.'},
  {name:'partiler',description:'TurkishPix siyasi partilerini görüntüle.'},
@@ -37,5 +39,6 @@ export function commandReply(name:string){
 }
 
 // Discord allows 100 guild CHAT_INPUT commands plus a separate global quota.
-export const guildCommands=commands.filter(c=>c.name!=='inv');
-export const globalCommands=commands.filter(c=>c.name==='inv');
+const globalNames=new Set(['inv','kick','ban']);
+export const guildCommands=commands.filter(c=>!globalNames.has(c.name));
+export const globalCommands=commands.filter(c=>globalNames.has(c.name));

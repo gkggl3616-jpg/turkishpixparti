@@ -339,3 +339,8 @@ Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve list
 - Yeni çekiliş kartının Katılımcılar düğmesi, her tıklamada güncel sunucu yöneticisi yetkisini doğrular. Liste ephemeral ve sayfalıdır. Ödül seçimi, katılımcılar ve bitiş zamanı değiştirilmez.
 - `/bilet kur log:` özel TXT arşiv kanalını seçer; boşsa denetim/genel log kullanılır. Kapanışta yazma kilitlenir, tam mesaj geçmişi ve ek bağlantıları kalıcı arşive alınır, loga gönderilir; sonra kanal silinir. Her dosya için kalıcı makbuz ve nonce vardır. Gönderim/silme hataları tekrar denenir. Daha önce kapatılmış kanallar yükseltmeyle topluca silinmez.
 - `/inv [uye]` mevcut davet kullanımını ve takip başlangıcından sonraki giriş/çıkış/yeniden girişleri gösterir. Mevcut üyeler başlangıç görüntüsüne alınır; eski hareketler uydurulmaz. Birden çok olası davet veya silinmiş davet bilinmeyen olarak tutulur. 100 guild komutu korunur; /inv ayrı global kotada, yalnızca sunucu bağlamında kayıtlıdır ve yapılandırılmış sunucu dışında çalışmaz.
+
+### 2.15.1 — Atma ve yasaklama
+- `/kick uye: @Üye [reason: Sebep]` ve `/ban uye: @Üye [reason: Sebep]`; 100 mevcut guild komutu korunur, iki komut ayrı global kotaya kaydedilir. Yalnızca yapılandırılmış sunucuda çalışırlar.
+- İşlemden önce roller ve üç üyenin (yetkili, bot, hedef) bilgileri yenilenir. İlgili KickMembers/BanMembers izni, yetkili ve bot rol sırası gerekir; kendi hesabı, sunucu sahibi ve TurkishPix korunur.
+- Yasaklamadan önce DM açılır; sunucu adı ve sebep bildirilir. İşlem sonrası bildirim tamamlandı diye güncellenir; hata halinde sonuç bildirimi düzeltilir. DM kapalıysa yasaklama engellenmez. Bot hesaplarına DM gönderilmez. Mesajlar silinmez; denetim gerekçesi işlemi isteyen yetkiliyi içerir.

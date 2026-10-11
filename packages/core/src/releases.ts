@@ -2,6 +2,10 @@
 export type ReleaseFeature={title:string;description:string;commands:string[];path:string;note?:string};
 export type Release={version:string;date:string;title:string;summary:string;features:ReleaseFeature[]};
 export const releases:Release[]=[
+ {version:'2.15.1',date:'2026-10-11',title:'Atma & yasaklama komutları',summary:'İsteğe bağlı sebep, güncel rol ve yetki kontrolü; yasaklanan üyeye özel DM bildirimi.',features:[
+  {title:'/kick ve /ban',description:'Üyeyi seç, istersen reason alanına sebep yaz. Komutlar ilgili atma / yasaklama iznini ve hem yetkilinin hem botun rol sırasını her işlemde doğrular. Sonuç yalnızca yetkiliye gösterilir.',commands:['/kick uye: @Üye reason: Kural ihlali','/ban uye: @Üye reason: Tekrarlanan ihlal'],path:'/guvenlik'},
+  {title:'Yasaklama bildirimi',description:'Yasaklanan insan üyeye sunucu adı ve gerekçe DM ile gönderilir. DM kapalıysa yasaklama yine uygulanır ve yetkiliye bildirimin gönderilemediği söylenir. Geçmiş mesajlar silinmez.',commands:['/ban'],path:'/guvenlik'}
+ ]},
  {version:'2.15.0',date:'2026-10-11',title:'Saniyelik XP, gerçek ses oynatımı & destek merkezi',summary:'5 saniye sohbet beklemesi, her saniye ses XP’si, şarkı seçimiyle botta oynatım, özel katılım listeleri ve kalıcı davet takibi.',features:[
   {title:'Daha hızlı aktiflik kazanımı',description:'Sohbet XP beklemesi 5 saniye. Ses kanalındaki insan üyeler tek başına ve mikrofon kapalıyken de her saniye varsayılan 1 XP kazanır. AFK kanalı sayılmaz; sohbet ve ses aynı günlük XP sınırını kullanır.',commands:['/rank','/siralama'],path:'/topluluk'},
   {title:'Ara, seç, ses kanalında çal',description:'YouTube aramasından seçilen şarkı botun ses kuyruğuna eklenir; bot seçim yapan üyenin o an bulunduğu kanala katılır. Ses dosyaları, radyo, kuyruk ve DJ kontrolleri korunur.',commands:['/muzik oynat','/muzik youtube ara: Şarkı','/muzik atla'],path:'/muzik',note:'Kaynak sağlayıcısı erişimi reddederse gerçek hata gösterilir; kayıtlı ses dosyaları ve radyo kullanılabilir.'},
