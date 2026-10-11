@@ -6,7 +6,7 @@ export const uiSeparator=()=>({type:14,divider:true,spacing:1});
 export const uiRow=(...components:any[])=>({type:1,components});
 export const uiButton=(custom_id:string,label:string,style=2,disabled=false)=>({type:2,custom_id,label,style,disabled});
 export function discordCard(title:string,subtitle:string,body:any[],color=theme.cyan,thumbnail?:string){
- const header=uiText('## '+title+'\n'+subtitle);
+ const header=uiText('## ✦ '+title+' ✦\n*'+subtitle+'*\n-# ✨ 𝙏𝙪𝙧𝙠𝙞𝙨𝙝𝙋𝙞𝙭 • Topluluğun kontrol merkezi');
  return {flags:COMPONENTS_V2,components:[{type:17,accent_color:color,components:[{type:9,components:[header],accessory:{type:11,media:{url:thumbnail||config().appUrl+'/brand/turkishpix-bot.png'},description:'TurkishPix'}},uiSeparator(),...body]}],allowedMentions:{parse:[]}};
 }
 /** Quotes untrusted message text without executing its Markdown or mentions. */

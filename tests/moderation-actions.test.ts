@@ -72,6 +72,6 @@ test('Command replies are private and report closed DM accurately',async()=>{
  assert.equal(await handleModerationInteraction(i),true);assert.equal(responses[0].flags,MessageFlags.Ephemeral);assert.match(responses[1].embeds[0].fields[2].value,/Gönderilemedi.*tamamlandı/);assert.deepEqual(responses[1].allowedMentions.parse,[]);
 });
 test('Kick/ban preserve every guild command, use separate global quota and appear in help',()=>{
- assert.equal(guildCommands.length,100);assert.equal(globalCommands.length,3);
+ assert.equal(guildCommands.length,100);assert.equal(globalCommands.length,4);
  for(const name of ['kick','ban']){const c:any=globalCommands.find(c=>c.name===name);assert.equal(c.default_member_permissions,name==='kick'?'2':'4');assert.deepEqual(c.contexts,[0]);assert.equal(c.options[0].name,'uye');assert.equal(c.options[0].required,true);assert.equal(c.options[1].name,'reason');assert.equal(c.options[1].required,false);assert.equal(c.options[1].max_length,500);assert.ok(helpEntries('feature-yonetim').some(e=>e.key===name));}
 });

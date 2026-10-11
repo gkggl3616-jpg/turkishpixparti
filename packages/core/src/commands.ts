@@ -39,6 +39,6 @@ export function commandReply(name:string){
 }
 
 // Discord allows 100 guild CHAT_INPUT commands plus a separate global quota.
-const globalNames=new Set(['inv','kick','ban']);
+const globalNames=new Set(['inv','kick','ban','sil']);
 export const guildCommands=commands.filter(c=>!globalNames.has(c.name));
 export const globalCommands=commands.filter(c=>globalNames.has(c.name));

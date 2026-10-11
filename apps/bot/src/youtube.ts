@@ -3,11 +3,20 @@ import {MessageFlags} from 'discord.js';
 import {config,RELEASE_VERSION,database,DomainError,rateLimit,searchYouTube,youtubeStatus,youtubeVideo,youtubeVideoId,recordYouTubeView,saveYouTubeFavourite,youtubeFavourites,youtubeHistory,createWatchTogether,brightEmbed,displayText,theme,type CommunitySettings,type YouTubeVideo} from '@turkishpix/core';
 type Session={userId:string;guildId:string;channelId:string;messageId:string|null;expires:number;videos:YouTubeVideo[];selected?:YouTubeVideo;favourite?:boolean;invite?:string;playback?:string;playing?:boolean};
 const sessions=new Map<string,Session>(),ttl=10*60*1000;
+export const musicControlRows=()=>[{type:1,components:[
+ {type:2,style:2,custom_id:'music:duraklat',label:'Duraklat',emoji:{name:'⏸️'}},
+ {type:2,style:3,custom_id:'music:devam',label:'Devam',emoji:{name:'▶️'}},
+ {type:2,style:1,custom_id:'music:atla',label:'Atla',emoji:{name:'⏭️'}},
+ {type:2,style:2,custom_id:'music:kuyruk',label:'Kuyruk',emoji:{name:'📜'}},
+ {type:2,style:4,custom_id:'music:durdur',label:'Durdur',emoji:{name:'⏹️'}}
+]}];
 export const youtubeControls=()=>[{type:1,components:[
  {type:2,style:1,custom_id:'yt:search',label:'YouTube’da ara',emoji:{name:'🔎'}},
+ {type:2,style:3,custom_id:'music:radyo',label:'Radyo',emoji:{name:'📻'}},
+ {type:2,style:2,custom_id:'music:tani',label:'Ses kontrolü',emoji:{name:'🩺'}},
  {type:2,style:2,custom_id:'yt:activity',label:'Ortak YouTube ekranı',emoji:{name:'▶️'}},
  {type:2,style:5,label:'Müzik paneli',url:config().appUrl+'/muzik'}
-]}];
+]},...musicControlRows()];
 const actorOf=(i:any)=>({id:i.user.id,username:i.user.username,avatar:i.user.avatar});
 function newSession(i:any,videos:YouTubeVideo[],selected?:YouTubeVideo){
  for(const [key,s] of sessions)if(s.expires<Date.now())sessions.delete(key);
@@ -43,14 +52,14 @@ function searchView(id:string,s:Session){
  return list;
 }
 function selectedView(id:string,s:Session,note=''){
- const v=s.selected!,embed=brightEmbed('▶ '+displayText(v.title,230),'**Seçildi** · '+displayText(v.channel,120)+(duration(v.duration)?' · '+duration(v.duration):'')+'\n\nSes kanalına katıl ve **Şarkıyı çal** düğmesine bas. Bot bulunduğun kanala otomatik girip bu şarkıyı kendi ses bağlantısından çalar:\n'+v.url+(s.invite?'\n\n**Ortak oturum hazır.** Oturuma katıl düğmesiyle görüntülü oynatıcıya geç.':'')+(s.playback?'\n\n'+s.playback:'')+(note?'\n\n'+note:''),[{name:'👤 Seçen üye',value:'<@'+s.userId+'>',inline:true},{name:'🎬 Oynatma',value:'Botun ses kanalında oynatım',inline:true}],theme.purple);
+ const v=s.selected!,embed=brightEmbed('▶ '+displayText(v.title,230),'**Seçildi** · '+displayText(v.channel,120)+(duration(v.duration)?' · '+duration(v.duration):'')+'\n\n'+(s.playback?'🎶 **'+s.playback+'**\n*Kontroller aşağıda; başka bir şarkı için yeni arama aç.*':'Ses kanalına katıl ve **Şarkıyı çal** düğmesine bas. Bot bulunduğun kanala otomatik girip bu şarkıyı kendi ses bağlantısından çalar.')+'\n'+v.url+(s.invite?'\n\n**Ortak oturum hazır.** Oturuma katıl düğmesiyle görüntülü oynatıcıya geç.':'')+(note?'\n\n'+note:''),[{name:'👤 Seçen üye',value:'<@'+s.userId+'>',inline:true},{name:'🎬 Oynatma',value:'Botun ses kanalında oynatım',inline:true}],theme.purple);
  embed.image={url:v.thumbnail};
  return {embeds:[embed],components:[{type:1,components:[
   s.invite?{type:2,style:5,label:'Oturuma katıl',url:s.invite,emoji:{name:'▶️'}}:{type:2,style:1,custom_id:'yt:listen:'+id,label:s.playback?'Tekrar çal':'Şarkıyı çal',emoji:{name:'▶️'}},
   {type:2,style:5,label:'Videoyu izle',url:config().appUrl+'/izle?v='+v.id},
   {type:2,style:2,custom_id:'yt:fav:'+id,label:s.favourite?'Favoriden çıkar':'Favoriye ekle',emoji:{name:s.favourite?'♥️':'🤍'}},
   {type:2,style:2,custom_id:'yt:search',label:'Yeni arama',emoji:{name:'🔎'}}
- ]}],allowedMentions:{parse:[]}};
+ ]},...musicControlRows()],allowedMentions:{parse:[]}};
 }
 async function searchReply(i:any,query:string){
  const videos=await searchYouTube(i.user.id,query),{id,s}=newSession(i,videos);

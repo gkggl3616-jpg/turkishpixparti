@@ -1,16 +1,16 @@
-import {resolveYouTubeAudio} from './youtube-audio';
+import {resolveYouTubeAudio,openYouTubeFragments,fragmentedYouTubeAudio} from './youtube-audio';
 import {handleYouTubeInteraction,youtubeControls} from './youtube';
 import {createAudioPlayer,createAudioResource,joinVoiceChannel,entersState,VoiceConnectionStatus,AudioPlayerStatus,NoSubscriberBehavior,StreamType,type VoiceConnection,type AudioResource} from '@discordjs/voice';
 import {PermissionFlagsBits,type Client,type Interaction} from 'discord.js';
 import {spawn,type ChildProcessWithoutNullStreams} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
-import type {IncomingMessage} from 'node:http';
+import type {Readable} from 'node:stream';
 import {MusicQueue,radioStations,rateLimit,config,database,transaction,musicJobSchema,brightEmbed,theme,displayText,youtubeVideoId,type YouTubeVideo,type CommunitySettings,type MusicTrack} from '@turkishpix/core';
 import {audioURL,openAudio} from './audio-source';
 type Payload={url?:string;title?:string;station?:string;index?:number;target?:number;volume?:number;mode?:'OFF'|'TRACK'|'QUEUE';seconds?:number};
 export class MusicManager{
  readonly player=createAudioPlayer({behaviors:{noSubscriber:NoSubscriberBehavior.Pause}});queue:MusicQueue;connection:VoiceConnection|null=null;channelId:string|null=null;
- private ffmpeg:ChildProcessWithoutNullStreams|null=null;private input:IncomingMessage|null=null;private resource:AudioResource|null=null;private sequence=Promise.resolve();private jobRunning=false;private emptySince=0;private idleSince=Date.now();private offset=0;private lastPublish=0;private dirty=true;private failureCount=0;private limitTimer:ReturnType<typeof setTimeout>|null=null;lastError='';
+ private ffmpeg:ChildProcessWithoutNullStreams|null=null;private input:Readable|null=null;private resource:AudioResource|null=null;private sequence=Promise.resolve();private jobRunning=false;private emptySince=0;private idleSince=Date.now();private offset=0;private lastPublish=0;private dirty=true;private failureCount=0;private limitTimer:ReturnType<typeof setTimeout>|null=null;lastError='';
  constructor(private client:Client,private settings:CommunitySettings){
   this.queue=new MusicQueue(settings.music);
   this.player.on(AudioPlayerStatus.Idle,(oldState:any)=>{const previous=oldState.resource;if(this.queue.current&&this.resource===previous)void this.serial(async()=>{if(this.resource===previous&&this.player.state.status===AudioPlayerStatus.Idle&&this.queue.current)await this.next(false);}).catch(()=>{this.lastError='Sıradaki parça açılamadı.';this.dirty=true;});});
@@ -29,19 +29,20 @@ export class MusicManager{
   if(ch.userLimit&&ch.members.size>=ch.userLimit&&!perms.has(PermissionFlagsBits.MoveMembers))throw Error('Ses kanalı dolu.');
   if(this.connection&&this.channelId===channelId&&this.connection.state.status===VoiceConnectionStatus.Ready)return;
   this.leave();this.channelId=channelId;this.connection=joinVoiceChannel({channelId,guildId:guild.id,adapterCreator:guild.voiceAdapterCreator,selfDeaf:true,selfMute:false});
-  const connection=this.connection;connection.subscribe(this.player);this.dirty=true;
+  const connection=this.connection;connection.subscribe(this.player);this.dirty=true;connection.on('error',(e:any)=>{this.lastError='Ses bağlantısı hata verdi; /ses katil ile yeniden bağlan.';this.dirty=true;console.error('MUSIC_VOICE_ERROR',JSON.stringify({code:e.code||'VOICE_CONNECTION'}));});
   connection.on(VoiceConnectionStatus.Disconnected,()=>{void Promise.race([entersState(connection,VoiceConnectionStatus.Signalling,5000),entersState(connection,VoiceConnectionStatus.Connecting,5000)]).catch(()=>this.serial(async()=>{if(this.connection===connection){this.lastError='Ses bağlantısı kesildi.';this.leave();}}));});
   try{await entersState(connection,VoiceConnectionStatus.Ready,20000);this.lastError='';this.idleSince=Date.now();}catch{this.leave();throw Error('Ses bağlantısı kurulamadı. Ses izinlerini ve bağlantıyı kontrol et.');}
  }
  private async start(seconds=0){
   const track=this.queue.current;if(!track)return;this.cleanup();this.offset=seconds;this.dirty=true;
-  let source=track.url,videoId:string|null=null;try{videoId=youtubeVideoId(track.url);}catch{}if(videoId)source=(await resolveYouTubeAudio(track.url,this.settings.music.maxTrackMinutes)).url;
-  const input=await openAudio(source);this.input=input;
+  let videoId:string|null=null;try{videoId=youtubeVideoId(track.url);}catch{}
+  const resolved=videoId?await resolveYouTubeAudio(track.url,this.settings.music.maxTrackMinutes):null;
+  const input=resolved&&fragmentedYouTubeAudio(resolved)?openYouTubeFragments(track.url,this.settings.music.maxTrackMinutes):await openAudio(resolved?.url||track.url,0,resolved?.headers);this.input=input;
   const child=spawn('ffmpeg',['-hide_banner','-loglevel','error','-i','pipe:0',...(seconds?['-ss',String(seconds)]:[]),'-t',String(Math.max(1,this.settings.music.maxTrackMinutes*60-seconds)),'-vn','-f','s16le','-ar','48000','-ac','2','pipe:1'],{stdio:['pipe','pipe','pipe']});this.ffmpeg=child;
   const resource=createAudioResource(child.stdout,{inputType:StreamType.Raw,inlineVolume:true,metadata:{trackId:track.id}});this.resource=resource;resource.volume?.setVolume(this.queue.volume/100);
   child.once('error',()=>{child.stdout.destroy(Error('Ses dönüştürücü başlatılamadı.'));});child.stdin.on('error',()=>{});child.stderr.resume();input.once('error',()=>child.stdout.destroy(Error('Ses kaynağı kesildi.')));input.pipe(child.stdin);
   this.player.play(resource);try{await entersState(this.player,AudioPlayerStatus.Playing,20000);}catch{this.cleanup();this.player.stop(true);throw Error('Ses dosyası çözümlenemedi veya kaynak yanıt vermedi.');}
-  this.limitTimer=setTimeout(()=>{if(this.resource===resource)void this.serial(()=>this.next(true)).catch(()=>{this.lastError='Parça süre sınırında durdu.';this.dirty=true;});},this.settings.music.maxTrackMinutes*60000);this.limitTimer.unref();this.lastError='';this.idleSince=0;this.dirty=true;
+  console.log('MUSIC_PLAYBACK_STARTED',JSON.stringify({source:videoId?'youtube':track.radio?'radio':'audio',voiceReady:this.connection?.state.status===VoiceConnectionStatus.Ready,codec:'opus'}));this.limitTimer=setTimeout(()=>{if(this.resource===resource)void this.serial(()=>this.next(true)).catch(()=>{this.lastError='Parça süre sınırında durdu.';this.dirty=true;});},this.settings.music.maxTrackMinutes*60000);this.limitTimer.unref();this.lastError='';this.idleSince=0;this.dirty=true;
  }
  private async next(skipped:boolean){
   this.cleanup();this.queue.advance(skipped);this.dirty=true;
@@ -101,6 +102,31 @@ export class MusicManager{
   return this.serial(()=>this.execute('oynat',{url:video.url,title:video.title},i.user.id,channelId));
  }
  async handle(interaction:Interaction){
+  const i=interaction as any,button=i.isButton?.()&&i.customId?.startsWith('music:'),select=i.isStringSelectMenu?.()&&i.customId==='music:station',diagnose=i.isChatInputCommand?.()&&i.commandName==='muzik'&&i.options.getSubcommand()==='tani';
+  if(button||select||diagnose){
+   await i.deferReply({flags:64});
+   try{
+    const action=diagnose?'tani':select?'radyo':i.customId.split(':')[1];
+    if(action==='tani'){
+     const member=await this.guild().members.fetch(i.user.id),channel:any=member.voice.channelId?await this.guild().channels.fetch(member.voice.channelId):null,perms=channel?.permissionsFor(this.guild().members.me!);
+     const audio=(await database().query("SELECT status FROM integration_status WHERE name='youtube-audio'")).rows[0]?.status,s=this.snapshot();
+     await i.editReply({embeds:[brightEmbed('🩺 Ses sistemi kontrolü','*Arama, kaynak ve Discord ses bağlantısı ayrı ayrı kontrol edilir.*',[
+      {name:'🎙️ Bulunduğun kanal',value:channel?'<#'+channel.id+'>':'Önce normal bir ses kanalına katıl.',inline:true},
+      {name:'🔐 Kanal izinleri',value:channel?(perms?.has([PermissionFlagsBits.ViewChannel,PermissionFlagsBits.Connect,PermissionFlagsBits.Speak])?'✅ Gör / Bağlan / Konuş hazır.':'❌ Botun Gör / Bağlan / Konuş izinlerini aç.'):'Kanal seçilmedi.',inline:true},
+      {name:'🔊 Bot bağlantısı',value:s.connected?'✅ Bağlı · '+s.state:'⚪ Henüz bağlı değil. /ses katil kullan.'},
+      {name:'▶️ YouTube ses kaynağı',value:audio?.ready?'✅ Son canlı ses örnekleri çözümlendi.':audio?'⚠️ Son ses kontrolü başarısız. YouTube kaynağı açılamadı; Radyo düğmesini veya bir ses dosyasını kullan.':'Kontrol hazırlanıyor.'},
+      {name:'📻 Alternatif ses',value:'Radyo düğmesinden istasyon seç veya /muzik oynat dosya: ile bir ses dosyası yükle.'},
+      ...(s.lastError?[{name:'⚠️ Son hata',value:displayText(s.lastError,900)}]:[])
+     ],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});return true;
+    }
+    if(action==='radyo'&&!select){await i.editReply({embeds:[brightEmbed('📻 Radyo salonu','**Bir istasyon seç.**\n*Bot bulunduğun ses kanalına otomatik katılır.*',[],theme.purple)],components:[{type:1,components:[{type:3,custom_id:'music:station',placeholder:'🎶 Radyo istasyonunu seç',options:radioStations.map(s=>({label:s.name,value:s.id,emoji:{name:'📻'}}))}]}],allowedMentions:{parse:[]}});return true;}
+    if(action==='kuyruk'){const s=this.snapshot();await i.editReply({embeds:[brightEmbed('📜 Dinleme kuyruğu',s.queue.map((t:any,n:number)=>`**${n+1}.** ${displayText(t.title,100)} · <@${t.requesterId}>`).join('\n')||'*Kuyruk boş. Yeni bir şarkı ekle.*',[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});return true;}
+    if(!['radyo','duraklat','devam','atla','durdur'].includes(action))throw Error('Bu müzik düğmesi geçerli değil.');
+    const member=await this.guild().members.fetch(i.user.id),channelId=member.voice.channelId;if(!channelId)throw Error('Önce bir ses kanalına katıl.');await rateLimit('music:'+i.user.id,15,60);
+    const text=await this.serial(()=>this.execute(action,select?{station:i.values[0]}:{},i.user.id,channelId));await i.editReply({embeds:[brightEmbed('🎶 Müzik kontrolü',text,[],theme.purple)],components:youtubeControls(),allowedMentions:{parse:[]}});
+   }catch(e){await i.editReply({embeds:[brightEmbed('⚠️ Müzik kontrolü',e instanceof Error?e.message:'İşlem tamamlanamadı.',[],theme.gold)],components:youtubeControls(),allowedMentions:{parse:[]}});}
+   return true;
+  }
   if(await handleYouTubeInteraction(interaction,this.settings,(i,video)=>this.playYouTube(i,video)))return true;
   if(!interaction.isChatInputCommand()||!['ses','muzik'].includes(interaction.commandName))return false;
   await interaction.deferReply({});

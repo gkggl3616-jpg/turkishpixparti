@@ -53,7 +53,7 @@ test('Discord düşük bakiye, kapalı ekonomi ve üç açık oyun sınırında 
 });
 test('Yeni Discord oyunlarının mesajı beş satır sınırında; onay önizlemesi ödeme yapmaz',async()=>{
  await grant();const settings=defaultCommunitySettings(),channel='999999999999999999';
- assert.equal(commands.length,103);const group=(commands.find(c=>c.name==='topluluk') as any).options.find((g:any)=>g.name==='oyun');assert.equal(group.options.length,4);
+ assert.equal(commands.length,104);const group=(commands.find(c=>c.name==='topluluk') as any).options.find((g:any)=>g.name==='oyun');assert.equal(group.options.length,4);
  for(const game of ['2048','mines','connect4'] as const){const {session}=await startDiscordArcade(actor,channel,game,crypto.randomUUID());for(const view of [discordArcadeView(session),discordArcadeView({...session,status:'EXPIRED'})]){assert.ok(view.components.length<=5);for(const row of view.components){assert.ok(row.components.length<=5);for(const button of row.components)assert.ok(!button.custom_id||button.custom_id.length<=100);}assert.deepEqual(view.allowedMentions,{parse:[]});}}
  const before=(await memberProfile(actor.id)).coins,calls:any[]=[];const i:any={commandName:'topluluk',guildId:'888888888888888888',channelId:channel,user:actor,appPermissions:{has:()=>true},options:{getSubcommandGroup:()=> 'oyun',getSubcommand:()=> 'mayin'},isChatInputCommand:()=>true,isButton:()=>false,isRepliable:()=>true,reply:async(payload:any)=>{calls.push(payload);i.replied=true;}};
  assert.equal(await handleArcadeInteraction(i,settings),true);assert.match(calls[0].components[0].components[0].label,/100 Bot TL/);assert.equal((await memberProfile(actor.id)).coins,before);

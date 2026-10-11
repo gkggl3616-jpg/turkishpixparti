@@ -1,6 +1,6 @@
 {
   "name": "@turkishpix/bot",
-  "version": "2.15.1",
+  "version": "2.16.0",
   "private": true,
   "scripts": {
     "start": "node --import tsx src/index.ts"

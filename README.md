@@ -344,3 +344,9 @@ Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve list
 - `/kick uye: @Üye [reason: Sebep]` ve `/ban uye: @Üye [reason: Sebep]`; 100 mevcut guild komutu korunur, iki komut ayrı global kotaya kaydedilir. Yalnızca yapılandırılmış sunucuda çalışırlar.
 - İşlemden önce roller ve üç üyenin (yetkili, bot, hedef) bilgileri yenilenir. İlgili KickMembers/BanMembers izni, yetkili ve bot rol sırası gerekir; kendi hesabı, sunucu sahibi ve TurkishPix korunur.
 - Yasaklamadan önce DM açılır; sunucu adı ve sebep bildirilir. İşlem sonrası bildirim tamamlandı diye güncellenir; hata halinde sonuç bildirimi düzeltilir. DM kapalıysa yasaklama engellenmez. Bot hesaplarına DM gönderilmez. Mesajlar silinmez; denetim gerekçesi işlemi isteyen yetkiliyi içerir.
+
+### 2.16.0 — Mesaj temizliği, Discord teması ve ses kaynakları
+- `/sil adet: 1–100 [uye: @Üye]` en fazla 1.000 mesajı sayfalı tarar; seçilen ID’leri siler. Yeni gelen mesajlar bu taramaya eklenmez. Sabitlenen mesajlar, açık çekiliş kayıtları ve etkileşimli TurkishPix panelleri korunur. `/temizle` aynı korumayı kullanır. İşlem için güncel kanal yetkisi ve bot ViewChannel/ReadMessageHistory/ManageMessages izinleri gerekir.
+- Ortak embed ve Components V2 kartları emojili süslü başlık, italik alt başlık, görsel kimlik ve belirgin bölümler kullanır. Embed metni Discord’un toplam sınırında tutulur. Yeni cache anahtarı 2.16.0’dır.
+- yt-dlp 2026.10.10.233141.dev0 sabitlenir; resmi nightly yeni varsayılan TV istemcisi içerir. Uzun Googlevideo URL’leri ve kaynak HTTP başlıkları desteklenir. HLS/DASH medyası yerel fragment downloader ile FFmpeg’e aktarılır. Canlı kontroller iki videoyu çözümler; başarılı örnekler ve başarısızlıklar ayrı kaydedilir.
+- `/muzik tani` ve Ses kontrolü düğmesi kaynak kontrolünü/kanal izinlerini gösterir; radyo seçicisi ve oynatma kontrolleri Discord mesajından kullanılabilir. YouTube sağlayıcı engeli varsa başarı sözü verilmez.
