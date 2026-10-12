@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 type Tool={id:string;name:string;label:string;enabled:boolean;icon:string};
-type Quota={xp:number;level:number;proxyResultLimit:number;tier:string;dailyLimit:number;used:number;remaining:number;resetTimezone:string};
+type Quota={xp:number;level:number;profileFound:boolean;levelSource:string;proxyResultLimit:number;tier:string;dailyLimit:number;used:number;remaining:number;resetTimezone:string};
 type Member={username:string;id:string;avatar?:string|null;displayName?:string;discordJoinedAt?:string|null;siteJoinedAt?:string|null};
 type Result={kind:string;target:string;title:string;summary:string;notice:string;items:{name:string;value:string}[]};
 type Data={authenticated:boolean;me?:Member;csrf?:string;quota?:Quota;tools:Tool[];owner?:boolean;loginUrl?:string;error?:string};
@@ -68,6 +68,7 @@ export default function OsintDashboard(){
   if(code){setLoginError(code==='OAUTH_CANCELLED'?'Discord girişini iptal ettin. Yeniden deneyebilirsin.':code==='MEMBERSHIP_PENDING'?'Önce TurkishPix sunucu doğrulamasını tamamla.':'Discord girişi tamamlanamadı. Aynı tarayıcıdan yeniden giriş yap.');}
   void load();
  },[]);
+ useEffect(()=>{const timer=setInterval(()=>{if(!document.hidden&&!busy)void load();},30000);return()=>clearInterval(timer);},[busy]);
  const catalog=data?.tools||[];
  const tool=useMemo(()=>catalog.find(t=>t.id===page),[catalog,page]);
  const toolGroup=GROUPS.find(g=>g.tools.includes(page));
@@ -245,7 +246,7 @@ export default function OsintDashboard(){
        {result&&<section className="os-result-panel"><div className="os-result-heading"><div><span className="os-kicker">QUERY COMPLETE</span><h3>{result.title}</h3><p>{result.summary}</p></div><button onClick={()=>navigator.clipboard.writeText(resultText)} title="Sonuçları kopyala"><Copy size={17}/> Kopyala</button></div><div className="os-result-rows">{result.items.map((row,i)=><div key={i}><span>{row.name}</span><pre>{row.value}</pre></div>)}</div><div className="os-result-notice">{result.notice}</div><div className="os-result-dm">{dm?<><Check size={16}/> Sonuç Discord özel mesajına da gönderildi.</>:<><ShieldAlert size={16}/> DM gizlilik ayarını açıp yeniden gönderebilirsin.</>}</div>{dm===false&&deliveryId&&<button className="os-primary-action" type="button" onClick={()=>void retryDm()} disabled={retrying}><Mail size={16}/>{retrying?'Gönderiliyor':'DM’ye Tekrar Gönder'}</button>}</section>}
       </section>
       <aside className="os-tool-aside">
-       <div className="os-aside-header"><ShieldCheck size={19}/><h3>Oturum durumu</h3></div><div className="os-aside-data"><span>OPERATÖR</span><strong>{profile?.displayName||'Bağlı değil'}</strong></div><div className="os-aside-data"><span>ERİŞİM UNVANI</span><strong>{data?.quota?rank.name:'—'}</strong></div><div className="os-aside-data"><span>KALAN HAK</span><strong>{data?.quota?data.quota.remaining+' / '+data.quota.dailyLimit:'—'}</strong></div>
+       <div className="os-aside-header"><ShieldCheck size={19}/><h3>Oturum durumu</h3></div><div className="os-aside-data"><span>OPERATÖR</span><strong>{profile?.displayName||'Bağlı değil'}</strong></div><div className="os-aside-data"><span>LEVEL KAYNAĞI</span><strong>{data?.quota?.levelSource||'TurkishPix XP'}</strong>{data?.quota&&!data.quota.profileFound&&<small>Henüz XP kaydı yok · Başlangıç seviye 0</small>}</div><div className="os-aside-data"><span>ERİŞİM UNVANI</span><strong>{data?.quota?rank.name:'—'}</strong></div><div className="os-aside-data"><span>KALAN HAK</span><strong>{data?.quota?data.quota.remaining+' / '+data.quota.dailyLimit:'—'}</strong></div>
        <div className="os-aside-note"><CircleHelp size={18}/><p>Proxy Checker mevcut sağlayıcı kayıtlarını doğrular; doğrudan, bağımsız canlı bağlantı testi yapmaz. Araç sonuçları tek başına güvenlik garantisi değildir.</p></div>
        <button className="os-tool-return" onClick={home}> <Home size={16}/> Genel bakışa dön <ArrowRight size={16}/></button>
       </aside>

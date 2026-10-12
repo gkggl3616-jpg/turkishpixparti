@@ -35,7 +35,7 @@ test('Invite attribution never assigns ambiguous simultaneous joins or deleted l
  const a={code:'a',uses:5,inviterId:inviter,maxUses:0},b={code:'b',uses:2,inviterId:member.id,maxUses:0};assert.equal(identifyInvite([a,b],[{...a,uses:6},b]).inviterId,inviter);assert.equal(identifyInvite([a,b],[{...a,uses:7},b]).source,'UNKNOWN');assert.equal(identifyInvite([a,b],[{...a,uses:6},{...b,uses:3}]).source,'UNKNOWN');assert.equal(identifyInvite([a],[]).source,'UNKNOWN');
 });
 test('New /inv uses the independent global quota and preserves all hundred guild commands',()=>{
- assert.equal(guildCommands.length,100);assert.ok(globalCommands.length<=100);for(const name of ['kick','ban','sil','inv','osint'])assert.ok(globalCommands.some(c=>c.name===name));assert.equal(globalCommands[0].contexts[0],0);assert.ok(guildCommands.some(c=>c.name==='cekilis'));assert.ok(guildCommands.some(c=>c.name==='bilet'));
+ assert.equal(guildCommands.length,100);assert.ok(globalCommands.length<=100);for(const name of ['kick','ban','sil','inv','kur'])assert.ok(globalCommands.some(c=>c.name===name));assert.equal(globalCommands[0].contexts[0],0);assert.ok(guildCommands.some(c=>c.name==='cekilis'));assert.ok(guildCommands.some(c=>c.name==='bilet'));
 });
 test('YouTube audio accepts only canonical video IDs and Google audio streams',()=>{
  const args=youtubeAudioArguments('https://youtu.be/M7lc1UVf-VE');assert.equal(args.at(-1),'https://www.youtube.com/watch?v=M7lc1UVf-VE');assert.ok(args.includes('node'));assert.throws(()=>youtubeAudioArguments('https://127.0.0.1/audio'));

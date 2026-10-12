@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {PGlite} from '@electric-sql/pglite';
 import {readFile,readdir} from 'node:fs/promises';
 import {setTestDatabase} from '../packages/core/src/db';
-import {osintRun,proxyResultLimit} from '../packages/core/src/osint';
+import {osintRun,osintQuota,proxyResultLimit} from '../packages/core/src/osint';
 import {osintDmPayload,queueOsintDm,retryOsintDelivery,retryPendingOsintDeliveries} from '../packages/core/src/osint-dm';
 import {handleOsintInteraction} from '../apps/bot/src/osint';
 import {GET} from '../apps/web/src/app/api/[...path]/route';
@@ -65,6 +65,14 @@ test('Real XP controls 10 + 5 × level proxy results, regardless of client-suppl
  assert.equal(proxyResultLimit(100),510);
 });
 
+test('Level analysis uses the saved server guild even when environment settings are stale',async()=>{
+ const old=process.env.DISCORD_GUILD_ID,id='555555555555555555';
+ await pg.query('INSERT INTO server_settings(id,settings,updated_by) VALUES(1,$1,$2)',[{guildId:guild,voteChannel:'',logChannel:''},user.id]);
+ process.env.DISCORD_GUILD_ID='123456789012345678';
+ try{const quota=await osintQuota(id);assert.equal(quota.level,5);assert.equal(quota.proxyResultLimit,35);assert.equal(quota.profileFound,true);assert.equal(quota.levelSource,'TurkishPix XP');}
+ finally{await pg.query('DELETE FROM server_settings WHERE id=1');process.env.DISCORD_GUILD_ID=old;await osintQuota(user.id);}
+});
+
 let pendingId='';
 test('A blocked DM retains encrypted results, never leaks to the channel, and can be retried without billing',async()=>{
  dmOpen=false;
@@ -85,14 +93,15 @@ test('A blocked DM retains encrypted results, never leaks to the channel, and ca
 });
 
 test('Installing a panel twice updates its native Discord V2 card instead of posting duplicates',async()=>{
- const i:any={id:'777777777777777771',guildId:guild,channelId:publicChannel,user,client:{user:{id:bot,displayAvatarURL:()=> 'https://cdn.discordapp.com/test.png'}},channel:{id:publicChannel,guildId:guild,type:0},guild:{ownerId:user.id,members:{fetch:async()=>({permissions:{has:()=>true}})}},commandName:'proxy',options:{getSubcommand:()=> 'kur',getChannel:()=>null},isChatInputCommand:()=>true,isButton:()=>false,deferReply:async()=>{i.deferred=true;},editReply:async(v:any)=>{i.output=v;},reply:async(v:any)=>{i.output=v;}};
+ const i:any={id:'777777777777777771',guildId:guild,channelId:publicChannel,user,client:{user:{id:bot,displayAvatarURL:()=> 'https://cdn.discordapp.com/test.png'}},channel:{id:publicChannel,guildId:guild,type:0},guild:{ownerId:user.id,members:{fetch:async()=>({permissions:{has:()=>true}})}},commandName:'kur',options:{getSubcommand:()=> 'proxy',getChannel:()=>null},isChatInputCommand:()=>true,isButton:()=>false,deferReply:async()=>{i.deferred=true;},editReply:async(v:any)=>{i.output=v;},reply:async(v:any)=>{i.output=v;}};
  const before=publicPosts;await handleOsintInteraction(i);await handleOsintInteraction({...i,id:'777777777777777772'});
  assert.equal(publicPosts,before+1);assert.equal(publicEdits,1);
  const payload=posted.filter(x=>x.channel===publicChannel).at(-1)!.payload;
  assert.equal(payload.flags,32768);assert.equal(payload.components[0].type,17);assert.equal(payload.components[0].accent_color,0x5865f2);
  const json=JSON.stringify(payload);assert.match(json,/Proxy Al/);assert.match(json,/Filtrele/);assert.match(json,/Proxy Checker/);assert.match(json,/discord.gg\/turkishpix/);
  assert.equal((await pg.query('SELECT * FROM osint_panels')).rows.length,1);
- const root=globalCommands.find(c=>c.name==='proxy')!;assert.ok(root);assert.ok(JSON.stringify(root).includes('"name":"gen"'));assert.ok(JSON.stringify(root).includes('"name":"kur"'));
+ const root=globalCommands.find(c=>c.name==='kur')!;assert.ok(root);assert.ok(JSON.stringify(root).includes('"name":"proxy"'));assert.ok(!globalCommands.some(c=>['osint','proxy','tempmail'].includes(c.name)));
+ assert.ok(JSON.stringify(root).includes('"name":"kur"'));
  assert.ok(guildCommands.length<=100);assert.ok(globalCommands.length<=100);
 });
 

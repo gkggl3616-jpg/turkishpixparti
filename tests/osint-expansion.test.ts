@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {parseProxyFilters} from '../packages/core/src/osint-providers';
 import {eventPreview} from '../packages/core/src/osint-access';
-import {osintCommand} from '../packages/core/src/osint-policy';
+import {osintSetupCommand} from '../packages/core/src/osint-policy';
 import {osintTools,validateOsint} from '../packages/core/src/osint';
 test('Turkish Osint lists >=20 categories but does not pretend integrations are connected',()=>{
  assert.ok(osintTools.length>=20);
@@ -20,10 +20,10 @@ test('Private URL tokens are stripped from owner log previews',()=>{
  assert.equal(eventPreview('proxy','{"country":"DE"}'),'[proxy filtreleri]');
 });
 test('Discord OSINT slash commands remain under 25 subcommands, all have valid option ordering',()=>{
- assert.ok(osintCommand.options.length<=25);
- const names=osintCommand.options.map(x=>x.name);
- for(const n of ['proxy-generator','proxy-checker','temp-mail','temp-number','kanal'])assert.ok(names.includes(n));
- for(const cmd of osintCommand.options){let optional=false;for(const option of ('options' in cmd?cmd.options:[])||[]){if(option.required)assert.equal(optional,false);else optional=true;}}
+ assert.equal(osintSetupCommand.name,'kur');assert.ok(osintSetupCommand.options.length<=25);
+ const names=osintSetupCommand.options.map(x=>x.name);
+ for(const n of ['proxy','proxy-checker','osint','temp-mail'])assert.ok(names.includes(n));
+ for(const cmd of osintSetupCommand.options){let optional=false;for(const option of ('options' in cmd?cmd.options:[])||[]){if(option.required)assert.equal(optional,false);else optional=true;}}
 });
 test('Additional provider inputs are strictly validated',()=>{
  assert.equal(validateOsint('asn','8.8.8.8').kind,'asn');

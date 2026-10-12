@@ -3,17 +3,11 @@ import {config,DomainError} from '../../../packages/core/src/config';
 import {database,transaction} from '../../../packages/core/src/db';
 import {rateLimit} from '../../../packages/core/src/auth';
 import {osintRun,osintQuota,osintTools} from '../../../packages/core/src/osint';
-import {osintLog,assertOsintAllowed,osintCommandChannel,setOsintCommandChannel} from '../../../packages/core/src/osint-access';
+import {osintLog,assertOsintAllowed} from '../../../packages/core/src/osint-access';
 import {sendOsintResult,queueOsintDm,retryOsintDelivery,type DeliveryOutcome} from '../../../packages/core/src/osint-dm';
 import {guildMember,discordRequest,isDiscordMissing,syncUser} from '../../../packages/core/src/discord';
 import {osintPanel,osintWebLink,osintQueryModal,osintProxyModal,type OsintPanelKind} from '../../../packages/core/src/osint-panels';
 
-const inputs:Record<string,{kind:string;field:string}>={
- dns:{kind:'dns',field:'alan'},ip:{kind:'ip',field:'adres'},url:{kind:'url',field:'adres'},
- rdap:{kind:'rdap',field:'alan'},subdomain:{kind:'subdomains',field:'alan'},sertifika:{kind:'tls',field:'alan'},
- asn:{kind:'asn',field:'adres'},cve:{kind:'cve',field:'kod'},email:{kind:'email',field:'alan'},hash:{kind:'hash',field:'sha256'},
- 'proxy-checker':{kind:'proxy-check',field:'adres'}
-};
 const running=new Set<string>();
 const actor=(i:any)=>({id:i.user.id,username:i.user.username,avatar:i.user.avatar});
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -52,7 +46,7 @@ async function installPanel(i:any,kind:OsintPanelKind){
  await i.editReply({content:'✅ **TurkishPix paneli hazır.**\n<#'+channel.id+'> · https://discord.com/channels/'+i.guildId+'/'+channel.id+'/'+id,allowedMentions:{parse:[]}});
 }
 export async function handleOsintInteraction(i:any):Promise<boolean>{
- const slash=!!i.isChatInputCommand?.()&&['osint','proxy','tempmail'].includes(i.commandName);
+ const slash=!!i.isChatInputCommand?.()&&i.commandName==='kur';
  const component=typeof i.customId==='string'&&i.customId.startsWith('tp-osint:');
  if(!slash&&!component)return false;
  let kind='',target='';
@@ -77,16 +71,11 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    return true;
   }
   await i.deferReply({flags:MessageFlags.Ephemeral});
-  if(slash&&(i.commandName==='proxy'||i.commandName==='tempmail'||i.options.getSubcommand()==='kur')){
-   const chosen=i.commandName==='proxy'?'proxy':i.commandName==='tempmail'?'mail':i.options.getString('panel')||'osint';
-   if(!['proxy','osint','mail'].includes(chosen))throw new DomainError('INVALID_PANEL','Panel türü tanımlı değil.',400);
-   await installPanel(i,chosen as OsintPanelKind);return true;
-  }
-  if(slash&&i.options.getSubcommand()==='kanal'){
-   const channel=i.options.getChannel('hedef',true);
-   if(channel.guildId!==i.guildId||![0,5].includes(channel.type))throw new DomainError('INVALID_CHANNEL','Bir TurkishPix metin kanalı seç.');
-   await setOsintCommandChannel(actor(i),channel.id);
-   await i.editReply({content:'✅ Doğrudan OSINT komutları <#'+channel.id+'> kanalında çalışacak. Kurulu butonlu paneller kendi kanallarında kullanılabilir.',allowedMentions:{parse:[]}});return true;
+  if(slash){
+   const sub=i.options.getSubcommand();
+   const chosen=sub==='proxy'||sub==='proxy-checker'?'proxy':sub==='temp-mail'?'mail':sub==='osint'?'osint':null;
+   if(!chosen)throw new DomainError('INVALID_PANEL','Panel türü tanımlı değil.',400);
+   await installPanel(i,chosen);return true;
   }
   await guildMember(i.user.id);await assertOsintAllowed(i.user.id);
   if(component&&i.customId.startsWith('tp-osint:retry:')){
@@ -95,10 +84,10 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    await rateLimit('osint-dm-retry:'+i.user.id,4,60);
    await i.editReply(deliveryReply(await retryOsintDelivery(id,i.user.id,true)));return true;
   }
-  const subcommand=slash?i.options.getSubcommand():i.customId.slice('tp-osint:'.length);
+  const subcommand=i.customId.slice('tp-osint:'.length);
   if(subcommand==='profil'||subcommand==='profile'){
    const q=await osintQuota(i.user.id);
-   await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+q.remaining+' / '+q.dailyLimit+'**\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
+   await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+q.remaining+' / '+q.dailyLimit+'**\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
   }
   if(subcommand==='yardim'){
    await notice(i,'ARAŞTIRMA ARAÇLARI',osintTools.filter(t=>t.enabled).map(t=>t.icon+' **'+t.name+'**').join('\n')+'\n\nSonuçlar yalnızca DM ile gönderilir.\n'+osintWebLink());return true;
@@ -106,19 +95,14 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   if(['temp-mail','temp-number','mail-status','mail-inbox'].includes(subcommand)){
    await notice(i,subcommand==='temp-number'?'TEMP NUMBER':'TEMP MAIL',subcommand==='temp-number'?'📱 Telefon/SMS sağlayıcısı henüz bağlanmadı. Şu anda numara tahsis edilemiyor.':'✉️ E-posta sağlayıcısı henüz bağlanmadı. Şu anda geçici adres ve gelen kutusu oluşturulamıyor.');return true;
   }
-  if(slash){
-   const assigned=await osintCommandChannel();
-   if(assigned&&i.channelId!==assigned)throw new DomainError('OSINT_CHANNEL','Komutu <#'+assigned+'> kanalında veya kurulu panel düğmelerinden kullan.',403);
-  }
-  if(subcommand==='proxy-generator'||subcommand==='proxy'){
-   kind='proxy';target=JSON.stringify({protocol:slash?i.options.getString('protokol')||'all':'all',country:slash?i.options.getString('ulke')||'':'',anonymity:slash?i.options.getString('anonimlik')||'all':'all',maxLatency:slash?i.options.getInteger('gecikme')??3000:3000,minUptime:slash?i.options.getInteger('uptime')??0:0});
+  if(subcommand==='proxy'){
+   kind='proxy';target=JSON.stringify({protocol:'all',country:'',anonymity:'all',maxLatency:3000,minUptime:0});
   }else if(i.isModalSubmit?.()&&subcommand.startsWith('modal:')){
    kind=subcommand.slice('modal:'.length);
    if(kind==='proxy')target=JSON.stringify({protocol:i.fields.getTextInputValue('protocol').trim().toLowerCase()||'all',country:i.fields.getTextInputValue('country').trim(),anonymity:i.fields.getTextInputValue('anonymity').trim().toLowerCase()||'all',maxLatency:Number(i.fields.getTextInputValue('latency')),minUptime:Number(i.fields.getTextInputValue('uptime'))});
    else{if(!osintQueryModal(kind))throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);target=i.fields.getTextInputValue('target');}
   }else{
-   const selected=inputs[subcommand];if(!selected)throw new DomainError('INVALID_COMMAND','Araç tanımlı değil.',400);
-   kind=selected.kind;target=i.options.getString(selected.field,true);
+   throw new DomainError('INVALID_ACTION','Bu düğme artık kullanılamıyor. Paneli /kur üzerinden yenile.',400);
   }
   const key=i.guildId+':'+i.user.id;
   if(running.has(key))throw new DomainError('OSINT_BUSY','Mevcut sorgun tamamlanıyor. DM teslimini bekleyip yeniden dene.',409);

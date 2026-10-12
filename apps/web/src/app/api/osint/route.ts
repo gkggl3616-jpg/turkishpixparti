@@ -1,9 +1,11 @@
+import {loadServerSettings} from '../../../../../../packages/core/src/setup';
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
 import {session,guildMember,osintQuota,osintTools,DomainError,assertOsintAllowed,osintLog,observedIp,config,database} from '../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 export async function GET(req:Request){
  try{
+  await loadServerSettings();
   const me=await session(req);
   if(!me)return NextResponse.json({authenticated:false,tools:osintTools,loginUrl:'/api/auth/login?return=%2Fosint'},{headers:{'Cache-Control':'no-store'}});
   const member=await guildMember(me.id);
