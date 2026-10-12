@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
-import {session,guildMember,osintQuota,osintTools,DomainError,assertOsintAllowed,osintLog,observedIp} from '../../../../../../packages/core/src/index';
+import {session,guildMember,osintQuota,osintTools,DomainError,assertOsintAllowed,osintLog,observedIp,config} from '../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 export async function GET(req:Request){
  try{
@@ -9,7 +9,7 @@ export async function GET(req:Request){
   await guildMember(me.id);
   await assertOsintAllowed(me.id);
   await osintLog(me.id,'VISIT','WEB','','',observedIp(req));
-  return NextResponse.json({authenticated:true,me:{id:me.id,username:me.username,avatar:me.avatar},csrf:me.csrf,quota:await osintQuota(me.id),tools:osintTools},{headers:{'Cache-Control':'no-store'}});
+  return NextResponse.json({authenticated:true,me:{id:me.id,username:me.username,avatar:me.avatar},csrf:me.csrf,owner:config().owners.includes(me.id),quota:await osintQuota(me.id),tools:osintTools},{headers:{'Cache-Control':'no-store'}});
  }catch(e){
   const status=e instanceof DomainError?e.status:e instanceof ZodError?400:500;
   return NextResponse.json({error:e instanceof DomainError?e.message:'Araştırma profili yüklenemedi.',authenticated:false},{status,headers:{'Cache-Control':'no-store'}});
