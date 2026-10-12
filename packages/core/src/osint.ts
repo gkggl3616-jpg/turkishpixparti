@@ -106,7 +106,8 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  const billing=await transaction(async tx=>{
   await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['osint:'+config().guildId+':'+actor.id]);
   await syncUser(tx,actor);
-  const prev=(await tx.query('SELECT request_id FROM osint_usage WHERE guild_id=$1 AND user_id=$2 AND request_id=$3',[config().guildId,actor.id,requestId])).rows[0];
+  const prev=(await tx.query('SELECT request_id,query_kind,target_sha256 FROM osint_usage WHERE guild_id=$1 AND user_id=$2 AND request_id=$3',[config().guildId,actor.id,requestId])).rows[0];
+  if(prev&&(prev.query_kind!==parsed.kind||prev.target_sha256!==fingerprint))throw new DomainError('OSINT_REQUEST_REUSED','Bu işlem kodu başka bir sorguyla kullanılmış.',409);
   const used=Number((await tx.query("SELECT count(*)::int AS n FROM osint_usage WHERE guild_id=$1 AND user_id=$2 AND day=(now() AT TIME ZONE 'Europe/Istanbul')::date",[config().guildId,actor.id])).rows[0].n);
   if(prev)return {used,duplicate:true};
   if(used>=tier.dailyLimit)throw new DomainError('OSINT_QUOTA','Günlük araştırma hakkın doldu. Türkiye saatiyle gece yarısı yenilenir.',429);
