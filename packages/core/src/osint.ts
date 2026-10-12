@@ -98,6 +98,8 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  const parsed=validateOsint(kind,target);
  await guildMember(actor.id);
  await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
+ const beforeQuota=await osintQuota(actor.id);
+ if(beforeQuota.remaining<=0)throw new DomainError('OSINT_QUOTA','Günlük araştırma hakkın doldu. Türkiye saatiyle gece yarısı yenilenir.',429);
  const result=parsed.kind==='dns'?await dnsInspect(parsed.target):parsed.kind==='ip'?await ipInspect(parsed.target):urlInspect(parsed.target);
  const profile=await memberProfile(actor.id),tier=osintTier(profile.level);
  const fingerprint=createHash('sha256').update(parsed.kind+':'+parsed.target).digest('hex');
