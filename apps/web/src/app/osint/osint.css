@@ -13,3 +13,33 @@
 .osint-catalog-heading{margin:35px 0 17px}.osint-catalog{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.osint-tool-card{border:1px solid #29414c;border-radius:13px;background:#12222d;padding:19px;display:flex;flex-direction:column;align-items:flex-start;min-height:160px}.osint-tool-symbol{font-size:25px}.osint-tool-card strong{font-size:14px;margin-top:13px}.osint-tool-card p{color:#91a8b3;font-size:12px;margin:4px 0 15px}.osint-enabled,.osint-planned{margin-top:auto;font-size:10px;padding:5px 10px;border-radius:30px}.osint-enabled{background:#163d36;color:#70e6bd}.osint-planned{background:#30313a;color:#b1adba}.osint-disclaimer{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:28px;color:#8ca4af;font-size:12px}.osint-disclaimer a{display:inline-flex;align-items:center;gap:5px;color:#7de8c4}
 @media(max-width:1000px){.osint-grid-layout{grid-template-columns:minmax(0,1fr)}.osint-catalog{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.osint-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.osint-stats strong{font-size:16px}.osint-login{flex-wrap:wrap}.osint-button{width:100%}.osint-search{flex-wrap:wrap}.osint-search button{width:100%}.osint-catalog{grid-template-columns:minmax(0,1fr)}.osint-output-list>div{grid-template-columns:minmax(0,1fr)}.osint-hero{padding:35px 18px}.osint-label{font-size:9px;letter-spacing:1.1px}}
+
+/* Dedicated OSINT product navigation, independent of the TurkishPix bot shell. */
+.osint-topnav{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px clamp(20px,5vw,74px);background:#07131b;border-bottom:1px solid #24444e}
+.osint-logo{font-size:18px;font-weight:950;letter-spacing:1.4px;color:#f0fff6}.osint-logo span{color:#53efb5}
+.osint-nav-actions{display:flex;align-items:center;gap:18px;color:#a4c0c6;font-size:12px}
+.osint-nav-actions a:hover{color:#62ffc4}
+.osint-catalog-buttons{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 20px}
+.osint-catalog-buttons button{padding:8px 12px;border-radius:9px;background:#162f39;border:1px solid #254850;color:#aee2cd;font-size:12px}
+.osint-catalog-buttons button.selected{background:#214a46;border-color:#56d9a9;color:#cffff0}
+.osint-select{min-width:130px;background:#102936!important;color:#e9fff3}
+.osint-searching-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:17px 0}
+.osint-searching-tools input,.osint-searching-tools select{font-size:13px;width:100%}
+.osint-tool-card{transition:transform .18s,border-color .18s;cursor:default}.osint-tool-card.clickable{cursor:pointer}.osint-tool-card.clickable:hover{transform:translateY(-2px);border-color:#50d7a6}
+.osint-owner-back{display:inline-flex;align-items:center;gap:8px;margin-top:18px;color:#55f5b5;font-size:13px}
+.osint-owner-controls,.osint-owner-records{padding:23px;margin-bottom:17px}
+.osint-owner-controls h2{display:flex;align-items:center;gap:9px;font-size:17px}
+.osint-owner-controls p,.osint-owner-records p{margin:12px 0 17px;color:#a2bec5;font-size:12px}
+.osint-owner-controls label{display:block;margin-top:12px;font-size:12px;color:#a9c8d0}.osint-owner-controls input{display:block;margin-top:6px;width:100%;max-width:520px}
+.osint-owner-controls>div{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}
+.osint-owner-controls button,.osint-owner-heading button{display:inline-flex;gap:8px;align-items:center;border-radius:8px;padding:11px 14px;background:#bf4857;color:white;font-weight:750;font-size:12px}
+.osint-owner-controls button.secondary{background:#244a44;color:#a5eed3}
+.osint-owner-records h2{font-size:16px}.osint-record{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #29414d;padding:12px 0;font-size:12px}
+.osint-owner-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.osint-owner-heading button{background:#183e3a;color:#b6f3d9}
+.osint-audit-scroll{overflow:auto;max-height:700px}
+.osint-audit-scroll table{width:100%;border-collapse:collapse;min-width:850px;font-size:12px}
+.osint-audit-scroll td,.osint-audit-scroll th{text-align:left;padding:12px;border-bottom:1px solid #273f49;vertical-align:top;overflow-wrap:anywhere}
+.osint-audit-scroll th{color:#82d5b2;background:#112e37;position:sticky;top:0}
+.osint-audit-scroll td small{display:block;color:#8babb3;margin-top:2px}
+@media(max-width:670px){.osint-nav-actions{gap:8px;flex-wrap:wrap}.osint-topnav{align-items:flex-start}.osint-searching-tools{grid-template-columns:1fr}}
