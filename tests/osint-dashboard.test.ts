@@ -11,7 +11,7 @@ test('OSINT operator titles follow XP levels without changing quota thresholds',
 test('Level progress uses the XP threshold formula already applied in TurkishPix',()=>{
  assert.deepEqual(levelProgress(0,0),{previousXp:0,nextXp:100,remaining:100,percent:0});
  assert.equal(levelProgress(100,1).nextXp,400);
- assert.equal(levelProgress(225,1).percent,125/300*100);
+ assert.ok(Math.abs(levelProgress(225,1).percent-125/300*100)<1e-9);
  assert.equal(levelProgress(2500,5).percent,0);
  assert.equal(levelProgress(3600,5).percent,100);
 });
