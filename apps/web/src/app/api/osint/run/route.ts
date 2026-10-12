@@ -1,3 +1,4 @@
+import {loadServerSettings} from '../../../../../../../packages/core/src/setup';
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
 import {session,csrf,osintRun,DomainError,osintLog,observedIp,sendOsintResult} from '../../../../../../../packages/core/src/index';
@@ -5,6 +6,7 @@ export const runtime='nodejs';export const dynamic='force-dynamic';
 export async function POST(req:Request){
  let actor:any=null, input:any=null;
  try{
+  await loadServerSettings();
   const me=await session(req);actor=me;
   if(!me)throw new DomainError('UNAUTHENTICATED','Discord ile giriş yapın.',401);
   csrf(req,me);

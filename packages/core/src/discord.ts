@@ -7,7 +7,7 @@ export class DiscordAPIError extends DomainError {
  }
 }
 export function isDiscordMissing(error:unknown,...codes:number[]){return error instanceof DiscordAPIError&&error.responseStatus===404&&(!error.discordCode||!codes.length||codes.includes(error.discordCode));}
-export function discordErrorDetails(error:any){return {code:typeof error?.code==='number'||typeof error?.code==='string'?error.code:'INTERNAL',...(error instanceof DiscordAPIError?{http:error.responseStatus,discordCode:error.discordCode,method:error.method,route:error.route,...(error.commandValidation?{validation:error.commandValidation}:{})}:{})};}
+export function discordErrorDetails(error:any){return {code:typeof error?.code==='number'||typeof error?.code==='string'?error.code:'INTERNAL',...(error instanceof DiscordAPIError?{http:error.responseStatus,discordCode:error.discordCode,method:error.method,route:error.route,retryAfter:error.retryAfter,...(error.commandValidation?{validation:error.commandValidation}:{})}:{})};}
 const reads=new Map<string,Promise<any>>();let readFetch=globalThis.fetch;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function routeName(path:string){return path.split('?')[0].replace(/(\/webhooks\/\d+)\/[^/]+/,'$1/:token').replace(/\d{17,20}/g,':id');}

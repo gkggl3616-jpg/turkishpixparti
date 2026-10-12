@@ -1,3 +1,4 @@
+import {loadServerSettings} from './setup';
 import {createHash} from 'node:crypto';
 import {isIP} from 'node:net';
 import {resolve4,resolve6,resolveMx,resolveNs,resolveTxt,reverse} from 'node:dns/promises';
@@ -51,9 +52,10 @@ export function osintTier(level:number){
  return {name:'Starter',dailyLimit:5};
 }
 export async function osintQuota(userId:string){
+ await loadServerSettings();
  const profile=await memberProfile(userId),tier=osintTier(profile.level);
  const used=Number((await database().query("SELECT count(*)::int AS n FROM osint_usage WHERE guild_id=$1 AND user_id=$2 AND day=(now() AT TIME ZONE 'Europe/Istanbul')::date",[config().guildId,userId])).rows[0]?.n||0);
- return {xp:profile.xp,level:profile.level,proxyResultLimit:proxyResultLimit(profile.level),tier:tier.name,dailyLimit:tier.dailyLimit,used,remaining:Math.max(0,tier.dailyLimit-used),resetTimezone:'Europe/Istanbul'};
+ return {xp:profile.xp,level:profile.level,profileFound:profile.profileFound,levelSource:'TurkishPix XP',proxyResultLimit:proxyResultLimit(profile.level),tier:tier.name,dailyLimit:tier.dailyLimit,used,remaining:Math.max(0,tier.dailyLimit-used),resetTimezone:'Europe/Istanbul'};
 }
 function domain(input:string){
  const value=input.toLowerCase().replace(/\.$/,'');
@@ -117,6 +119,7 @@ export function validateOsint(kind:string,target:unknown){
  return {kind:type,target:input};
 }
 export async function osintRun(actor:OsintActor,kind:string,target:unknown,requestId:string){
+ await loadServerSettings();
  if(config().demo)throw new DomainError('OSINT_DISABLED','Demo modunda araştırma kapalı.',403);
  if(!/^[a-zA-Z0-9:_-]{10,100}$/.test(requestId))throw new DomainError('INVALID_REQUEST','Geçersiz işlem anahtarı.',400);
  const parsed=validateOsint(kind,target);
@@ -149,6 +152,6 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   await tx.query('INSERT INTO osint_usage(guild_id,user_id,request_id,query_kind,target_sha256) VALUES($1,$2,$3,$4,$5)',[config().guildId,actor.id,requestId,parsed.kind,fingerprint]);
   return {used:used+1,duplicate:false};
  });
- return {result,quota:{xp:profile.xp,level:profile.level,proxyResultLimit:proxyResultLimit(profile.level),tier:tier.name,dailyLimit:tier.dailyLimit,used:billing.used,remaining:Math.max(0,tier.dailyLimit-billing.used),resetTimezone:'Europe/Istanbul'},duplicate:billing.duplicate};
+ return {result,quota:{xp:profile.xp,level:profile.level,profileFound:profile.profileFound,levelSource:'TurkishPix XP',proxyResultLimit:proxyResultLimit(profile.level),tier:tier.name,dailyLimit:tier.dailyLimit,used:billing.used,remaining:Math.max(0,tier.dailyLimit-billing.used),resetTimezone:'Europe/Istanbul'},duplicate:billing.duplicate};
 }
 export function proxyResultLimit(level:number){return 10+5*(Number.isSafeInteger(level)&&level>=0?level:0);}
