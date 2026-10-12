@@ -54,3 +54,17 @@ export async function osintSetBlocked(owner:{id:string;username:string},targetId
 export async function purgeOldOsintLogs(){
  await database().query("DELETE FROM osint_access_events WHERE created_at<now()-interval '14 days'");
 }
+
+export async function osintCommandChannel(){
+ const row=(await database().query('SELECT channel_id FROM osint_channel_settings WHERE guild_id=$1',[config().guildId])).rows[0];
+ return row?.channel_id||process.env.OSINT_CHANNEL_ID||'';
+}
+export async function setOsintCommandChannel(actor:{id:string;username:string},channelId:string){
+ if(!config().owners.includes(actor.id))throw new DomainError('FORBIDDEN','Bu ayar yalnızca owner hesaplarına açık.',403);
+ if(!/^\d{17,20}$/.test(channelId))throw new DomainError('INVALID_CHANNEL','Geçerli kanal ID gerekli.',400);
+ await transaction(async tx=>{
+  await syncUser(tx,actor);
+  await tx.query('INSERT INTO osint_channel_settings(guild_id,channel_id,updated_by) VALUES($1,$2,$3) ON CONFLICT(guild_id) DO UPDATE SET channel_id=EXCLUDED.channel_id,updated_by=EXCLUDED.updated_by,updated_at=now()',[config().guildId,channelId,actor.id]);
+ });
+ return channelId;
+}
