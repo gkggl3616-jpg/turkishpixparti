@@ -58,3 +58,5 @@ export * from './osint-policy';
 
 export * from './osint-access';
 export * from './osint-providers';
+
+export * from './osint-dm';
