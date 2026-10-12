@@ -22,9 +22,15 @@ CREATE TABLE IF NOT EXISTS osint_access_events (
 );
 CREATE INDEX IF NOT EXISTS osint_events_recent ON osint_access_events(guild_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS osint_events_user ON osint_access_events(guild_id,user_id,created_at DESC);
-DO $$ BEGIN
+CREATE TABLE IF NOT EXISTS osint_channel_settings (
+ guild_id text PRIMARY KEY,
+ channel_id text NOT NULL,
+ updated_by text NOT NULL REFERENCES users(id),
+ updated_at timestamptz NOT NULL DEFAULT now()
+);
+DO $ BEGIN
  IF EXISTS (SELECT FROM pg_roles WHERE rolname='turkishpix_runtime') THEN
-  GRANT SELECT,INSERT,UPDATE,DELETE ON osint_access_blocks,osint_access_events TO turkishpix_runtime;
+  GRANT SELECT,INSERT,UPDATE,DELETE ON osint_access_blocks,osint_access_events,osint_channel_settings TO turkishpix_runtime;
   GRANT USAGE,SELECT ON SEQUENCE osint_access_events_id_seq TO turkishpix_runtime;
  END IF;
 END $$;
