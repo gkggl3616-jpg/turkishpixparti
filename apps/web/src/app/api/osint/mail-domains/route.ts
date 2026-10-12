@@ -1,0 +1,4 @@
+import {NextResponse} from 'next/server';
+import {session,guildMember,DomainError,loadServerSettings,assertOsintAllowed,temporaryMailDomains,rateLimit} from '../../../../../../../packages/core/src/index';
+export const dynamic='force-dynamic';export const runtime='nodejs';
+export async function GET(req:Request){try{await loadServerSettings();const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);await guildMember(me.id);await assertOsintAllowed(me.id);await rateLimit('mail-domain-list:'+me.id,6,60);return NextResponse.json({domains:await temporaryMailDomains()},{headers:{'Cache-Control':'no-store'}});}catch(e){return NextResponse.json({error:e instanceof DomainError?e.message:'E-posta domainleri alınamadı.'},{status:e instanceof DomainError?e.status:500,headers:{'Cache-Control':'no-store'}});}}

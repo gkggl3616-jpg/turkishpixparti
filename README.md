@@ -368,3 +368,14 @@ Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve list
 - Gizlilik: ham araştırma hedefleri log tablosuna yazılmaz, SHA-256 parmak izi tutulur. Web CSRF ve oturum kontrolünü mevcut altyapıdan devralır; sunucu üyeliği tekrar doğrulanır. Araç sonuçları güvenlik garantisi olarak sunulmaz.
 - Yayın: Yeni 019_osint_usage.sql migration'ı hem web hem bot predeploy adımında uygulanır. Discord global komut kaydı bot açılışındaki mevcut akıştan geçer.
 - Uzun vadeli hedefler **20+ kategori, 50+ alt komut, 7/24 çalışma** olarak izlenecek; bu sürümün çalışan özellik sayısı olduğu iddia edilmez.
+
+## 2.19 research console and welcome delivery
+
+- 92 curated first-party username sources, 8 concurrent reads, 30-second scheduling budget, 300 KB source body limit and 10-minute cache. Confirmed API profiles, candidate pages, absence, blocking and unattempted sources are separate. No CAPTCHA/login bypass; search-engine links are manual research links. Source attribution and license are in THIRD-PARTY-NOTICES.md.
+- 28 additional DNS, mail-policy, public web and local parsing tools. Public GET/HEAD pins a verified public DNS address on every redirect and bounds text responses. Cookie names/values are discarded.
+- Booster +20 uses current Discord premium_since, applies to the shared daily allowance and is rechecked before billing. Owners remain unlimited within the application; upstream limits remain.
+- Custom mail names and active domains, Mail.tm/Mail.gw, and explicit active-mailbox replacement. A replacement with failed token exchange remains encrypted pending; the active box is preserved. Mail.gw is 10 minutes; Mail.tm platform access is 24 hours.
+- Twilio credentials are encrypted. Existing owned numbers can be assigned with expiry; only the assigned user's inbound messages within their assignment window appear. No purchase, outgoing SMS or shared public OTP inbox.
+- New join welcome jobs wait 10 seconds for initial role assignments, read current roles at delivery, and deduplicate guild/member/join timestamp. They mention only the configured notification role and newcomer; Lady takes precedence if both category roles exist. The existing welcome or system channel is used; if neither exists, one welcome channel is created and saved once. Mentionability and role existence are logged at startup.
+- Owners and the allowed welcome role receive recipient-bound private welcome cards. The web composer copies a draft and opens Discord; it does not automate personal user accounts. Role access is rechecked; cards expire in 24 hours.
+- Migration 024_osint_wide must run on all deployment paths before starting new code. Announcement content comes from the release catalog.

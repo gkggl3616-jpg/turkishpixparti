@@ -6,7 +6,7 @@ import {osintRun,osintQuota,osintTools,osintCatalog} from '../../../packages/cor
 import {osintLog,assertOsintAllowed} from '../../../packages/core/src/osint-access';
 import {sendOsintResult,queueOsintDm,retryOsintDelivery,type DeliveryOutcome} from '../../../packages/core/src/osint-dm';
 import {guildMember,discordRequest,isDiscordMissing,syncUser} from '../../../packages/core/src/discord';
-import {osintPanel,osintWebLink,osintQueryModal,osintProxyModal,type OsintPanelKind} from '../../../packages/core/src/osint-panels';
+import {osintPanel,osintWebLink,osintQueryModal,osintProxyModal,osintMailModal,osintToolMenus,type OsintPanelKind} from '../../../packages/core/src/osint-panels';
 
 const running=new Set<string>();
 const actor=(i:any)=>({id:i.user.id,username:i.user.username,avatar:i.user.avatar});
@@ -54,20 +54,21 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   requireGuild(i);
   if(component&&(i.isButton?.()||i.isStringSelectMenu?.())&&i.message?.author?.id!==i.client.user.id)throw new DomainError('INVALID_PANEL','Panel doğrulanamadı.',403);
   // Modal display must acknowledge within three seconds; authorization is checked on submission.
+  if(i.isButton?.()&&i.customId==='tp-osint:mail-custom'){await i.showModal(osintMailModal());return true;}
   if(i.isButton?.()&&i.customId==='tp-osint:proxy-filters'){await i.showModal(osintProxyModal());return true;}
   if(i.isButton?.()&&i.customId.startsWith('tp-osint:query:')){
    const modal=osintQueryModal(i.customId.slice('tp-osint:query:'.length));
    if(!modal)throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);
    await i.showModal(modal);return true;
   }
-  if(i.isStringSelectMenu?.()&&i.customId==='tp-osint:tool'){
+  if(i.isStringSelectMenu?.()&&(i.customId==='tp-osint:tool'||i.customId.startsWith('tp-osint:tool:'))){
    const selected=i.values?.[0],available=(await osintCatalog()).some(t=>t.id===selected&&t.enabled);
    const modal=available?osintQueryModal(selected):null;
    if(!modal)throw new DomainError('INVALID_TOOL','Bu araç şu an kullanılamıyor.',400);
    await i.showModal(modal);return true;
   }
   if(i.isButton?.()&&i.customId==='tp-osint:research'){
-   await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **Araştırma aracını seç.** Sonuç yalnızca özel mesajına gönderilecek.',components:[{type:1,components:[{type:3,custom_id:'tp-osint:tool',placeholder:'Sorgu türünü seç',min_values:1,max_values:1,options:(await osintCatalog()).filter(t=>t.enabled&&!!osintQueryModal(t.id)).map(t=>({label:t.name,value:t.id,description:t.label,emoji:{name:t.icon}}))}]}],allowedMentions:{parse:[]}});
+   await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **Araştırma aracını seç.** Sonuç yalnızca özel mesajına gönderilecek.',components:osintToolMenus(await osintCatalog()),allowedMentions:{parse:[]}});
    return true;
   }
   await i.deferReply({flags:MessageFlags.Ephemeral});
@@ -87,7 +88,7 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   const subcommand=i.customId.slice('tp-osint:'.length);
   if(subcommand==='profil'||subcommand==='profile'){
    const q=await osintQuota(i.user.id);
-   await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+(q.unlimited?'Sınırsız · Owner':q.remaining+' toplam / '+q.dailyLimit+' günlük · '+q.extraCredits+' ek hak')+'**\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
+   await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+(q.unlimited?'Sınırsız · Owner':q.remaining+' toplam / '+q.dailyLimit+' günlük · '+q.extraCredits+' ek hak')+'**'+(q.boosterBonus?'\n🚀 Booster bonusun: **+20 günlük sorgu** · tüm araçlarda ortak.':'')+'\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
   }
   if(subcommand==='yardim'){
    await notice(i,'ARAŞTIRMA ARAÇLARI',osintTools.filter(t=>t.enabled).map(t=>t.icon+' **'+t.name+'**').join('\n')+'\n\nSonuçlar yalnızca DM ile gönderilir.\n'+osintWebLink());return true;
@@ -99,6 +100,7 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   }else if(i.isModalSubmit?.()&&subcommand.startsWith('modal:')){
    kind=subcommand.slice('modal:'.length);
    if(kind==='proxy')target=JSON.stringify({protocol:i.fields.getTextInputValue('protocol').trim().toLowerCase()||'all',country:i.fields.getTextInputValue('country').trim(),anonymity:i.fields.getTextInputValue('anonymity').trim().toLowerCase()||'all',maxLatency:Number(i.fields.getTextInputValue('latency')),minUptime:Number(i.fields.getTextInputValue('uptime'))});
+   else if(kind==='mail')target=JSON.stringify({localPart:i.fields.getTextInputValue('localPart').trim(),domain:i.fields.getTextInputValue('domain').trim()||undefined,replace:i.fields.getTextInputValue('replace').trim().toLocaleLowerCase('tr-TR')==='evet'});
    else{if(!osintQueryModal(kind))throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);target=i.fields.getTextInputValue('target');}
   }else{
    throw new DomainError('INVALID_ACTION','Bu düğme artık kullanılamıyor. Paneli /kur üzerinden yenile.',400);

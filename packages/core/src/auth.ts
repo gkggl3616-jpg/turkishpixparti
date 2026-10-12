@@ -19,11 +19,12 @@ export function csrf(req:Request,s:{csrf:string}){
 export function safeLoginPath(returnPath:string){
  const c=config();
  let safePath='/';
- try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&['/','/secim','/guvenlik','/karsilama','/duyurular','/yapay-zeka','/bot-ayarlari','/eglence','/oyunlar','/osint','/osint/owner'].includes(target.pathname)){
+ try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&['/','/secim','/guvenlik','/karsilama','/duyurular','/yapay-zeka','/bot-ayarlari','/eglence','/oyunlar','/osint','/osint/owner','/welcome'].includes(target.pathname)){
   const out=new URL(target.pathname,c.appUrl);const view=target.searchParams.get('view'),create=target.searchParams.get('create');
   if(view&&['genel','partiler','basvurular','oylamalar','tbmm','secimler','kayitlar','owner','roller','baglanti','ayarlar','kilavuz'].includes(view))out.searchParams.set('view',view);
   if(create&&['PARTY','BILL'].includes(create))out.searchParams.set('create',create);
   const game=target.searchParams.get('oyun');if(target.pathname==='/oyunlar'&&arcadeGames.some(g=>g.id===game))out.searchParams.set('oyun',game!);
+  const event=target.searchParams.get('event');if(target.pathname==='/welcome'&&event&&/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(event))out.searchParams.set('event',event);
   safePath=out.pathname+out.search;
  }}catch{}
  return safePath;

@@ -1,5 +1,6 @@
 import {config} from './config';
 import {COMPONENTS_V2,uiText,uiSeparator,uiRow,uiButton} from './discord-ui';
+import {extraCatalog} from './osint-extra-catalog';
 export type OsintPanelKind='proxy'|'osint'|'mail';
 export const osintWebLink=()=>process.env.OSINT_WEB_URL||config().appUrl+'/osint';
 const link=(label:string,url:string)=>({type:2,style:5,label,url});
@@ -12,7 +13,7 @@ export function osintPanel(kind:OsintPanelKind,thumbnail?:string){
  }[kind];
  const buttons=kind==='proxy'?[uiRow(action('proxy','Proxy Al',3,'⚡'),action('proxy-filters','Filtrele',2,'⚙️')),uiRow(action('query:proxy-check','Proxy Checker',1,'✅'),action('profile','Level & Kota',2,'⭐'))]
   :kind==='osint'?[uiRow(action('research','Sorgu Başlat',3,'🔎'),action('query:combo-domain','Domain Kombosu',1,'🌐')),uiRow(action('query:combo-ip','IP Kombosu',2,'🛰️'),action('profile','Level & Kota',2,'⭐'))]
-  :[uiRow(action('mail-create','E-Posta Al (Anlık)',3,'⚡')),uiRow(action('mail-inbox','Gelen Kutusu',1,'📥'),link('Mail.tm','https://mail.tm'))];
+  :[uiRow(action('mail-custom','Adresini Seç',3,'✉️'),action('mail-create','Rastgele Adres',2,'⚡')),uiRow(action('mail-inbox','Gelen Kutusu',1,'📥'),link('Mail.tm','https://mail.tm'))];
  return {flags:COMPONENTS_V2,components:[{type:17,accent_color:0x5865f2,components:[
   {type:9,components:[uiText('# TurkishPix\n'+details.subtitle)],accessory:{type:11,media:{url:thumbnail||config().appUrl+'/brand/turkishpix-bot.png'},description:'TurkishPix'}},
   uiSeparator(),uiText('### '+details.title+'\n'+details.body),...buttons,
@@ -27,9 +28,11 @@ const fields:Record<string,{label:string;placeholder:string}>={
  'dns-history':{label:'Alan adı / DNS geçmişi',placeholder:'example.com'},reports:{label:'Alan adı / rapor',placeholder:'example.com'},malware:{label:'SHA-256 / hash raporu',placeholder:'64 haneli dosya özeti'},hash:{label:'SHA-256',placeholder:'64 haneli dosya özeti'},'proxy-check':{label:'Proxy adresi',placeholder:'http://1.2.3.4:8080'}
 };
 export function osintQueryModal(kind:string){
- const field=fields[kind];if(!field)return null;
+ const extra=extraCatalog.find(t=>t.id===kind),field=fields[kind]||(extra?{label:extra.name,placeholder:extra.input==='url'?'https://example.com':extra.input==='ip'?'1.1.1.1':extra.input==='dkim'?'example.com selector':'example.com'}:['number','sms-inbox'].includes(kind)?{label:'Kişisel numara / SMS',placeholder:'inbox'}:null);if(!field)return null;
  return {custom_id:'tp-osint:modal:'+kind,title:kind==='proxy-check'?'TurkishPix · Proxy Checker':'TurkishPix · Araştırma',components:[{type:18,label:field.label,component:{type:4,custom_id:'target',style:1,placeholder:field.placeholder,required:true,min_length:2,max_length:250}}]};
 }
+export function osintMailModal(){return {custom_id:'tp-osint:modal:mail',title:'TurkishPix · Adresini Seç',components:[{type:18,label:'Adres adı · boşsa rastgele',component:{type:4,custom_id:'localPart',style:1,required:false,max_length:40,placeholder:'frizz2025'}},{type:18,label:'Domain · boşsa aktif sağlayıcı seçilir',component:{type:4,custom_id:'domain',style:1,required:false,max_length:150,placeholder:'Aktif alan adları web Temp Mail ekranında'}},{type:18,label:'Aktif adres değişsin mi? evet / hayır',component:{type:4,custom_id:'replace',style:1,required:true,value:'hayır',max_length:5}}]};}
+export function osintToolMenus(tools:{id:string;name:string;label:string;enabled:boolean;icon:string}[]){const available=tools.filter(t=>t.enabled&&osintQueryModal(t.id));return Array.from({length:Math.ceil(available.length/25)},(_,i)=>({type:1,components:[{type:3,custom_id:'tp-osint:tool:'+i,placeholder:'Araştırma araçları '+(i*25+1)+'–'+Math.min((i+1)*25,available.length),min_values:1,max_values:1,options:available.slice(i*25,(i+1)*25).map(t=>({label:t.name,value:t.id,description:t.label,emoji:{name:t.icon}}))}]}));}
 export function osintProxyModal(){
  return {custom_id:'tp-osint:modal:proxy',title:'TurkishPix · Proxy Filtreleri',components:[
   ['protocol','Protokol','all / http / https / socks4 / socks5','all',8],
