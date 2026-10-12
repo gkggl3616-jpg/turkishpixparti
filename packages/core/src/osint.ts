@@ -125,6 +125,8 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
  const beforeQuota=await osintQuota(actor.id);
  if(beforeQuota.remaining<=0)throw new DomainError('OSINT_QUOTA','Günlük araştırma hakkın doldu. Türkiye saatiyle gece yarısı yenilenir.',429);
+ const perMinute=parsed.kind==='cve'?5:['tls','subdomains'].includes(parsed.kind)?8:parsed.kind==='hash'?4:parsed.kind==='rdap'?25:100;
+ await rateLimit('osint-upstream:'+parsed.kind,perMinute,60);
  const provided=parsed.kind==='rdap'?await lookupRdap(parsed.target)
   :parsed.kind==='subdomains'||parsed.kind==='tls'?await lookupCt(parsed.target,parsed.kind)
   :parsed.kind==='asn'?await lookupAsn(parsed.target)
