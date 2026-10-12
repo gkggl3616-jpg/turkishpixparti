@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import OsintPanel from '../../components/OsintPanel';
-import './osint.css';
-export const metadata:Metadata={title:'Turkish Osint · NEXUS OSINT',description:'TurkishPix Discord hesabın ve XP seviyen ile OSINT araştırma araçları.',robots:{index:false,follow:false}};
-export default function OsintPage(){return <OsintPanel/>;}
+import OsintDashboard from '../../components/OsintDashboard';
+import './dashboard.css';
+export const metadata:Metadata={title:'NEXUS OSINT | TurkishPix Intelligence',description:'TurkishPix OSINT çalışma alanı: Discord üyeliği, operatör unvanları ve güvenli araştırma araçları.',robots:{index:false,follow:false}};
+export default function OsintPage(){return <OsintDashboard/>;}
