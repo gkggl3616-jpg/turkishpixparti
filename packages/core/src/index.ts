@@ -60,3 +60,6 @@ export * from './osint-access';
 export * from './osint-providers';
 
 export * from './osint-dm';
+
+export * from './osint-ranks';
+export * from './osint-membership';
