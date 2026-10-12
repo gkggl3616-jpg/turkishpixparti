@@ -355,3 +355,16 @@ Kişisel not/görev/hatırlatma içerikleri, özel bilet bağlantıları ve list
 - `/muzik oynat ara: Şarkı [kaynak: Otomatik / SoundCloud / YouTube]` beş sonuçlu seçim listesini açar. YouTube ses kontrolü başarısızsa otomatik mod SoundCloud aramasını seçer. Müzik merkezindeki SoundCloud düğmesi de aynı akışı açar. Seçim yapan üyenin güncel ses kanalına katılma, kuyruk ve DJ izinleri ortak müzik motorunda uygulanır.
 - Yalnızca herkese açık tek SoundCloud şarkı bağlantıları kabul edilir; arama ve oynatım sabit argümanlarla yt-dlp üzerinden yürür. Tam ses akışına ait HTTPS CDN URL’si, kaynak alan adı, süre ve protokol doğrulanır. Ücretli içeriğin 30 saniyelik önizlemesi tam şarkı gibi oynatılmaz. Hata durumunda seçim listesi ve yeniden deneme düğmesi korunur; aynı seçimin eşzamanlı tekrarı engellenir.
 - Başlangıçta gerçek arama ve kısa PCM çözümleme kontrolü yapılır; Discord ses kanalına girilmez. `/muzik tani` hem SoundCloud hem YouTube kaynak sonucunu gösterir. Çekiliş kayıtları ve katılımcıları bu değişikliğin dışındadır.
+
+## Turkish Osint · NEXUS OSINT (ilk sürüm, XP entegrasyonu)
+
+- İsim: **Turkish Osint**; altyapı/modül kod adı: **NEXUS OSINT**.
+- Web: /osint. Discord OAuth2 identify guilds.members.read ile mevcut oturum kullanılır, kullanıcı için yeni şifre tutulmaz.
+- /osint profil, /osint dns, /osint ip, /osint url, /osint yardim aynı TurkishPix botunda, tek global slash kökü altında çalışır.
+- XP mevcut member_profiles kaydından okunur; harcanmaz. Günlük limitler: Lv 0+ 5, Lv 5+ 15, Lv 10+ 35, Lv 20+ 75, Lv 40+ 150. Türkiye saatiyle gece 00:00'da sıfırlanır.
+- Web + Discord sorguları aynı osint_usage tablosunda, Discord kullanıcı ID'si ile tutulur. PostgreSQL advisory lock ve tekrarlanan işlem anahtarıyla çift ücret engellenir. Dakikada en fazla sekiz sorgu.
+- Aktif ilk araçlar DNS (A/AAAA/MX/NS/TXT), IP biçimi/PTR, güvenli pasif URL biçim kontrolü. URL aracı hedef sayfayı açmaz veya JavaScript çalıştırmaz.
+- RDAP/WHOIS, ASN/GeoIP, malware taraması, temp mail, temp number, proxy havuzu, tehdit itibarı için güvenilir servis / izolasyon entegrasyonları henüz bağlı değildir; arayüzde Entegrasyon planında görünür.
+- Gizlilik: ham araştırma hedefleri log tablosuna yazılmaz, SHA-256 parmak izi tutulur. Web CSRF ve oturum kontrolünü mevcut altyapıdan devralır; sunucu üyeliği tekrar doğrulanır. Araç sonuçları güvenlik garantisi olarak sunulmaz.
+- Yayın: Yeni 019_osint_usage.sql migration'ı hem web hem bot predeploy adımında uygulanır. Discord global komut kaydı bot açılışındaki mevcut akıştan geçer.
+- Uzun vadeli hedefler **20+ kategori, 50+ alt komut, 7/24 çalışma** olarak izlenecek; bu sürümün çalışan özellik sayısı olduğu iddia edilmez.
