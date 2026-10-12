@@ -1,3 +1,4 @@
+import {discordErrorDetails} from '../../../packages/core/src/discord';
 import {retryPendingOsintDeliveries} from '../../../packages/core/src/osint-dm';
 import {InviteTracker} from './invites';
 import {handleOsintInteraction} from './osint';
@@ -189,6 +190,6 @@ async function worker(){while(!stopped){try{
   background.run('maintenance',3600000,async()=>{await moderationMaintenance(settings);await cleanupFeatures();});
   if(!logRepairDone)background.run('log-repair',30000,async()=>{const result=await repairLegacySecurityLogs(client.user.id,[settings.security.logChannel,config().logChannel]);logRepairDone=true;console.log('LOG_PRESENTATION_READY',JSON.stringify(result));});
  }
- }catch(e){console.error('Kuyruk kontrolü başarısız:',e instanceof DomainError?e.code:'INTERNAL');}await new Promise(r=>setTimeout(r,1000));}}
+ }catch(e){console.error('WORKER_FAILED',JSON.stringify(discordErrorDetails(e)));}await new Promise(r=>setTimeout(r,1000));}}
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,async()=>{if(stopped)return;stopped=true;await background.stop();await music.shutdown().catch(()=>{});await heartbeat(false).catch(()=>{});client.destroy();await closeDatabase();process.exit(0);});
 try{await client.login(initial.botToken);void worker();}catch{console.error('Bot Discord bağlantısını kuramadı. Token, intent izinleri ve Gateway bağlantısını kontrol edin.');await closeDatabase();process.exit(1);}

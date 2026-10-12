@@ -1,13 +1,13 @@
 import {config,DomainError} from './config';
 import {randomUUID} from 'node:crypto';
 export class DiscordAPIError extends DomainError {
- constructor(public responseStatus:number,public discordCode:number|null,public method:string,public route:string,public retryAfter=0){
+ constructor(public responseStatus:number,public discordCode:number|null,public method:string,public route:string,public retryAfter=0,public commandValidation:string|undefined=undefined){
   const message=discordCode===10007?'Bu üye artık sunucuda bulunmuyor.':discordCode===10008?'Bu Discord mesajı silinmiş veya artık bulunamıyor.':discordCode===10003?'Seçilen Discord kanalı silinmiş veya artık erişilemiyor. Kanalı yeniden seç.':responseStatus===403?'Botun bu işlem için Discord izni eksik. Kanal ve rol izinlerini kontrol et.':responseStatus===401?'Botun Discord bağlantısı doğrulanamadı.':responseStatus===429?'Discord kısa süreli hız sınırı uyguluyor. İşlem kaydı korunur; biraz sonra yeniden dene.':responseStatus===404?'Seçilen Discord kaydı artık bulunamıyor. Kanalı veya mesajı yeniden seç.':'Discord bağlantısı geçici olarak yanıt vermedi.';
   super('DISCORD_ERROR',message+` (${responseStatus}).`,[401,403,404].includes(responseStatus)?403:503);
  }
 }
 export function isDiscordMissing(error:unknown,...codes:number[]){return error instanceof DiscordAPIError&&error.responseStatus===404&&(!error.discordCode||!codes.length||codes.includes(error.discordCode));}
-export function discordErrorDetails(error:any){return {code:typeof error?.code==='number'||typeof error?.code==='string'?error.code:'INTERNAL',...(error instanceof DiscordAPIError?{http:error.responseStatus,discordCode:error.discordCode,method:error.method,route:error.route}:{})};}
+export function discordErrorDetails(error:any){return {code:typeof error?.code==='number'||typeof error?.code==='string'?error.code:'INTERNAL',...(error instanceof DiscordAPIError?{http:error.responseStatus,discordCode:error.discordCode,method:error.method,route:error.route,...(error.commandValidation?{validation:error.commandValidation}:{})}:{})};}
 const reads=new Map<string,Promise<any>>();let readFetch=globalThis.fetch;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function routeName(path:string){return path.split('?')[0].replace(/(\/webhooks\/\d+)\/[^/]+/,'$1/:token').replace(/\d{17,20}/g,':id');}
@@ -23,7 +23,8 @@ async function request(path:string,init:RequestInit,bearer?:string){
   if(response.status===429&&attempt<2&&Number.isFinite(retryAfter)&&retryAfter>=0&&Date.now()+retryAfter*1000+250<deadline){await wait(Math.max(50,retryAfter*1000));continue;}
   // Ambiguous POST failures are left to durable, nonce-protected application jobs.
   if(response.status>=500&&method==='GET'&&attempt===0&&Date.now()+250<deadline){await wait(200);continue;}
-  throw new DiscordAPIError(response.status,discordCode,method,routeName(path),retryAfter);
+  const commandRoute=/^\/applications\/\d+\/(?:guilds\/\d+\/)?commands(?:\/\d+)?$/.test(path.split('?')[0]);
+  throw new DiscordAPIError(response.status,discordCode,method,routeName(path),retryAfter,commandRoute&&body?.errors?JSON.stringify(body.errors).slice(0,6000):undefined);
  }
 }
 export async function discordRequest(path:string,init:RequestInit={},bearer?:string){
