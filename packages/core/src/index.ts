@@ -52,3 +52,6 @@ export * from './role-automation-policy';
 export * from './role-automation';
 
 export * from './invites';
+
+export * from './osint';
+export * from './osint-policy';
