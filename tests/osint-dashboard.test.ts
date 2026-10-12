@@ -13,7 +13,7 @@ test('Level progress uses the XP threshold formula already applied in TurkishPix
  assert.equal(levelProgress(100,1).nextXp,400);
  assert.equal(levelProgress(225,1).percent,125/300*100);
  assert.equal(levelProgress(2500,5).percent,0);
- assert.equal(levelProgress(3500,5).percent,100);
+ assert.equal(levelProgress(3600,5).percent,100);
 });
 
 test('An OSINT site join date is recorded on authenticated access, not inferred from Discord',async()=>{
