@@ -17,7 +17,23 @@ export const osintTools=[
  {id:'mail',name:'Temp Mail',label:'Geçici e-posta',enabled:false,icon:'✉️'},
  {id:'number',name:'Temp Number',label:'Sağlayıcıyla sanal SMS',enabled:false,icon:'📱'},
  {id:'proxy',name:'Proxy Manager',label:'Yasal proxy havuzu ve kontrolü',enabled:false,icon:'🧩'},
- {id:'malware',name:'Malware Scanner',label:'Dosya ve hash kontrolü',enabled:false,icon:'🦠'}
+ {id:'malware',name:'Malware Scanner',label:'Dosya ve hash kontrolü',enabled:false,icon:'🦠'},
+ {id:'tls',name:'SSL / TLS Inspector',label:'Sertifika zinciri ve süreleri',enabled:false,icon:'🔐'},
+ {id:'subdomains',name:'Subdomain Discovery',label:'Pasif alt alan adı keşfi',enabled:false,icon:'🧭'},
+ {id:'dns-history',name:'DNS History',label:'Geçmiş DNS kayıtları',enabled:false,icon:'🕓'},
+ {id:'asn',name:'ASN / BGP Explorer',label:'Operatör, ASN ve yönlendirme bilgileri',enabled:false,icon:'🌍'},
+ {id:'email',name:'Email Intelligence',label:'E-posta alan adı güvenlik kayıtları',enabled:false,icon:'📨'},
+ {id:'usernames',name:'Public Username Search',label:'Açık profillerde kullanıcı adı araması',enabled:false,icon:'👤'},
+ {id:'github',name:'Repository Intelligence',label:'Açık kaynak depo analizi',enabled:false,icon:'💻'},
+ {id:'archives',name:'Web Archive',label:'Geçmiş sayfa anlık görüntüleri',enabled:false,icon:'🗃️'},
+ {id:'metadata',name:'File Metadata',label:'Yerel dosya meta veri analizi',enabled:false,icon:'🗂️'},
+ {id:'headers',name:'HTTP Header Review',label:'Güvenli yanıt başlığı inceleme',enabled:false,icon:'📃'},
+ {id:'ioc',name:'IOC Normalizer',label:'Gösterge doğrulama ve normalizasyon',enabled:false,icon:'🧬'},
+ {id:'cve',name:'CVE Intelligence',label:'Açık CVE veritabanı araştırması',enabled:false,icon:'🛠️'},
+ {id:'hash',name:'Hash Reputation',label:'Dosya karması itibar karşılaştırma',enabled:false,icon:'🔏'},
+ {id:'reports',name:'Research Reports',label:'Araştırma raporu ve dışa aktarma',enabled:false,icon:'📊'},
+ {id:'proxy-check',name:'Proxy Validator',label:'Yetkili proxy otomatik ve manuel test',enabled:false,icon:'✅'},
+ {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:false,icon:'📍'}
 ] as const;
 
 export type OsintKind='dns'|'ip'|'url';
