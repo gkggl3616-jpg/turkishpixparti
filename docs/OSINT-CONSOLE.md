@@ -1,4 +1,4 @@
-# OSINT Console 2.21.0
+# OSINT Console 2.21.1
 
 This release is deployed from an OSINT-specific branch. Do not merge into the shared production branch or deploy the TurkishPix management bot as part of this release.
 
