@@ -20,6 +20,7 @@ export function eventPreview(kind:string,target:unknown):string{
  if(['proxy-check'].includes(kind))return '[proxy adresi]';
  return value.slice(0,140).replace(/[\x00-\x1f\x7f]/g,'');
 }
+let lastPrune=0;
 export async function osintLog(userId:string,type:'VISIT'|'QUERY'|'DENIED'|'BLOCK'|'UNBLOCK',source:'WEB'|'DISCORD'|'OWNER',kind='',target:unknown='',ip:string|null=null,code=''){
  await database().query("INSERT INTO osint_access_events(guild_id,user_id,event_type,source,query_kind,target_preview,observed_ip,error_code) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[config().guildId,userId,type,source,kind,eventPreview(kind,target),ip,code.slice(0,60)]);
 }
