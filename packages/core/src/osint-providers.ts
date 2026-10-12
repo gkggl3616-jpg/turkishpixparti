@@ -82,13 +82,20 @@ export function parseProxyFilters(input:string):ProxyFilters{
  const protocol=String(data.protocol||'all').toLowerCase(),country=String(data.country||'').toUpperCase(),anonymity=String(data.anonymity||'all').toLowerCase();
  if(!['all','http','https','socks4','socks5'].includes(protocol)||country&&!/^[A-Z]{2}$/.test(country)||!['all','elite','anonymous','transparent'].includes(anonymity))throw new DomainError('PROXY_FILTER','Bilinmeyen proxy filtresi.');
  const maxLatency=Number(data.maxLatency??3000),minUptime=Number(data.minUptime??0),limit=Number(data.limit??10);
- if(!Number.isFinite(maxLatency)||maxLatency<100||maxLatency>30000||!Number.isFinite(minUptime)||minUptime<0||minUptime>100||!Number.isInteger(limit)||limit<1||limit>25)throw new DomainError('PROXY_FILTER','Filtre değerleri sınır dışında.');
+ if(!Number.isFinite(maxLatency)||maxLatency<100||maxLatency>30000||!Number.isFinite(minUptime)||minUptime<0||minUptime>100||!Number.isInteger(limit)||limit<1||limit>40000)throw new DomainError('PROXY_FILTER','Filtre değerleri sınır dışında.');
  return {protocol,country,anonymity,maxLatency,minUptime,limit};
 }
-export async function lookupProxy(target:string):Promise<ProviderResult>{
+export async function lookupProxy(target:string,levelLimit?:number):Promise<ProviderResult>{
  const f=parseProxyFilters(target),list=await proxySnapshot();
- const entries=list.filter(x=>(f.protocol==='all'||x.protocol===f.protocol)&&(!f.country||x.country_code===f.country)&&(f.anonymity==='all'||x.anonymity===f.anonymity)&&(Number(x.latency_ms||Infinity)<=f.maxLatency!)&&(Number(x.uptime_percent||0)>=f.minUptime!)).sort((a,b)=>(Number(a.latency_ms)||999999)-(Number(b.latency_ms)||999999));
- return {title:'Proxy Generator · Filtrelenmiş Havuz',summary:entries.length+' eşleşen kayıt · ilk '+Math.min(entries.length,f.limit!)+' gösteriliyor.',items:entries.slice(0,f.limit).map((p,i)=>put(String(i+1).padStart(2,'0')+' · '+p.country_code+' · '+p.anonymity,p.protocol+'://'+p.ip+':'+p.port+' · '+p.latency_ms+'ms · uptime %'+p.uptime_percent)).concat([put('Sağlayıcı listesi',list.length+' kayıt')]),notice:'Proxy üretimi = yayımlanmış proxy havuzundan filtreli liste oluşturma. Bağlantıların güncelliği ProxyScrape kontrolüne dayanır; cihazından bağımsız canlı bağlantı testi yapılmamıştır.'};
+ const seen=new Set<string>();
+ const entries=list.filter(x=>{
+  const key=x.protocol+':'+x.ip+':'+x.port;
+  if(seen.has(key))return false;
+  const matches=(f.protocol==='all'||x.protocol===f.protocol)&&(!f.country||x.country_code===f.country)&&(f.anonymity==='all'||x.anonymity===f.anonymity)&&Number.isFinite(x.latency_ms)&&Number(x.latency_ms)<=f.maxLatency!&&Number(x.uptime_percent||0)>=f.minUptime!;
+  if(matches)seen.add(key);return matches;
+ }).sort((a,b)=>Number(a.latency_ms)-Number(b.latency_ms));
+ const wanted=levelLimit??f.limit!,selected=entries.slice(0,wanted);
+ return {title:'Proxy Generator',summary:selected.length+' proxy · '+entries.length+' eşleşen kayıt'+(levelLimit!==undefined?' · level hakkın '+wanted:''),items:selected.map((p,i)=>put(String(i+1).padStart(2,'0')+' · '+(p.country_code||'—')+' · '+(p.anonymity||'—'),p.protocol+'://'+(isIP(p.ip)===6?'['+p.ip+']':p.ip)+':'+p.port+' · '+p.latency_ms+'ms · uptime %'+(p.uptime_percent??0))).concat([put('Sağlayıcı listesi',list.length+' kayıt')]),notice:(selected.length<wanted?'Filtrene uyan yeterli kayıt yok; '+wanted+' yerine '+selected.length+' gerçek kayıt gönderildi. ':'')+'Kaynak: ProxyScrape. Durum ve gecikme sağlayıcının son kontrolüne dayanır.'};
 }
 export async function lookupProxyCheck(target:string):Promise<ProviderResult>{
  const pattern=/^(https?|socks4|socks5):\/\/(\[[0-9a-f:]+\]|[0-9.]+):(\d{1,5})$/i;

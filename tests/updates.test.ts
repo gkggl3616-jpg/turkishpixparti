@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
-import {commands} from '../packages/core/src/commands';
+import {commands,guildCommands,globalCommands} from '../packages/core/src/commands';
 import {RELEASE_VERSION} from '../packages/core/src/config';
 import {releases,currentRelease,releaseMatches} from '../packages/core/src/releases';
 import {updatesView,handleUpdatesInteraction} from '../apps/bot/src/updates';
@@ -9,7 +9,7 @@ import {commandCategory,commandHelpView} from '../apps/bot/src/help';
 import {setTestDatabase} from '../packages/core/src/db';
 import {GET} from '../apps/web/src/app/api/updates/route';
 test('Güncellemeler komutu 100 komut sınırında kaydedilir ve rehberden bulunur',()=>{
- assert.equal(commands.length,105);assert.equal(new Set(commands.map(c=>c.name)).size,105);
+ assert.ok(guildCommands.length<=100);assert.ok(globalCommands.length<=100);assert.equal(new Set(commands.map(c=>c.name)).size,commands.length);
  const command=commands.find(c=>c.name==='guncellemeler')!;assert.ok(command);assert.equal(commandCategory(command.name),'guncellemeler');
  assert.equal(currentRelease.version,RELEASE_VERSION);assert.equal(new Set(releases.map(r=>r.version)).size,releases.length);
  assert.equal((commandHelpView('guncellemeler').components[1].components[2] as any).url,process.env.APP_URL?process.env.APP_URL+'/guncellemeler':'http://localhost:3000/guncellemeler');

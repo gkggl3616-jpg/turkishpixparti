@@ -16,19 +16,24 @@ export function safeEqual(a:string,b:string){return a.length===b.length&&timingS
 export function csrf(req:Request,s:{csrf:string}){
  if(req.headers.get('origin')!==config().appUrl||!safeEqual(req.headers.get('x-csrf-token')||'',s.csrf))throw new DomainError('CSRF','İstek doğrulanamadı. Sayfayı yenileyin.',403);
 }
-export async function oauthStart(returnPath='/'){
- const c=config();if(!c.clientSecret||!c.guildId)throw new DomainError('OAUTH_NOT_CONFIGURED','Discord bağlantısı henüz tamamlanmadı.',503);
- const app=await applicationConnection();
- if(!app.verified)throw new DomainError('APPLICATION_UNAVAILABLE',app.error||'Discord uygulaması doğrulanamadı.',503);
- if(app.redirectRegistered===false)throw new DomainError('OAUTH_REDIRECT_NOT_REGISTERED','Discord Developer Portal’da OAuth yönlendirme adresi kaydedilmeli.',503);
- const state=randomBytes(32).toString('hex');let safePath='/';
- try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&['/','/secim','/guvenlik','/karsilama','/duyurular','/yapay-zeka','/bot-ayarlari','/eglence','/oyunlar','/osint'].includes(target.pathname)){
+export function safeLoginPath(returnPath:string){
+ const c=config();
+ let safePath='/';
+ try{const target=new URL(returnPath,c.appUrl);if(target.origin===new URL(c.appUrl).origin&&['/','/secim','/guvenlik','/karsilama','/duyurular','/yapay-zeka','/bot-ayarlari','/eglence','/oyunlar','/osint','/osint/owner'].includes(target.pathname)){
   const out=new URL(target.pathname,c.appUrl);const view=target.searchParams.get('view'),create=target.searchParams.get('create');
   if(view&&['genel','partiler','basvurular','oylamalar','tbmm','secimler','kayitlar','owner','roller','baglanti','ayarlar','kilavuz'].includes(view))out.searchParams.set('view',view);
   if(create&&['PARTY','BILL'].includes(create))out.searchParams.set('create',create);
   const game=target.searchParams.get('oyun');if(target.pathname==='/oyunlar'&&arcadeGames.some(g=>g.id===game))out.searchParams.set('oyun',game!);
   safePath=out.pathname+out.search;
  }}catch{}
+ return safePath;
+}
+export async function oauthStart(returnPath='/'){
+ const c=config();if(!c.clientSecret||!c.guildId)throw new DomainError('OAUTH_NOT_CONFIGURED','Discord bağlantısı henüz tamamlanmadı.',503);
+ const app=await applicationConnection();
+ if(!app.verified)throw new DomainError('APPLICATION_UNAVAILABLE',app.error||'Discord uygulaması doğrulanamadı.',503);
+ if(app.redirectRegistered===false)throw new DomainError('OAUTH_REDIRECT_NOT_REGISTERED','Discord Developer Portal’da OAuth yönlendirme adresi kaydedilmeli.',503);
+ const state=randomBytes(32).toString('hex'),safePath=safeLoginPath(returnPath);
  await database().query('INSERT INTO oauth_states(state_hash,expires_at,return_path) VALUES($1,now()+interval \'10 minutes\',$2)',[sha256(state),safePath]);
  const url=new URL('https://discord.com/oauth2/authorize');url.search=new URLSearchParams({client_id:c.clientId,redirect_uri:c.appUrl+'/api/auth/callback',response_type:'code',scope:'identify guilds.members.read',state}).toString();
  return {url:url.toString(),state};
@@ -36,7 +41,7 @@ export async function oauthStart(returnPath='/'){
 export async function oauthCallback(req:Request){
  const url=new URL(req.url);const state=url.searchParams.get('state')||'';const stored=cookieValue(req,STATE_COOKIE)||'';
  if(!state||!safeEqual(state,stored))throw new DomainError('INVALID_STATE','Discord giriş isteğinin süresi dolmuş. Yeniden giriş yapın.',403);
- const row=(await database().query('DELETE FROM oauth_states WHERE state_hash=$1 AND expires_at>now() RETURNING return_path',[sha256(state)])).rows[0];
+ const row=(await database().query('DELETE FROM oauth_states WHERE state_hash=$1 AND expires_at>now() RETURNING return_path,handoff_hash',[sha256(state)])).rows[0];
  if(!row)throw new DomainError('STATE_EXPIRED','Giriş isteği kullanılmış veya süresi dolmuş.',403);
  const code=url.searchParams.get('code');if(!code)throw new DomainError('OAUTH_CANCELLED','Discord girişine izin verilmedi.');
  const c=config();const response=await fetch('https://discord.com/api/v10/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:c.clientId,client_secret:c.clientSecret,grant_type:'authorization_code',code,redirect_uri:c.appUrl+'/api/auth/callback'}),signal:AbortSignal.timeout(10000)});
@@ -46,8 +51,8 @@ export async function oauthCallback(req:Request){
  const member=await discordRequest(`/users/@me/guilds/${c.guildId}/member`,{},token.access_token);
  if(member.pending)throw new DomainError('MEMBERSHIP_PENDING','Önce TurkishPix sunucu doğrulamasını tamamlayın.',403);
  const secret=randomBytes(32).toString('hex'),csrfToken=randomBytes(32).toString('hex');
- await transaction(async tx=>{await syncUser(tx,user);await tx.query('INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES($1,$2,$3,$4)',[sha256(secret),user.id,csrfToken,new Date(Date.now()+c.sessionHours*3600000).toISOString()]);await audit(tx,user.id,'LOGIN',user.id);});
- return {secret,returnPath:row.return_path};
+ await transaction(async tx=>{await syncUser(tx,user);if(!row.handoff_hash)await tx.query('INSERT INTO sessions(token_hash,user_id,csrf_token,expires_at) VALUES($1,$2,$3,$4)',[sha256(secret),user.id,csrfToken,new Date(Date.now()+c.sessionHours*3600000).toISOString()]);await audit(tx,user.id,'LOGIN',user.id);});
+ return {secret,returnPath:row.return_path,handoffHash:row.handoff_hash as string|null,userId:user.id as string};
 }
 export async function logout(req:Request,actor:any){const token=cookieValue(req,SESSION_COOKIE);if(token)await transaction(async tx=>{await tx.query('DELETE FROM sessions WHERE token_hash=$1',[sha256(token)]);await audit(tx,actor.id,'LOGOUT',actor.id);});}
 export async function rateLimit(key:string,limit:number,seconds=60){

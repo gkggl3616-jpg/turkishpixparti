@@ -1,3 +1,5 @@
+import {authBrokerOrigin,createLoginHandoff,startLoginHandoff,completeLoginHandoff,redeemLoginHandoff,HANDOFF_COOKIE} from '../../../../../../packages/core/src/auth-bridge';
+import {cookieValue} from '../../../../../../packages/core/src/auth';
 import {arcadeOverview,startArcade,finishArcade} from '../../../../../../packages/core/src/index';
 import {saveYouTubeKey,youtubeStatus,searchYouTube,youtubeVideo,recordYouTubeView,saveYouTubeFavourite,youtubeFavourites,createWatchTogether,expansionRoleDirectory,createAdvancedEvent,communityCalendar} from '../../../../../../packages/core/src/index';
 import {NextResponse} from 'next/server';
@@ -39,13 +41,29 @@ export async function GET(req:Request){
    return json({...r,version:RELEASE_VERSION,application,clientId:config().clientId,guildId:config().guildId,installUrl:botInviteUrl(),redirectUri:config().appUrl+'/api/auth/callback',rules:{quorum:config().quorum,ballotHours:config().ballotHours,minVotes:config().minVotes}});
   }
   if(path==='/api/auth/login'){
-   try{const {url,state}=await oauthStart(new URL(req.url).searchParams.get('return')||'/');
+   try{const returnPath=new URL(req.url).searchParams.get('return')||'/';
+    if(authBrokerOrigin()){const handoff=await createLoginHandoff(returnPath);return new Response(null,{status:302,headers:{Location:handoff.url,'Set-Cookie':cookie(HANDOFF_COOKIE,handoff.verifier,1/6),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});}
+    const {url,state}=await oauthStart(returnPath);
     return new Response(null,{status:302,headers:{Location:url,'Set-Cookie':cookie(STATE_COOKIE,state,1/6),'Cache-Control':'no-store'}});
-   }catch(e){if(e instanceof DomainError)return NextResponse.redirect(new URL('/?view=owner&error='+e.code,config().appUrl));throw e;}
+   }catch(e){if(e instanceof DomainError)return NextResponse.redirect(new URL((process.env.OSINT_ONLY==='true'?'/osint?error=':'/?view=owner&error=')+e.code,config().appUrl));throw e;}
+  }
+  if(path==='/api/auth/bridge'){
+   const {url,state}=await startLoginHandoff(new URL(req.url).searchParams.get('request')||'');
+   return new Response(null,{status:302,headers:{Location:url,'Set-Cookie':cookie(STATE_COOKIE,state,1/6),'Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
+  }
+  if(path==='/api/auth/bridge/callback'){
+   try{
+    const result=await redeemLoginHandoff(new URL(req.url).searchParams.get('ticket')||'',cookieValue(req,HANDOFF_COOKIE)||'');
+    const res=NextResponse.redirect(new URL(result.returnPath,config().appUrl));
+    res.headers.append('Set-Cookie',cookie(SESSION_COOKIE,result.secret,config().sessionHours));res.headers.append('Set-Cookie',cookie(HANDOFF_COOKIE,'',0));res.headers.set('Cache-Control','no-store');res.headers.set('Referrer-Policy','no-referrer');return res;
+   }catch(e){return NextResponse.redirect(new URL('/osint?error='+(e instanceof DomainError?e.code:'LOGIN_FAILED'),config().appUrl));}
   }
   if(path==='/api/auth/callback'){
-   try{const result=await oauthCallback(req);const res=NextResponse.redirect(new URL(result.returnPath,config().appUrl));res.headers.append('Set-Cookie',cookie(SESSION_COOKIE,result.secret,config().sessionHours));res.headers.append('Set-Cookie',cookie(STATE_COOKIE,'',0));return res;}
-   catch(e){const code=e instanceof DomainError?e.code:'LOGIN_FAILED';return NextResponse.redirect(new URL('/?error='+code,config().appUrl));}
+   try{
+    const result=await oauthCallback(req);
+    const destination=result.handoffHash?await completeLoginHandoff(result.handoffHash,result.userId):new URL(result.returnPath,config().appUrl);
+    const res=NextResponse.redirect(destination);if(!result.handoffHash)res.headers.append('Set-Cookie',cookie(SESSION_COOKIE,result.secret,config().sessionHours));res.headers.append('Set-Cookie',cookie(STATE_COOKIE,'',0));res.headers.set('Cache-Control','no-store');res.headers.set('Referrer-Policy','no-referrer');return res;
+   }catch(e){const code=e instanceof DomainError?e.code:'LOGIN_FAILED';return NextResponse.redirect(new URL((process.env.OSINT_ONLY==='true'?'/osint?error=':'/?error=')+code,config().appUrl));}
   }
   if(path==='/api/overview'){
    if(config().demo)return json({demo:true});

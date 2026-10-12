@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 type Tool={id:string;name:string;label:string;enabled:boolean;icon:string};
-type Quota={xp:number;level:number;tier:string;dailyLimit:number;used:number;remaining:number;resetTimezone:string};
+type Quota={xp:number;level:number;proxyResultLimit:number;tier:string;dailyLimit:number;used:number;remaining:number;resetTimezone:string};
 type Member={username:string;id:string;avatar?:string|null;displayName?:string;discordJoinedAt?:string|null;siteJoinedAt?:string|null};
 type Result={kind:string;target:string;title:string;summary:string;notice:string;items:{name:string;value:string}[]};
 type Data={authenticated:boolean;me?:Member;csrf?:string;quota?:Quota;tools:Tool[];owner?:boolean;loginUrl?:string;error?:string};
@@ -52,7 +52,8 @@ export default function OsintDashboard(){
  const [groups,setGroups]=useState<string[]>(['proxy','infrastructure']),[sidebarCollapsed,setSidebarCollapsed]=useState(false);
  const [mobileOpen,setMobileOpen]=useState(false),[search,setSearch]=useState('');
  const [target,setTarget]=useState(''),[result,setResult]=useState<Result|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[dm,setDm]=useState<boolean|null>(null);
- const [country,setCountry]=useState(''),[protocol,setProtocol]=useState('all'),[anonymity,setAnonymity]=useState('all'),[latency,setLatency]=useState('3000'),[uptime,setUptime]=useState('0'),[count,setCount]=useState('10');
+ const [deliveryId,setDeliveryId]=useState(''),[retrying,setRetrying]=useState(false),[loginError,setLoginError]=useState('');
+ const [country,setCountry]=useState(''),[protocol,setProtocol]=useState('all'),[anonymity,setAnonymity]=useState('all'),[latency,setLatency]=useState('3000'),[uptime,setUptime]=useState('0');
 
  async function load(){
   try{
@@ -62,7 +63,11 @@ export default function OsintDashboard(){
   }catch(e){setError(e instanceof Error?e.message:'Sunucuya bağlanılamadı.');}
   finally{setLoading(false);}
  }
- useEffect(()=>{void load();},[]);
+ useEffect(()=>{
+  const code=new URLSearchParams(window.location.search).get('error');
+  if(code){setLoginError(code==='OAUTH_CANCELLED'?'Discord girişini iptal ettin. Yeniden deneyebilirsin.':code==='MEMBERSHIP_PENDING'?'Önce TurkishPix sunucu doğrulamasını tamamla.':'Discord girişi tamamlanamadı. Aynı tarayıcıdan yeniden giriş yap.');}
+  void load();
+ },[]);
  const catalog=data?.tools||[];
  const tool=useMemo(()=>catalog.find(t=>t.id===page),[catalog,page]);
  const toolGroup=GROUPS.find(g=>g.tools.includes(page));
@@ -71,6 +76,7 @@ export default function OsintDashboard(){
  const profile=data?.me;
  const avatar=memberAvatar(profile);
  const xp=data?.quota?.xp||0,level=data?.quota?.level||0;
+ const proxyLimit=data?.quota?.proxyResultLimit??10+5*level;
  const {nextXp,percent:levelPct}=levelProgress(xp,level);
  const usedPct=data?.quota?Math.min(100,data.quota.used/Math.max(1,data.quota.dailyLimit)*100):0;
 
@@ -82,12 +88,17 @@ export default function OsintDashboard(){
   e.preventDefault();if(!data?.authenticated||!data.csrf||!tool?.enabled||busy||!data.quota?.remaining)return;
   setBusy(true);setError('');setResult(null);setDm(null);
   try{
-   const input=page==='proxy'?JSON.stringify({protocol,country,anonymity,maxLatency:Number(latency),minUptime:Number(uptime),limit:Number(count)}):target;
+   const input=page==='proxy'?JSON.stringify({protocol,country,anonymity,maxLatency:Number(latency),minUptime:Number(uptime),limit:proxyLimit}):target;
    const r=await fetch('/api/osint/run',{method:'POST',headers:{'Content-Type':'application/json','x-csrf-token':data.csrf},body:JSON.stringify({kind:page,target:input,requestId:crypto.randomUUID()})});
    const body=await r.json();if(!r.ok)throw Error(body.error||'Araştırma tamamlanamadı.');
-   setResult(body.result);setDm(Boolean(body.dmDelivered));setData(previous=>previous?{...previous,quota:body.quota}:previous);
+   setResult(body.result);setDeliveryId(body.deliveryId||'');setDm(Boolean(body.dmDelivered));setData(previous=>previous?{...previous,quota:body.quota}:previous);
   }catch(e){setError(e instanceof Error?e.message:'İşlem başarısız.');}
   finally{setBusy(false);}
+ }
+ async function retryDm(){
+  if(!data?.csrf||!deliveryId||retrying)return;setRetrying(true);
+  try{const r=await fetch('/api/osint/delivery',{method:'POST',headers:{'Content-Type':'application/json','x-csrf-token':data.csrf},body:JSON.stringify({deliveryId})}),body=await r.json();if(!r.ok)throw Error(body.error||'DM gönderilemedi.');setDm(Boolean(body.dmDelivered));if(!body.dmDelivered)setError('Discord DM teslimine izin vermedi. Sunucunun gizlilik ayarlarında Özel Mesajlar seçeneğini aç.');else setError('');}
+  catch(e){setError(e instanceof Error?e.message:'DM gönderilemedi.');}finally{setRetrying(false);}
  }
  const activeCount=catalog.filter(t=>t.enabled).length;
  const resultText=result?result.title+'\n'+result.items.map(x=>x.name+': '+x.value).join('\n')+'\n'+result.notice:'';
@@ -143,6 +154,7 @@ export default function OsintDashboard(){
    </header>
 
    <div className="os-page-content">
+    {loginError&&<div className="os-error" role="alert"><ShieldAlert size={17}/>{loginError}</div>}
     {page==='overview'?<>
 
      <section className="os-hero">
@@ -223,14 +235,14 @@ export default function OsintDashboard(){
          <div><label htmlFor="os-anon">Anonimlik</label><select id="os-anon" value={anonymity} onChange={e=>setAnonymity(e.target.value)}>{['all','elite','anonymous','transparent'].map(x=><option key={x} value={x}>{x==='all'?'Tüm seviyeler':x.toUpperCase()}</option>)}</select></div>
          <div><label htmlFor="os-latency">Azami gecikme (ms)</label><input id="os-latency" type="number" min={100} max={30000} value={latency} onChange={e=>setLatency(e.target.value)}/></div>
          <div><label htmlFor="os-uptime">Minimum uptime (%)</label><input id="os-uptime" type="number" min={0} max={100} value={uptime} onChange={e=>setUptime(e.target.value)}/></div>
-         <div><label htmlFor="os-count">Sonuç adedi</label><input id="os-count" type="number" min={1} max={25} value={count} onChange={e=>setCount(e.target.value)}/></div>
+         <div><label htmlFor="os-count">Level {level} · Proxy hakkın</label><input id="os-count" type="number" value={proxyLimit} readOnly aria-describedby="os-count-rule"/><small id="os-count-rule">10 + level × 5</small></div>
         </div>:<div className="os-input-wrap"><Search size={19}/><input id="os-query-target" placeholder={PLACEHOLDERS[page]||'Sorgu hedefi'} value={target} maxLength={250} onChange={e=>setTarget(e.target.value)} autoComplete="off" required/></div>}
         <div className="os-query-actions"><button className="os-primary-action" type="submit" disabled={!data?.authenticated||!data?.quota?.remaining||busy}>{busy?<RefreshCw size={17} className="os-spin"/>:<Search size={17}/>} {busy?'Sorgu işleniyor':page==='proxy'?'Filtreli listeyi oluştur':'Sorguyu çalıştır'} <ArrowRight size={16}/></button><span><LockKeyhole size={13}/> Kullanım günlük XP kotasına bağlıdır.</span></div>
         {!data?.authenticated&&<div className="os-inline-message">Araçları kullanmak için <a href="/api/auth/login?return=%2Fosint">Discord ile giriş yapmalısın.</a></div>}
         {data?.authenticated&&data?.quota?.remaining===0&&<div className="os-inline-message">Günlük araştırma hakkın tükendi. Türkiye saatiyle 00:00'da yenilenir.</div>}
        </form>}
        {error&&<div className="os-error" role="alert"><ShieldAlert size={17}/>{error}</div>}
-       {result&&<section className="os-result-panel"><div className="os-result-heading"><div><span className="os-kicker">QUERY COMPLETE</span><h3>{result.title}</h3><p>{result.summary}</p></div><button onClick={()=>navigator.clipboard.writeText(resultText)} title="Sonuçları kopyala"><Copy size={17}/> Kopyala</button></div><div className="os-result-rows">{result.items.map((row,i)=><div key={i}><span>{row.name}</span><pre>{row.value}</pre></div>)}</div><div className="os-result-notice">{result.notice}</div><div className="os-result-dm">{dm?<><Check size={16}/> Sonuç Discord özel mesajına da gönderildi.</>:<><ShieldAlert size={16}/> Discord DM teslim edilemedi. Sonucu buradan inceleyebilirsin.</>}</div></section>}
+       {result&&<section className="os-result-panel"><div className="os-result-heading"><div><span className="os-kicker">QUERY COMPLETE</span><h3>{result.title}</h3><p>{result.summary}</p></div><button onClick={()=>navigator.clipboard.writeText(resultText)} title="Sonuçları kopyala"><Copy size={17}/> Kopyala</button></div><div className="os-result-rows">{result.items.map((row,i)=><div key={i}><span>{row.name}</span><pre>{row.value}</pre></div>)}</div><div className="os-result-notice">{result.notice}</div><div className="os-result-dm">{dm?<><Check size={16}/> Sonuç Discord özel mesajına da gönderildi.</>:<><ShieldAlert size={16}/> DM gizlilik ayarını açıp yeniden gönderebilirsin.</>}</div>{dm===false&&deliveryId&&<button className="os-primary-action" type="button" onClick={()=>void retryDm()} disabled={retrying}><Mail size={16}/>{retrying?'Gönderiliyor':'DM’ye Tekrar Gönder'}</button>}</section>}
       </section>
       <aside className="os-tool-aside">
        <div className="os-aside-header"><ShieldCheck size={19}/><h3>Oturum durumu</h3></div><div className="os-aside-data"><span>OPERATÖR</span><strong>{profile?.displayName||'Bağlı değil'}</strong></div><div className="os-aside-data"><span>ERİŞİM UNVANI</span><strong>{data?.quota?rank.name:'—'}</strong></div><div className="os-aside-data"><span>KALAN HAK</span><strong>{data?.quota?data.quota.remaining+' / '+data.quota.dailyLimit:'—'}</strong></div>

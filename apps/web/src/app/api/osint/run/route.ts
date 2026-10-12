@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
-import {session,csrf,osintRun,DomainError,osintLog,observedIp,formatOsintDm,deliverOsintDm} from '../../../../../../../packages/core/src/index';
+import {session,csrf,osintRun,DomainError,osintLog,observedIp,sendOsintResult} from '../../../../../../../packages/core/src/index';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 export async function POST(req:Request){
  let actor:any=null, input:any=null;
@@ -13,8 +13,8 @@ export async function POST(req:Request){
   let body:any;try{body=JSON.parse(raw);input=body;}catch{throw new DomainError('BAD_JSON','Geçersiz araştırma isteği.',400);}
   const result=await osintRun(me,body?.kind,body?.target,body?.requestId);
   await osintLog(me.id,'QUERY','WEB',body?.kind,body?.target,observedIp(req));
-  const dmDelivered=await deliverOsintDm(me.id,formatOsintDm(result.result,result.quota.remaining));
-  return NextResponse.json({...result,dmDelivered},{headers:{'Cache-Control':'no-store'}});
+  const delivery=await sendOsintResult(me,result.result,result.quota.remaining,body.requestId);
+  return NextResponse.json({...result,dmDelivered:delivery.delivered,deliveryId:delivery.id},{headers:{'Cache-Control':'no-store'}});
  }catch(e){
   if(actor)await osintLog(actor.id,'DENIED','WEB',typeof input?.kind==='string'?input.kind:'',input?.target,observedIp(req),e instanceof DomainError?e.code:'INVALID').catch(()=>{});
   const status=e instanceof DomainError?e.status:e instanceof ZodError?400:500;
