@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="650" viewBox="0 0 960 650" role="img" aria-label="Turkish OSINT gözlem ağı ve veri noktaları">
+<defs>
+ <linearGradient id="bg" x1="0" x2="1" y1="1" y2="0"><stop stop-color="#0c1926"/><stop offset=".55" stop-color="#101f31"/><stop offset="1" stop-color="#122d35"/></linearGradient>
+ <linearGradient id="trace" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#a4d9dc" stop-opacity=".08"/><stop offset=".5" stop-color="#79babc" stop-opacity=".55"/><stop offset="1" stop-color="#5f8fbf" stop-opacity=".15"/></linearGradient>
+ <radialGradient id="aura"><stop stop-color="#75d4bf" stop-opacity=".22"/><stop offset="1" stop-color="#0d2330" stop-opacity="0"/></radialGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+ <pattern id="grid" width="29" height="29" patternUnits="userSpaceOnUse"><path d="M29 0H0V29" fill="none" stroke="#6f9eae" stroke-opacity=".07"/></pattern>
+</defs>
+<rect width="960" height="650" fill="url(#bg)"/>
+<rect width="960" height="650" fill="url(#grid)"/>
+<ellipse cx="564" cy="294" rx="369" ry="340" fill="url(#aura)"/>
+<g fill="none" stroke="#7aa4b4" stroke-width="1">
+ <circle cx="562" cy="322" r="236" stroke-opacity=".30"/>
+ <circle cx="562" cy="322" r="204" stroke-opacity=".27"/>
+ <circle cx="562" cy="322" r="160" stroke-opacity=".23"/>
+ <circle cx="562" cy="322" r="118" stroke-opacity=".24"/>
+ <circle cx="562" cy="322" r="75" stroke-opacity=".2"/>
+ <path d="M327 322h471M562 87v470" stroke-opacity=".23"/>
+ <path d="M405 153l318 339M725 165L398 498" stroke-opacity=".13" stroke-dasharray="3 10"/>
+ <ellipse cx="562" cy="322" rx="236" ry="83" transform="rotate(-29 562 322)" stroke="#8ad9c5" stroke-opacity=".32"/>
+ <ellipse cx="562" cy="322" rx="236" ry="83" transform="rotate(51 562 322)" stroke="#9cbde4" stroke-opacity=".29"/>
+ <ellipse cx="562" cy="322" rx="92" ry="236" transform="rotate(28 562 322)" stroke="#7aa4b4" stroke-opacity=".2"/>
+ <path d="M562 86a236 236 0 0 1 205 118" stroke="#b0e8d0" stroke-width="3" stroke-opacity=".65" stroke-linecap="round"/>
+</g>
+<g fill="none" stroke="url(#trace)" stroke-width="1.35">
+ <path d="M82 174L228 124L395 224L562 322L792 196L911 256"/>
+ <path d="M85 464L245 532L392 421L562 322L715 491L922 454"/>
+ <path d="M228 124L245 532M395 224L392 421M792 196L715 491"/>
+ <path d="M85 464L395 224L715 491L911 256"/>
+</g>
+<g fill="#85bac8" stroke="#a9e8de" stroke-width="1.3">
+ <circle cx="82" cy="174" r="3"/><circle cx="228" cy="124" r="4"/><circle cx="395" cy="224" r="3"/><circle cx="562" cy="322" r="5" fill="#b3f2d3"/>
+ <circle cx="792" cy="196" r="4"/><circle cx="911" cy="256" r="3"/><circle cx="85" cy="464" r="3"/><circle cx="245" cy="532" r="4"/><circle cx="392" cy="421" r="4"/><circle cx="715" cy="491" r="4"/><circle cx="922" cy="454" r="3"/>
+</g>
+<g fill="none" stroke="#a3dbc6" stroke-width="1.2">
+ <path d="M562 304v-34M546 322h-34M562 340v34M579 322h33"/>
+ <path d="M548 307h28v28h-28z" opacity=".6"/>
+ <path d="M95 174h60v-14M792 195v-35h62M715 491h55v-27" opacity=".5"/>
+</g>
+<circle cx="562" cy="322" r="23" fill="#b8ffdc" opacity=".14" filter="url(#glow)"/>
+<g font-family="monospace" fill="#a9c6cf">
+ <text x="66" y="113" font-size="10" letter-spacing="3">NODE / DISTRIBUTED INTELLIGENCE</text>
+ <text x="66" y="135" font-size="15" font-weight="bold" fill="#e3f0f4" letter-spacing="1.5">NETWORK OBSERVABILITY</text>
+ <text x="65" y="580" font-size="11" letter-spacing="2" opacity=".74">PASSIVE SIGNAL MONITORING / GRID 01</text>
+ <text x="598" y="307" font-size="10" letter-spacing="1">CORE / 01</text>
+ <text x="735" y="185" font-size="9">EXT · 09</text>
+ <text x="717" y="513" font-size="9">RELAY · 04</text>
+ <text x="244" y="113" font-size="9">LINK 07</text>
+ <text x="841" y="594" font-size="10" letter-spacing="1.5">40° 44′ N / 29° 56′ E</text>
+</g>
+<g stroke="#a3ccce" opacity=".3" fill="none"><path d="M30 30h30M30 30v30M930 30h-30M930 30v30M30 620h30M30 620v-30M930 620h-30M930 620v-30"/></g>
+</svg>
