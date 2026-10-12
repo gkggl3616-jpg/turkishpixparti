@@ -1,5 +1,9 @@
 import {lookupDns,domainCombo,ipCombo,lookupHeaders,lookupGeo,passiveSubdomains,emailConfiguration,lookupUsername,lookupRepository,lookupArchives,normalizeIoc,lookupThreat,researchUrl,lookupUrlHistory,lookupDnsHistory,lookupMalwareHash,lookupTls} from './osint-research';
 import {temporaryMailbox,temporaryInbox} from './osint-mail';
+import {lookupWideUsername,type ProfileObservation} from './osint-usernames';
+import {extraCatalog,type ExtraOsintKind} from './osint-extra-catalog';
+import {advancedResearch,validateAdvanced} from './osint-advanced';
+import {temporaryNumber,temporarySmsInbox} from './osint-sms';
 import {osintProviderStatus} from './osint-network';
 import {entitlement,consumeOsintCredit} from './osint-entitlements';
 import {loadServerSettings} from './setup';
@@ -24,7 +28,8 @@ export const osintTools=[
  {id:'rdap',name:'RDAP / WHOIS',label:'Alan adı kayıt bilgileri',enabled:true,icon:'📑'},
  {id:'threat',name:'Threat Intelligence',label:'Tehdit itibar sorgusu',enabled:true,icon:'🛡️'},
  {id:'mail',name:'Temp Mail',label:'Geçici e-posta',enabled:true,icon:'✉️'},
- {id:'number',name:'Temp Number',label:'Sağlayıcıyla sanal SMS',enabled:false,icon:'📱'},
+ {id:'number',name:'Temp Number',label:'Sana atanmış sağlayıcı numarası',enabled:false,icon:'📱'},
+ {id:'sms-inbox',name:'Private SMS Inbox',label:'Kendi numaranın gelen SMS kutusu',enabled:false,icon:'📲'},
  {id:'proxy',name:'Proxy Manager',label:'Yasal proxy havuzu ve kontrolü',enabled:true,icon:'🧩'},
  {id:'malware',name:'Malware Hash Report',label:'SHA-256 ile geçmiş örnek meta verisi',enabled:false,icon:'🦠'},
  {id:'tls',name:'SSL / TLS Inspector',label:'Sertifika geçmişi / canlı TLS alternatifi',enabled:true,icon:'🔐'},
@@ -42,12 +47,12 @@ export const osintTools=[
  {id:'hash',name:'Hash Reputation',label:'Dosya karması itibar karşılaştırma',enabled:!!process.env.VIRUSTOTAL_API_KEY,icon:'🔏'},
  {id:'reports',name:'Research Reports',label:'Domain araştırma raporu ve TXT dışa aktarma',enabled:true,icon:'📊'},
  {id:'proxy-check',name:'Proxy Validator',label:'Yetkili proxy otomatik ve manuel test',enabled:true,icon:'✅'},
- {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'}
+ {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'},...extraCatalog
 ] as const;
 
-export type OsintKind='dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
+export type OsintKind=ExtraOsintKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
 export type OsintActor={id:string;username:string;avatar?:string|null};
-export type OsintResult={kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string};
+export type OsintResult={kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
 const targetSchema=z.string().trim().min(2).max(250);
 const domainPattern=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 export function osintTier(level:number){
@@ -57,11 +62,12 @@ export function osintTier(level:number){
  if(level>=5)return {name:'Researcher',dailyLimit:15};
  return {name:'Starter',dailyLimit:5};
 }
-export async function osintQuota(userId:string){
+export function boosterDailyBonus(m:{premium_since?:string|null}){return m.premium_since&&Number.isFinite(Date.parse(m.premium_since))&&Date.parse(m.premium_since)<=Date.now()?20:0;}
+export async function osintQuota(userId:string,verifiedMember?:{premium_since?:string|null}){
  await loadServerSettings();
  const profile=await memberProfile(userId),tier=osintTier(profile.level);
- const access=await entitlement(userId,tier.dailyLimit);
- return {xp:profile.xp,level:profile.level,profileFound:profile.profileFound,levelSource:'TurkishPix XP',proxyResultLimit:proxyResultLimit(profile.level),tier:access.unlimited?'Owner':tier.name,...access,resetTimezone:'Europe/Istanbul'};
+ const boosterBonus=boosterDailyBonus(verifiedMember||await guildMember(userId)),access=await entitlement(userId,tier.dailyLimit+boosterBonus);
+ return {xp:profile.xp,level:profile.level,profileFound:profile.profileFound,levelSource:'TurkishPix XP',proxyResultLimit:proxyResultLimit(profile.level),tier:access.unlimited?'Owner':tier.name,...access,baseDailyLimit:tier.dailyLimit,boosterBonus,isBooster:boosterBonus>0,resetTimezone:'Europe/Istanbul'};
 }
 function domain(input:string){
  const value=input.toLowerCase().replace(/\.$/,'');
@@ -85,9 +91,10 @@ function urlInspect(input:string):OsintResult{
  return {kind:'url',target:host,title:'URL Analyzer',summary:risk,items:[{name:'Protokol',value:url.protocol.slice(0,-1)},{name:'Alan adı',value:host},{name:'Yol',value:clean(url.pathname,120)},{name:'Biçimsel uyarılar',value:flags.join('\n')||'Yok'}],notice:'Bu yalnızca pasif sözdizimi kontrolüdür. Site açılmadı; phishing, virüs veya güvenlik garantisi sağlamaz.'};
 }
 export function validateOsint(kind:string,target:unknown){
- const type=z.enum(['dns','ip','url','rdap','subdomains','tls','asn','cve','email','hash','proxy','proxy-check','combo-domain','combo-ip','headers','geo','usernames','github','ioc','archives','mail','mail-inbox','threat','dns-history','malware','reports','metadata']).parse(kind);
+ const type=z.enum(osintTools.map(t=>t.id) as [OsintKind,...OsintKind[]]).parse(kind);
  const input=type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
  if(type==='metadata')metadataInspect(input);
+ if(extraCatalog.some(t=>t.id===type))validateAdvanced(type as ExtraOsintKind,input);
  if(type==='dns')domain(input);
  if(type==='ip'&&!isIP(input))throw new DomainError('INVALID_IP','Geçerli bir IP adresi girin.',400);
  if(type==='url')urlInspect(input);
@@ -96,7 +103,7 @@ export function validateOsint(kind:string,target:unknown){
  if(type==='cve'&&!/^CVE-\d{4}-\d{4,8}$/i.test(input))throw new DomainError('INVALID_CVE','CVE kimliği gerekli.',400);
  if(['hash','malware'].includes(type)&&!/^[a-f0-9]{64}$/i.test(input))throw new DomainError('INVALID_HASH','SHA-256 özeti gerekli.',400);
  if(type==='headers')researchUrl(input);
- if(type==='usernames'&&!/^[a-z0-9][a-z0-9_-]{0,38}$/i.test(input))throw new DomainError('INVALID_USERNAME','Geçerli kullanıcı adı gerekli.',400);
+ if(type==='usernames'&&!/^[a-z0-9][a-z0-9_.-]{0,38}$/i.test(input))throw new DomainError('INVALID_USERNAME','Geçerli kullanıcı adı gerekli.',400);
  if(type==='proxy')parseProxyFilters(input);
  if(type==='proxy-check'&&!/^(https?|socks4|socks5):\/\/([0-9.]+|\[[0-9a-f:]+\]):\d{1,5}$/i.test(input))throw new DomainError('INVALID_PROXY','protocol://IP:port biçimi gerekli.',400);
  return {kind:type,target:input};
@@ -106,13 +113,16 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  if(config().demo)throw new DomainError('OSINT_DISABLED','Demo modunda araştırma kapalı.',403);
  if(!/^[a-zA-Z0-9:_-]{10,100}$/.test(requestId))throw new DomainError('INVALID_REQUEST','Geçersiz işlem anahtarı.',400);
  const parsed=validateOsint(kind,target);
- await guildMember(actor.id);
+ const member=await guildMember(actor.id);
  await assertOsintAllowed(actor.id);
  if(!config().owners.includes(actor.id))await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
- const beforeQuota=await osintQuota(actor.id);
+ const beforeQuota=await osintQuota(actor.id,member);
  if(!beforeQuota.unlimited&&beforeQuota.remaining!<=0)throw new DomainError('OSINT_QUOTA','Araştırma hakkın doldu. Günlük hak 00:00’da yenilenir; ek hak için owner ile iletişime geç.',429);
  if(['mail','mail-inbox'].includes(parsed.kind))await syncUser(database(),actor);
- const provided=parsed.kind==='metadata'?metadataInspect(parsed.target)
+ const provided=extraCatalog.some(t=>t.id===parsed.kind)?await advancedResearch(parsed.kind as ExtraOsintKind,parsed.target)
+  :parsed.kind==='number'?await temporaryNumber(actor.id)
+  :parsed.kind==='sms-inbox'?await temporarySmsInbox(actor.id)
+  :parsed.kind==='metadata'?metadataInspect(parsed.target)
   :parsed.kind==='dns-history'?await lookupDnsHistory(parsed.target)
   :parsed.kind==='reports'?await domainCombo(parsed.target)
   :parsed.kind==='url'?await lookupUrlHistory(parsed.target,urlInspect(parsed.target))
@@ -122,12 +132,12 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   :parsed.kind==='dns'?await lookupDns(parsed.target)
   :parsed.kind==='headers'?await lookupHeaders(parsed.target)
   :parsed.kind==='geo'?await lookupGeo(parsed.target)
-  :parsed.kind==='usernames'?await lookupUsername(parsed.target)
+  :parsed.kind==='usernames'?await lookupWideUsername(parsed.target)
   :parsed.kind==='github'?await lookupRepository(parsed.target)
   :parsed.kind==='archives'?await lookupArchives(parsed.target)
   :parsed.kind==='ioc'?normalizeIoc(parsed.target)
   :parsed.kind==='threat'?await lookupThreat(parsed.target)
-  :parsed.kind==='mail'?await temporaryMailbox(actor.id)
+  :parsed.kind==='mail'?await temporaryMailbox(actor.id,parsed.target)
   :parsed.kind==='mail-inbox'?await temporaryInbox(actor.id)
   :parsed.kind==='rdap'?await lookupRdap(parsed.target)
   :parsed.kind==='subdomains'?await passiveSubdomains(parsed.target)
@@ -139,18 +149,18 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   :parsed.kind==='proxy'?await lookupProxy(parsed.target,beforeQuota.proxyResultLimit)
   :parsed.kind==='proxy-check'?await lookupProxyCheck(parsed.target):null;
  const result:OsintResult=provided?{...provided,kind:parsed.kind,target:parsed.kind==='proxy'?'Filtreli proxy sorgusu':parsed.kind==='metadata'?'Yerel dosya meta verisi':parsed.kind==='mail'||parsed.kind==='mail-inbox'?'Kişisel geçici e-posta':parsed.target}:urlInspect(parsed.target);
- const profile=await memberProfile(actor.id),tier=osintTier(profile.level);
+ const profile=await memberProfile(actor.id),tier=osintTier(profile.level),billingMember=await guildMember(actor.id);
  const fingerprint=createHash('sha256').update(parsed.kind+':'+parsed.target).digest('hex');
  const billing=await transaction(async tx=>{
   await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['osint:'+config().guildId+':'+actor.id]);
   await syncUser(tx,actor);
-  return consumeOsintCredit(tx,actor.id,requestId,parsed.kind,fingerprint,tier.dailyLimit);
+  return consumeOsintCredit(tx,actor.id,requestId,parsed.kind,fingerprint,tier.dailyLimit+boosterDailyBonus(billingMember));
  });
  return {result,quota:await osintQuota(actor.id),duplicate:billing.duplicate};
 }
 export function proxyResultLimit(level:number){return 10+5*(Number.isSafeInteger(level)&&level>=0?level:0);}
 
-export async function osintCatalog(){const providers=await osintProviderStatus();return osintTools.map(t=>({...t,enabled:['hash','malware'].includes(t.id)?providers.some(p=>['virustotal','malwarebazaar'].includes(p.id)&&p.configured):t.id==='threat'?providers.some(p=>['virustotal','abuseipdb'].includes(p.id)&&p.configured):t.id==='dns-history'?providers.some(p=>p.id==='securitytrails'&&p.configured):t.enabled}));}
+export async function osintCatalog(){const providers=await osintProviderStatus();return osintTools.map(t=>({...t,enabled:['number','sms-inbox'].includes(t.id)?providers.some(p=>p.id==='twilio'&&p.configured):['hash','malware'].includes(t.id)?providers.some(p=>['virustotal','malwarebazaar'].includes(p.id)&&p.configured):t.id==='threat'?providers.some(p=>['virustotal','abuseipdb'].includes(p.id)&&p.configured):t.id==='dns-history'?providers.some(p=>p.id==='securitytrails'&&p.configured):t.enabled}));}
 
 function metadataInspect(input:string){
  let raw:unknown;try{raw=JSON.parse(input);}catch{throw new DomainError('INVALID_METADATA','Geçerli dosya meta verisi gerekli.',400);}

@@ -1,0 +1,7 @@
+'use client';
+import {useState} from 'react';
+import Link from 'next/link';
+import {Sparkles,ArrowUpRight,ChevronDown,Radio} from 'lucide-react';
+import {releases} from '../../../../packages/core/src/releases';
+import './release-notice.css';
+export default function ReleaseNotice(){const [open,setOpen]=useState(false),release=releases[0];return <section className={'release-notice'+(open?' is-open':'')} aria-label="Son güncelleme"><div className="rn-orbit" aria-hidden="true"/><div className="rn-top"><span><Radio size={13}/> GÜNCELLEME GÜNLÜĞÜ</span><time dateTime={release.date}>v{release.version} · {new Date(release.date+'T12:00:00+03:00').toLocaleDateString('tr-TR')}</time></div><div className="rn-heading"><div className="rn-symbol"><Sparkles size={25}/></div><div><h2>{release.title}</h2><p>{release.summary}</p></div><button type="button" onClick={()=>setOpen(!open)} aria-expanded={open}>Neler yeni? <ChevronDown size={16}/></button></div><div className="rn-tags"><span>92 PLATFORM KONTROLÜ</span><span>28 YENİ ARAÇ</span><span>BOOSTER +20 / GÜN</span><span>ROLLE KARŞILAMA</span></div>{open&&<div className="rn-features">{release.features.map((f,i)=><Link key={f.title} href={f.path}><span>0{i+1}</span><h3>{f.title}<ArrowUpRight size={16}/></h3><p>{f.description}</p></Link>)}</div>}<div className="rn-foot"><Link href="/guncellemeler">Tüm güncellemeler <ArrowUpRight size={13}/></Link><span>by@frizz2025</span></div></section>;}

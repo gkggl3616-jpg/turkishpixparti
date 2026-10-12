@@ -1,0 +1,846 @@
+[
+ {
+  "name": "GitHub",
+  "url": "https://www.github.com/{}",
+  "probe": "https://www.github.com/{}",
+  "missing": [],
+  "regex": "^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "GitLab",
+  "url": "https://gitlab.com/{}",
+  "probe": "https://gitlab.com/api/v4/users?username={}",
+  "missing": "[]",
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Codeberg",
+  "url": "https://codeberg.org/{}",
+  "probe": "https://codeberg.org/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "BitBucket",
+  "url": "https://bitbucket.org/{}/",
+  "probe": "https://bitbucket.org/{}/",
+  "missing": [],
+  "regex": "^[a-zA-Z0-9-_]{1,30}$",
+  "claimed": "white",
+  "method": "GET"
+ },
+ {
+  "name": "DEV Community",
+  "url": "https://dev.to/{}",
+  "probe": "https://dev.to/{}",
+  "missing": [],
+  "regex": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Docker Hub",
+  "url": "https://hub.docker.com/u/{}/",
+  "probe": "https://hub.docker.com/v2/users/{}/",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Hugging Face",
+  "url": "https://huggingface.co/{}",
+  "probe": "https://huggingface.co/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "Pasanlaksitha",
+  "method": "GET"
+ },
+ {
+  "name": "Codewars",
+  "url": "https://www.codewars.com/users/{}",
+  "probe": "https://www.codewars.com/users/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "example",
+  "method": "GET"
+ },
+ {
+  "name": "Lichess",
+  "url": "https://lichess.org/@/{}",
+  "probe": "https://lichess.org/@/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "john",
+  "method": "GET"
+ },
+ {
+  "name": "Chess",
+  "url": "https://www.chess.com/member/{}",
+  "probe": "https://www.chess.com/callback/user/valid?username={}",
+  "missing": "Username is valid",
+  "regex": "^[a-zA-Z0-9_]{3,25}$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Bluesky",
+  "url": "https://bsky.app/profile/{}.bsky.social",
+  "probe": "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={}.bsky.social",
+  "missing": [],
+  "regex": "",
+  "claimed": "mcuban",
+  "method": "GET"
+ },
+ {
+  "name": "Reddit",
+  "url": "https://www.reddit.com/user/{}",
+  "probe": "https://www.reddit.com/user/{}",
+  "missing": "Sorry, nobody on Reddit goes by that name.",
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "ArtStation",
+  "url": "https://www.artstation.com/{}",
+  "probe": "https://www.artstation.com/users/{}.json",
+  "missing": [],
+  "regex": "",
+  "claimed": "Blue",
+  "method": "GET"
+ },
+ {
+  "name": "Anilist",
+  "url": "https://anilist.co/user/{}/",
+  "probe": "https://graphql.anilist.co/",
+  "missing": [],
+  "regex": "^[A-Za-z0-9]{2,20}$",
+  "claimed": "Josh",
+  "method": "POST"
+ },
+ {
+  "name": "Keybase",
+  "url": "https://keybase.io/{}",
+  "probe": "https://keybase.io/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Scratch",
+  "url": "https://scratch.mit.edu/users/{}",
+  "probe": "https://scratch.mit.edu/users/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "griffpatch",
+  "method": "GET"
+ },
+ {
+  "name": "HackerNews",
+  "url": "https://news.ycombinator.com/user?id={}",
+  "probe": "https://news.ycombinator.com/user?id={}",
+  "missing": [
+   "No such user.",
+   "Sorry."
+  ],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Steam Community (User)",
+  "url": "https://steamcommunity.com/id/{}/",
+  "probe": "https://steamcommunity.com/id/{}/",
+  "missing": "The specified profile could not be found",
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "mastodon.social",
+  "url": "https://mastodon.social/@{}",
+  "probe": "https://mastodon.social/@{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "Gargron",
+  "method": "GET"
+ },
+ {
+  "name": "mastodon.cloud",
+  "url": "https://mastodon.cloud/@{}",
+  "probe": "https://mastodon.cloud/@{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "TheAdmin",
+  "method": "GET"
+ },
+ {
+  "name": "mstdn.social",
+  "url": "https://mstdn.social/@{}",
+  "probe": "https://mstdn.social/@{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "MagicLike",
+  "method": "GET"
+ },
+ {
+  "name": "npm",
+  "url": "https://www.npmjs.com/~{}",
+  "probe": "https://www.npmjs.com/~{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "kennethsweezy",
+  "method": "GET"
+ },
+ {
+  "name": "PyPi",
+  "url": "https://pypi.org/user/{}",
+  "probe": "https://pypi.org/_includes/administer-user-include/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "Blue",
+  "method": "GET"
+ },
+ {
+  "name": "RubyGems",
+  "url": "https://rubygems.org/profiles/{}",
+  "probe": "https://rubygems.org/profiles/{}",
+  "missing": [],
+  "regex": "^[a-zA-Z][a-zA-Z0-9_-]{1,40}",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Replit.com",
+  "url": "https://replit.com/@{}",
+  "probe": "https://replit.com/@{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Codepen",
+  "url": "https://codepen.io/{}",
+  "probe": "https://codepen.io/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "CodeSandbox",
+  "url": "https://codesandbox.io/u/{}",
+  "probe": "https://codesandbox.io/api/v1/users/{}",
+  "missing": "Could not find user with username",
+  "regex": "^[a-zA-Z0-9_-]{3,30}$",
+  "claimed": "icyjoseph",
+  "method": "GET"
+ },
+ {
+  "name": "Kaggle",
+  "url": "https://www.kaggle.com/{}",
+  "probe": "https://www.kaggle.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "dansbecker",
+  "method": "GET"
+ },
+ {
+  "name": "HackerRank",
+  "url": "https://hackerrank.com/{}",
+  "probe": "https://hackerrank.com/{}",
+  "missing": "Something went wrong",
+  "regex": "^[^.]*?$",
+  "claimed": "satznova",
+  "method": "GET"
+ },
+ {
+  "name": "HackerOne",
+  "url": "https://hackerone.com/{}",
+  "probe": "https://hackerone.com/{}",
+  "missing": "Page not found",
+  "regex": "",
+  "claimed": "stok",
+  "method": "GET"
+ },
+ {
+  "name": "BugCrowd",
+  "url": "https://bugcrowd.com/{}",
+  "probe": "https://bugcrowd.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "ppfeister",
+  "method": "GET"
+ },
+ {
+  "name": "TryHackMe",
+  "url": "https://tryhackme.com/p/{}",
+  "probe": "https://tryhackme.com/api/user/exist/{}",
+  "missing": "{\"success\":false}",
+  "regex": "^[a-zA-Z0-9.]{1,16}$",
+  "claimed": "ashu",
+  "method": "GET"
+ },
+ {
+  "name": "HackTheBox",
+  "url": "https://forum.hackthebox.com/u/{}",
+  "probe": "https://forum.hackthebox.com/u/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "angar",
+  "method": "GET"
+ },
+ {
+  "name": "GeeksforGeeks",
+  "url": "https://auth.geeksforgeeks.org/user/{}",
+  "probe": "https://auth.geeksforgeeks.org/user/{}",
+  "missing": "false   | GeeksforGeeks Profile",
+  "regex": "",
+  "claimed": "adam",
+  "method": "GET"
+ },
+ {
+  "name": "freecodecamp",
+  "url": "https://www.freecodecamp.org/{}",
+  "probe": "https://api.freecodecamp.org/api/users/get-public-profile?username={}",
+  "missing": [],
+  "regex": "",
+  "claimed": "naveennamani",
+  "method": "GET"
+ },
+ {
+  "name": "YouTube",
+  "url": "https://www.youtube.com/@{}",
+  "probe": "https://www.youtube.com/@{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "youtube",
+  "method": "GET"
+ },
+ {
+  "name": "Instagram",
+  "url": "https://instagram.com/{}",
+  "probe": "https://instagram.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "instagram",
+  "method": "GET"
+ },
+ {
+  "name": "Twitter",
+  "url": "https://x.com/{}",
+  "probe": "https://x.com/{}",
+  "missing": [
+   "<div class=\"error-panel\"><span>User ",
+   "<title>429 Too Many Requests</title>"
+  ],
+  "regex": "^[a-zA-Z0-9_]{1,15}$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "TikTok",
+  "url": "https://www.tiktok.com/@{}",
+  "probe": "https://www.tiktok.com/@{}",
+  "missing": [
+   "\"statusCode\":10221",
+   "Govt. of India decided to block 59 apps"
+  ],
+  "regex": "",
+  "claimed": "charlidamelio",
+  "method": "GET"
+ },
+ {
+  "name": "Twitch",
+  "url": "https://www.twitch.tv/{}",
+  "probe": "https://www.twitch.tv/{}",
+  "missing": "content='Twitch is the world&#39;s leading video platform and community for gamers.'",
+  "regex": "",
+  "claimed": "xqc",
+  "method": "GET"
+ },
+ {
+  "name": "Telegram",
+  "url": "https://t.me/{}",
+  "probe": "https://t.me/{}",
+  "missing": [
+   "<title>Telegram Messenger</title>",
+   "If you have <strong>Telegram</strong>, you can contact <a class=\"tgme_username_link\" href=\"tg://resolve?domain="
+  ],
+  "regex": "^[a-zA-Z0-9_]{3,32}[^_]$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Pinterest",
+  "url": "https://www.pinterest.com/{}/",
+  "probe": "https://www.pinterest.com/oembed.json?url=https://www.pinterest.com/{}/",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "LinkedIn",
+  "url": "https://linkedin.com/in/{}",
+  "probe": "https://linkedin.com/in/{}",
+  "missing": [],
+  "regex": "^[a-zA-Z0-9]{3,100}$",
+  "claimed": "paulpfeister",
+  "method": "GET"
+ },
+ {
+  "name": "Snapchat",
+  "url": "https://www.snapchat.com/add/{}",
+  "probe": "https://www.snapchat.com/add/{}",
+  "missing": [],
+  "regex": "^[a-z][a-z-_.]{3,15}",
+  "claimed": "teamsnapchat",
+  "method": "GET"
+ },
+ {
+  "name": "Roblox",
+  "url": "https://www.roblox.com/user.aspx?username={}",
+  "probe": "https://www.roblox.com/user.aspx?username={}",
+  "missing": [],
+  "regex": "",
+  "claimed": "bluewolfekiller",
+  "method": "GET"
+ },
+ {
+  "name": "osu!",
+  "url": "https://osu.ppy.sh/users/{}",
+  "probe": "https://osu.ppy.sh/users/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Atcoder",
+  "url": "https://atcoder.jp/users/{}",
+  "probe": "https://atcoder.jp/users/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "ksun48",
+  "method": "GET"
+ },
+ {
+  "name": "Codeforces",
+  "url": "https://codeforces.com/profile/{}",
+  "probe": "https://codeforces.com/api/user.info?handles={}",
+  "missing": [],
+  "regex": "",
+  "claimed": "tourist",
+  "method": "GET"
+ },
+ {
+  "name": "DMOJ",
+  "url": "https://dmoj.ca/user/{}",
+  "probe": "https://dmoj.ca/user/{}",
+  "missing": "No such user",
+  "regex": "",
+  "claimed": "junferno",
+  "method": "GET"
+ },
+ {
+  "name": "Itch.io",
+  "url": "https://{}.itch.io/",
+  "probe": "https://{}.itch.io/",
+  "missing": [],
+  "regex": "^[\\w@-]+?$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Bandcamp",
+  "url": "https://www.bandcamp.com/{}",
+  "probe": "https://www.bandcamp.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "SoundCloud",
+  "url": "https://soundcloud.com/{}",
+  "probe": "https://soundcloud.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "MixCloud",
+  "url": "https://www.mixcloud.com/{}/",
+  "probe": "https://api.mixcloud.com/{}/",
+  "missing": [],
+  "regex": "",
+  "claimed": "jenny",
+  "method": "GET"
+ },
+ {
+  "name": "last.fm",
+  "url": "https://last.fm/user/{}",
+  "probe": "https://last.fm/user/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Spotify",
+  "url": "https://open.spotify.com/user/{}",
+  "probe": "https://open.spotify.com/user/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Vimeo",
+  "url": "https://vimeo.com/{}",
+  "probe": "https://vimeo.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Flickr",
+  "url": "https://www.flickr.com/people/{}",
+  "probe": "https://www.flickr.com/people/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Unsplash",
+  "url": "https://unsplash.com/@{}",
+  "probe": "https://unsplash.com/@{}",
+  "missing": [],
+  "regex": "^[a-z0-9_]{1,60}$",
+  "claimed": "jenny",
+  "method": "GET"
+ },
+ {
+  "name": "Behance",
+  "url": "https://www.behance.net/{}",
+  "probe": "https://www.behance.net/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Dribbble",
+  "url": "https://dribbble.com/{}",
+  "probe": "https://dribbble.com/{}",
+  "missing": "Whoops, that page is gone.",
+  "regex": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "DeviantArt",
+  "url": "https://www.deviantart.com/{}",
+  "probe": "https://www.deviantart.com/{}",
+  "missing": "Llama Not Found",
+  "regex": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Sketchfab",
+  "url": "https://sketchfab.com/{}",
+  "probe": "https://sketchfab.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Giphy",
+  "url": "https://giphy.com/{}",
+  "probe": "https://giphy.com/{}",
+  "missing": "<title> GIFs - Find &amp; Share on GIPHY</title>",
+  "regex": "",
+  "claimed": "red",
+  "method": "GET"
+ },
+ {
+  "name": "Tenor",
+  "url": "https://tenor.com/users/{}",
+  "probe": "https://tenor.com/users/{}",
+  "missing": [],
+  "regex": "^[A-Za-z0-9_]{2,32}$",
+  "claimed": "red",
+  "method": "GET"
+ },
+ {
+  "name": "Letterboxd",
+  "url": "https://letterboxd.com/{}",
+  "probe": "https://letterboxd.com/{}",
+  "missing": "Sorry, we can’t find the page you’ve requested.",
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "GoodReads",
+  "url": "https://www.goodreads.com/{}",
+  "probe": "https://www.goodreads.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "MyAnimeList",
+  "url": "https://myanimelist.net/profile/{}",
+  "probe": "https://myanimelist.net/profile/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Trakt",
+  "url": "https://www.trakt.tv/users/{}",
+  "probe": "https://www.trakt.tv/users/{}",
+  "missing": [],
+  "regex": "^[^.]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Medium",
+  "url": "https://medium.com/@{}",
+  "probe": "https://medium.com/feed/@{}",
+  "missing": "<body",
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Substack",
+  "url": "https://{}.substack.com/",
+  "probe": "https://{}.substack.com/",
+  "missing": [],
+  "regex": "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,60}$",
+  "claimed": "green",
+  "method": "GET"
+ },
+ {
+  "name": "tumblr",
+  "url": "https://{}.tumblr.com/",
+  "probe": "https://{}.tumblr.com/",
+  "missing": [],
+  "regex": "",
+  "claimed": "goku",
+  "method": "GET"
+ },
+ {
+  "name": "LiveJournal",
+  "url": "https://{}.livejournal.com",
+  "probe": "https://{}.livejournal.com",
+  "missing": [],
+  "regex": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "WordPress",
+  "url": "https://{}.wordpress.com/",
+  "probe": "https://{}.wordpress.com/",
+  "missing": [],
+  "regex": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Linktree",
+  "url": "https://linktr.ee/{}",
+  "probe": "https://linktr.ee/{}",
+  "missing": "\"statusCode\":404",
+  "regex": "^[\\w\\.]{2,30}$",
+  "claimed": "anne",
+  "method": "GET"
+ },
+ {
+  "name": "Carrd",
+  "url": "https://{}.carrd.co/",
+  "probe": "https://{}.carrd.co/",
+  "missing": [],
+  "regex": "^[a-zA-Z0-9_-]{3,50}$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "About.me",
+  "url": "https://about.me/{}",
+  "probe": "https://about.me/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "BuyMeACoffee",
+  "url": "https://buymeacoff.ee/{}",
+  "probe": "https://www.buymeacoffee.com/{}",
+  "missing": [],
+  "regex": "[a-zA-Z0-9]{3,15}",
+  "claimed": "red",
+  "method": "GET"
+ },
+ {
+  "name": "kofi",
+  "url": "https://ko-fi.com/{}",
+  "probe": "https://ko-fi.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "yeahkenny",
+  "method": "GET"
+ },
+ {
+  "name": "Patreon",
+  "url": "https://www.patreon.com/{}",
+  "probe": "https://www.patreon.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Open Collective",
+  "url": "https://opencollective.com/{}",
+  "probe": "https://opencollective.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "sindresorhus",
+  "method": "GET"
+ },
+ {
+  "name": "ProductHunt",
+  "url": "https://www.producthunt.com/@{}",
+  "probe": "https://www.producthunt.com/@{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "jenny",
+  "method": "GET"
+ },
+ {
+  "name": "Wikipedia",
+  "url": "https://en.wikipedia.org/wiki/Special:CentralAuth/{}?uselang=qqx",
+  "probe": "https://en.wikipedia.org/wiki/Special:CentralAuth/{}?uselang=qqx",
+  "missing": "centralauth-admin-nonexistent:",
+  "regex": "",
+  "claimed": "Hoadlck",
+  "method": "GET"
+ },
+ {
+  "name": "Archive.org",
+  "url": "https://archive.org/details/@{}",
+  "probe": "https://archive.org/details/@{}?noscript=true",
+  "missing": [
+   "could not fetch an account with user item identifier",
+   "The resource could not be found",
+   "Internet Archive services are temporarily offline"
+  ],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Academia.edu",
+  "url": "https://independent.academia.edu/{}",
+  "probe": "https://independent.academia.edu/{}",
+  "missing": [],
+  "regex": "^[^.]*$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "ResearchGate",
+  "url": "https://www.researchgate.net/profile/{}",
+  "probe": "https://www.researchgate.net/profile/{}",
+  "missing": [],
+  "regex": "\\w+_\\w+",
+  "claimed": "John_Smith",
+  "method": "GET"
+ },
+ {
+  "name": "Wattpad",
+  "url": "https://www.wattpad.com/user/{}",
+  "probe": "https://www.wattpad.com/api/v3/users/{}/",
+  "missing": [],
+  "regex": "",
+  "claimed": "Dogstho7951",
+  "method": "GET"
+ },
+ {
+  "name": "Duolingo",
+  "url": "https://www.duolingo.com/profile/{}",
+  "probe": "https://www.duolingo.com/2017-06-30/users?username={}",
+  "missing": "{\"users\":[]}",
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "OpenStreetMap",
+  "url": "https://www.openstreetmap.org/user/{}",
+  "probe": "https://www.openstreetmap.org/user/{}",
+  "missing": [],
+  "regex": "^[^.]*?$",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "SourceForge",
+  "url": "https://sourceforge.net/u/{}",
+  "probe": "https://sourceforge.net/u/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ },
+ {
+  "name": "Gitee",
+  "url": "https://gitee.com/{}",
+  "probe": "https://gitee.com/{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "wizzer",
+  "method": "GET"
+ },
+ {
+  "name": "NotABug.org",
+  "url": "https://notabug.org/{}",
+  "probe": "https://notabug.org/{}/followers",
+  "missing": [],
+  "regex": "",
+  "claimed": "red",
+  "method": "GET"
+ },
+ {
+  "name": "Launchpad",
+  "url": "https://launchpad.net/~{}",
+  "probe": "https://launchpad.net/~{}",
+  "missing": [],
+  "regex": "",
+  "claimed": "blue",
+  "method": "GET"
+ }
+]

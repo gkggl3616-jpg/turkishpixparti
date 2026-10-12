@@ -1,0 +1,32 @@
+export const extraOsintTools=[
+ ['dns-mx','MX Explorer','E-posta sunucuları ve öncelikleri','domain','infrastructure'],
+ ['dns-ns','NS Explorer','Ad sunucuları ve TTL','domain','infrastructure'],
+ ['dns-soa','SOA Inspector','DNS otoritesi, seri ve yenileme','domain','infrastructure'],
+ ['dns-caa','CAA Inspector','Sertifika otoritesi yetkileri','domain','infrastructure'],
+ ['dnssec','DNSSEC Explorer','DNSKEY, DS ve doğrulama sinyali','domain','infrastructure'],
+ ['spf','SPF Inspector','Gönderici politikası','domain','infrastructure'],
+ ['dmarc','DMARC Inspector','DMARC politikası','domain','infrastructure'],
+ ['dkim','DKIM Selector','Domain ve selector ile açık anahtar','dkim','infrastructure'],
+ ['mta-sts','MTA-STS Inspector','SMTP taşıma DNS ve HTTPS politikası','domain','infrastructure'],
+ ['tls-rpt','SMTP TLS Reports','TLS raporlama DNS politikası','domain','infrastructure'],
+ ['robots','Robots Inspector','Genel robots.txt kuralları','domain','research'],
+ ['sitemap','Sitemap Explorer','Genel sitemap.xml adresleri','domain','research'],
+ ['security-txt','Security.txt','Güvenlik iletişim politikası','domain','research'],
+ ['csp','CSP Inspector','İçerik güvenliği yönergeleri','url','web'],
+ ['hsts','HSTS Inspector','HTTPS taşıma politikası','url','web'],
+ ['cors','CORS Observation','CORS yanıt başlığı gözlemleri','url','web'],
+ ['cache-policy','Cache Policy','Cache-Control, ETag ve Vary','url','web'],
+ ['redirects','Redirect Chain','En fazla üç genel HTTP adımı','url','web'],
+ ['web-status','HTTP Status','Genel durum kodu ve TLS','url','web'],
+ ['tech','Technology Signals','Başlık ve HTML teknoloji işaretleri','url','web'],
+ ['web-meta','Page Metadata','Başlık, description ve Open Graph','url','web'],
+ ['web-links','Public Link Map','Tek sayfadaki ilk 50 HTTP bağlantısı','url','web'],
+ ['cookies','Cookie Security','Değerler olmadan güvenlik nitelikleri','url','web'],
+ ['domain-age','Domain Timeline','RDAP kayıt ve değişiklik olayları','domain','infrastructure'],
+ ['url-parts','URL Structure','Yerel URL bileşenleri','url','research'],
+ ['idn','IDN / Punycode','Unicode ve ASCII alan adı','domain','infrastructure'],
+ ['ip-scope','IP Scope','Genel / özel / ayrılmış ağ sınıfı','ip','infrastructure'],
+ ['commoncrawl','Common Crawl','En güncel açık crawl indeksi','domain','research']
+] as const;
+export type ExtraOsintKind=(typeof extraOsintTools)[number][0];
+export const extraCatalog=extraOsintTools.map(([id,name,label,input,group])=>({id,name,label,input,group,icon:group==='web'?'📃':group==='research'?'🔎':'🌐',enabled:true}));

@@ -21,7 +21,7 @@ export function eventPreview(kind:string,target:unknown):string{
  if(['proxy'].includes(kind))return '[proxy filtreleri]';
  if(['proxy-check'].includes(kind))return '[proxy adresi]';
  if(kind==='metadata')return '[yerel dosya meta verisi]';
- if(['mail','mail-inbox'].includes(kind))return '[kişisel geçici e-posta]';
+ if(['mail','mail-inbox','number','sms-inbox'].includes(kind))return '[kişisel geçici e-posta]';
  return value.slice(0,140).replace(/[\x00-\x1f\x7f]/g,'');
 }
 let lastPrune=0;

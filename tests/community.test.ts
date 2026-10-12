@@ -27,10 +27,10 @@ test('Ayarlar owner ve sunucu kanal doğrulaması gerektirir; provider anahtarı
  const row=await pg.query('SELECT provider FROM community_secrets');assert.ok(!JSON.stringify(row.rows).includes(key));assert.equal((await aiProviderStatus()).configured,true);
  const panel=await communityOverview(owner);assert.ok(!JSON.stringify(panel).includes(key));assert.equal(panel.settings.ai.enabled,true);assert.equal((await verifyAudit()).valid,true);
 });
-test('Karşılama tekrar gönderilmez; yalnızca yeni üyeye etiket izni verilir',async()=>{
+test('Karşılama tekrar gönderilmez; yalnızca yeni üye ve seçilen yetkili rolü etiketlenir',async()=>{
  const s=await communitySettings();s.welcome.message='Hoş geldin {user}! {username} · {server} · {count} @everyone';const member={id:citizen.id,username:'name@everyone',server:'guild@everyone',count:30,joinedAt:'2026-10-08T00:00:00Z'};
  assert.ok(welcomeText(s.welcome.message,member).includes('name＠everyone'));
- await queueWelcome(member,s);await queueWelcome(member,s);assert.equal((await pg.query('SELECT id FROM community_deliveries')).rows.length,1);await communityDeliveryTick();assert.deepEqual(sent.at(-1).allowed_mentions,{parse:[],users:[citizen.id]});assert.equal((await pg.query<{status:string}>('SELECT status FROM community_deliveries')).rows[0].status,'SENT');
+ await queueWelcome(member,s);await queueWelcome(member,s);assert.equal((await pg.query('SELECT id FROM community_deliveries')).rows.length,1);await pg.query("UPDATE community_deliveries SET available_at=now() WHERE kind='WELCOME'");await communityDeliveryTick();assert.deepEqual(sent.at(-1).allowed_mentions,{parse:[],users:[citizen.id],roles:['1557495902514581605']});assert.equal((await pg.query<{status:string}>('SELECT status FROM community_deliveries')).rows[0].status,'SENT');
 });
 test('DM sadece abonelere hazırlanır; abonelikten çıkış ve kampanya iptali bekleyen gönderimi keser',async()=>{
  await setDMSubscription(citizen,true);const campaign=await createAnnouncement(owner,{title:'Duyuru',content:'Topluluk etkinliği',delivery:'DM',confirmed:true});assert.equal(campaign.recipients,1);
