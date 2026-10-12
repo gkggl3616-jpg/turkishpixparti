@@ -55,3 +55,6 @@ export * from './invites';
 
 export * from './osint';
 export * from './osint-policy';
+
+export * from './osint-access';
+export * from './osint-providers';
