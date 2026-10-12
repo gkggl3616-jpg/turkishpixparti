@@ -12,7 +12,7 @@ const row=(name:string,value:unknown)=>({name,value:txt(value)||'Kayıt gözlenm
 const stamp=(s:string)=>s+' · Gözlem: '+new Date().toISOString();
 export function validateIntelligence(kind:IntelligenceKind,input:string){
  const tool=intelligenceCatalog.find(t=>t.id===kind)!;
- if(tool.input==='proxy')parseLiveProxy(input);
+ if(tool.input==='proxy')parseLiveProxy(input,null);
  if(tool.input==='ip'&&(!isIP(input)||!publicResearchIp(input)))throw new DomainError('INVALID_PUBLIC_IP','Genel internet IP adresi gerekli.',400);
  if(tool.input==='domain')researchDomain(input);
  if(tool.input==='indicator'){if(isIP(input)){if(!publicResearchIp(input))throw new DomainError('INVALID_PUBLIC_IP','Genel IP gerekli.',400);}else researchDomain(input);}

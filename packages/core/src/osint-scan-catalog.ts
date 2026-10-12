@@ -1,9 +1,11 @@
+import {multiCatalog} from './osint-multi-catalog';
 import {webIntelligenceCatalog} from './osint-web-intelligence-catalog';
 // Shared browser-safe research definitions. Every module has an explicit input contract.
 export type TargetType='domain'|'ip'|'url'|'email'|'username'|'discord'|'repository'|'hash';
 export type ScanModule={id:string;name:string;description:string;category:string;inputs:TargetType[];provider:string;key?:string};
 const module=(id:string,name:string,description:string,category:string,inputs:TargetType[],provider:string,key?:string):ScanModule=>({id,name,description,category,inputs,provider,key});
 export const scanModules:ScanModule[]=[
+ ...multiCatalog.filter(t=>t.input!=='panel'&&t.id!=='security-score').map(t=>module(t.id,t.name,t.label,t.input==='domain'?'Domain & DNS':'Tehdit & İtibar',(t.input==='domain'?['domain','url','email']:t.input==='cve'?[]:[t.input]) as TargetType[],'Çoklu API')),
  ...webIntelligenceCatalog.map(t=>module(t.id,t.name,t.label,t.group==='web'?'Web & Güvenlik':t.group==='research'?'Arşiv & Kaynaklar':'Domain & DNS',['domain','url'],t.id==='ssl-labs'?'SSL Labs':t.id==='tranco'?'Tranco':t.id==='certspotter'?'CertSpotter':t.id==='green-web'?'Green Web Foundation':t.id==='hsts-preload'?'Chromium preload':'DNS / HTTPS',t.id==='ssl-labs'?'ssllabs':undefined)),
  module('dns','DNS kayıtları','A / AAAA / CNAME / MX / NS / TXT / SOA / CAA','Domain & DNS',['domain','url','email'],'Cloudflare / Google DNS'),
  module('rdap','WHOIS / RDAP','Kayıt olayları, registrar ve nameserver','Domain & DNS',['domain','url','email'],'RDAP / IANA'),
@@ -34,17 +36,17 @@ export const scanModules:ScanModule[]=[
  module('url-history','urlscan geçmişi','Yeni tarama göndermeden açık indeks','Arşiv & Kaynaklar',['domain','url'],'urlscan.io'),
  module('search-web','Canlı web araması','Domain ile sınırlandırılmış arama sonuçları','Arşiv & Kaynaklar',['domain','url'],'Brave Search','brave'),
  module('github-mentions','Kod deposu referansları','Domain için açık GitHub kod referansları','Arşiv & Kaynaklar',['domain','url'],'GitHub','github-token'),
- module('usernames','Geniş kullanıcı adı araştırması','92 platformda açık profil gözlemleri','Kimlik & Sosyal',['username'],'Açık profil kaynakları'),
+ module('usernames','Geniş kullanıcı adı araştırması','696 platformda açık profil gözlemleri','Kimlik & Sosyal',['username'],'Açık profil kaynakları'),
  module('github-keys','GitHub anahtar & Gist','Yayımlanmış SSH anahtar parmak izleri, GPG ve Gist meta verisi','Kimlik & Sosyal',['username'],'GitHub REST'),
  module('gravatar','Gravatar profili','Yayımlanmış Gravatar profil meta verisi','Kimlik & Sosyal',['email'],'Gravatar'),
  module('discord-id','Discord Snowflake','Yerel oluşturulma zamanı çözümlemesi','Kimlik & Sosyal',['discord'],'Yerel çözümleme'),
  module('github','Açık depo analizi','Lisans, dil, yıldız, fork ve push zamanı','Kimlik & Sosyal',['repository'],'GitHub REST')
 ];
 export const comboPresets=[
- {id:'combo-domain',name:'Domain Kombosu',inputs:['domain','url'] as TargetType[],modules:['dns','rdap','subdomains','tls','headers','email','resolved-networks','origin-history','mail-gateway']},
- {id:'combo-ip',name:'IP İstihbarat Kombosu',inputs:['ip'] as TargetType[],modules:['ip-rdap','asn','bgp','rpki','abuse-contact','rdns','geo-consensus','internetdb','cloud-ip','reverse-ip','threat','otx','greynoise']},
+ {id:'combo-domain',name:'Domain Kombosu',inputs:['domain','url'] as TargetType[],modules:['dns','rdap','subdomains','tls','headers','email','resolved-networks','origin-history','mail-gateway','dns-multi','domain-multi']},
+ {id:'combo-ip',name:'IP İstihbarat Kombosu',inputs:['ip'] as TargetType[],modules:['ip-rdap','asn','bgp','rpki','abuse-contact','rdns','geo-consensus','internetdb','cloud-ip','reverse-ip','threat','otx','greynoise','ip-multi','geo-multi']},
  {id:'combo-web',name:'Web Güvenlik Kombosu',inputs:['domain','url'] as TargetType[],modules:['headers','csp','hsts','cors','cookies','redirects','cache-policy','tech','web-meta','web-links','web-inventory','isolation','waf-signals','security-details','hsts-preload','tls']},
- {id:'combo-email',name:'E-posta Güvenlik Kombosu',inputs:['domain','email'] as TargetType[],modules:['dns-mx','spf-deep','dmarc','mta-sts','tls-rpt','dnssec','public-breaches']},
+ {id:'combo-email',name:'E-posta Güvenlik Kombosu',inputs:['domain','email'] as TargetType[],modules:['dns-mx','spf-deep','dmarc','mta-sts','tls-rpt','dnssec','public-breaches','dns-multi']},
  {id:'combo-archive',name:'Arşiv & İz Kombosu',inputs:['domain','url'] as TargetType[],modules:['archives','commoncrawl','url-history','robots','sitemap','humans','tranco','green-web','search-web','github-mentions']},
  {id:'combo-identity',name:'Açık Profil Kombosu',inputs:['username'] as TargetType[],modules:['usernames','github-keys']},
  {id:'combo-threat',name:'Tehdit İstihbarat Kombosu',inputs:['ip'] as TargetType[],modules:['internetdb','threat','otx','greynoise','ip-rdap','rdns']},

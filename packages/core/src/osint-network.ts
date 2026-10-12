@@ -6,7 +6,9 @@ import {assertOsintOwner} from './osint-entitlements';
 import {syncUser,guildMember} from './discord';
 import {audit} from './audit';
 import sources from './osint-profile-sources.json';
+import {extraProviderDefinitions} from './osint-multi-catalog';
 export const providerDefinitions:{id:string;name:string;key:boolean;env?:string;category?:string}[]=[
+ ...extraProviderDefinitions,
  {id:'cloudflare',name:'Cloudflare DNS',key:false},{id:'google-dns',name:'Google DNS (alternatif)',key:false},
  {id:'rdap',name:'RDAP.org',key:false},{id:'iana-rdap',name:'IANA / kayıt operatörü (alternatif)',key:false},
  {id:'ripe',name:'RIPEstat ASN/BGP',key:false},{id:'ipwho',name:'IPwho.is GeoIP',key:false},
@@ -45,6 +47,7 @@ export async function setOsintProviderKey(owner:{id:string;username:string},id:s
  assertOsintOwner(owner.id);await guildMember(owner.id);
  if(!providerDefinitions.some(x=>x.id===id&&x.key)||value.length>512||value&&(!/^[\x21-\x7e]+$/.test(value)||value.length<8))throw new DomainError('INVALID_PROVIDER_KEY','Desteklenen sağlayıcı ve geçerli API anahtarı gerekli.',400);
  if(id==='ssllabs'&&value&&!/^[^\s@]+@[^\s@]+\.[a-z]{2,63}$/i.test(value))throw new DomainError('INVALID_PROVIDER_KEY','SSL Labs v4 kayıtlı kurumsal email gerekli.',400);
+ if(id==='signalwire'&&value)(await import('./osint-number-providers')).signalWireCredentials(value);
  if(id==='twilio'&&value&&!/^AC[a-f0-9]{32}:[a-f0-9]{32}$/i.test(value))throw new DomainError('INVALID_PROVIDER_KEY','Twilio için AccountSID:AuthToken biçimini gir.',400);
  await transaction(async tx=>{await syncUser(tx,owner);if(value)await tx.query('INSERT INTO osint_provider_keys(provider,key_cipher,updated_by) VALUES($1,$2,$3) ON CONFLICT(provider) DO UPDATE SET key_cipher=EXCLUDED.key_cipher,updated_by=EXCLUDED.updated_by,updated_at=now()',[id,sealOsintSecret(value),owner.id]);else await tx.query('DELETE FROM osint_provider_keys WHERE provider=$1',[id]);await audit(tx,owner.id,'OSINT_PROVIDER_KEY',id,{configured:!!value});});return {success:true};
 }
@@ -59,7 +62,7 @@ export async function providerHealth(id:string,ok:boolean,code:string,ms:number)
 }
 export async function boundedProviderText(id:string,url:string,maximum=3000000,init:RequestInit={}):Promise<string>{
  if((cooldown.get(id)||0)>Date.now())throw new DomainError('PROVIDER_COOLDOWN','Sağlayıcının hız sınırı nedeniyle bekleniyor: '+id,503);
- const limits:Record<string,number>={certspotter:2,observatory:10,ssllabs:5,cloudflare:600,'google-dns':600,rdap:25,'iana-rdap':25,ripe:120,ipwho:16,crtsh:8,hackertarget:5,nvd:5,mitre:30,github:30,gitlab:30,wayback:8,virustotal:4,abuseipdb:20,urlscan:20,securitytrails:10,malwarebazaar:20,proxyscrape:20,'proxyscrape-origin':20};
+ const limits:Record<string,number>={guerrilla:30,dropmail:30,mailslurp:60,twilio:30,'ipapi-co':30,'ipapi-is':30,certspotter:2,observatory:10,ssllabs:5,cloudflare:600,'google-dns':600,rdap:25,'iana-rdap':25,ripe:120,ipwho:16,crtsh:8,hackertarget:5,nvd:5,mitre:30,github:30,gitlab:30,wayback:8,virustotal:4,abuseipdb:20,urlscan:20,securitytrails:10,malwarebazaar:20,proxyscrape:20,'proxyscrape-origin':20};
  if(id==='tranco')await rateLimit('osint-provider:tranco-second',1,1);
  if(id==='nominatim')await rateLimit('osint-provider:nominatim-second',1,1);
  if(!['mailtm','mailgw'].includes(id)){await rateLimit('osint-provider:'+id,limits[id]||60,60);if(id==='ipwho')await rateLimit('osint-provider:ipwho-day',1000,86400);if(id==='github')await rateLimit('osint-provider:github-hour',60,3600);}

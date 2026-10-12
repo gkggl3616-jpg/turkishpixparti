@@ -1,3 +1,8 @@
+import {saveResearchReport} from './osint-reports';
+import {multiCatalog,type MultiKind} from './osint-multi-catalog';
+import {multiResearch,validateMulti} from './osint-multi';
+import {assessDomainSecurity,securityReport,type SecurityAssessment} from './osint-security';
+import {parseLiveProxy,liveProxyReport} from './osint-proxy-live';
 import {webIntelligenceCatalog,webIntelligenceResearch,type WebIntelligenceKind} from './osint-web-intelligence';
 import {comboCatalog,comboPresets,type ScanKind} from './osint-scan-catalog';
 import {runScan,parseScan,type ScanEvent} from './osint-scan';
@@ -52,12 +57,12 @@ export const osintTools=[
  {id:'hash',name:'Hash Reputation',label:'Dosya karması itibar karşılaştırma',enabled:!!process.env.VIRUSTOTAL_API_KEY,icon:'🔏'},
  {id:'reports',name:'Research Reports',label:'Domain araştırma raporu ve TXT dışa aktarma',enabled:true,icon:'📊'},
  {id:'proxy-check',name:'Proxy Validator',label:'Yetkili proxy otomatik ve manuel test',enabled:true,icon:'✅'},
- {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'},...extraCatalog,...intelligenceCatalog,...webIntelligenceCatalog,...comboCatalog
+ {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'},...extraCatalog,...intelligenceCatalog,...webIntelligenceCatalog,...comboCatalog,...multiCatalog
 ] as const;
 
-export type OsintKind='aliases'|ExtraOsintKind|WebIntelligenceKind|IntelligenceKind|ScanKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
+export type OsintKind=MultiKind|'aliases'|ExtraOsintKind|WebIntelligenceKind|IntelligenceKind|ScanKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
 export type OsintActor={id:string;username:string;avatar?:string|null};
-export type OsintResult={kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
+export type OsintResult={security?:SecurityAssessment;kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
 const targetSchema=z.string().trim().min(2).max(250);
 const domainPattern=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 export function osintTier(level:number){
@@ -72,7 +77,7 @@ export async function osintQuota(userId:string,verifiedMember?:{premium_since?:s
  await loadServerSettings();
  const profile=await memberProfile(userId),tier=osintTier(profile.level);
  const boosterBonus=boosterDailyBonus(verifiedMember||await guildMember(userId)),access=await entitlement(userId,tier.dailyLimit+boosterBonus);
- return {xp:profile.xp,level:profile.level,profileFound:profile.profileFound,levelSource:'TurkishPix XP',proxyResultLimit:proxyResultLimit(profile.level),tier:access.unlimited?'Owner':tier.name,...access,baseDailyLimit:tier.dailyLimit,boosterBonus,isBooster:boosterBonus>0,resetTimezone:'Europe/Istanbul'};
+ return {xp:profile.xp,level:profile.level,profileFound:profile.profileFound,levelSource:'TurkishPix XP',proxyResultLimit:access.unlimited?null:proxyResultLimit(profile.level),tier:access.unlimited?'Owner':tier.name,...access,baseDailyLimit:tier.dailyLimit,boosterBonus,isBooster:boosterBonus>0,resetTimezone:'Europe/Istanbul'};
 }
 function domain(input:string){
  const value=input.toLowerCase().replace(/\.$/,'');
@@ -97,7 +102,8 @@ function urlInspect(input:string):OsintResult{
 }
 export function validateOsint(kind:string,target:unknown){
  const type=z.enum(osintTools.map(t=>t.id) as [OsintKind,...OsintKind[]]).parse(kind);
- const input=type==='proxy-live'?z.string().trim().min(2).max(5000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(5000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
+ const input=type==='proxy-live'?z.string().trim().min(2).max(64000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(12000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
+ if(multiCatalog.some(t=>t.id===type))validateMulti(type as MultiKind,input);
  if(comboPresets.some(p=>p.id===type))parseScan(type as ScanKind,input);
  const webTool=webIntelligenceCatalog.find(t=>t.id===type);if(webTool){if(webTool.input==='url')researchUrl(input);else domain(input);}
  if(intelligenceCatalog.some(t=>t.id===type))validateIntelligence(type as IntelligenceKind,input);
@@ -116,7 +122,7 @@ export function validateOsint(kind:string,target:unknown){
  if(type==='proxy-check'&&!/^(https?|socks4|socks5):\/\/([0-9.]+|\[[0-9a-f:]+\]):\d{1,5}$/i.test(input))throw new DomainError('INVALID_PROXY','protocol://IP:port biçimi gerekli.',400);
  return {kind:type,target:input};
 }
-export async function osintRun(actor:OsintActor,kind:string,target:unknown,requestId:string,onProgress?:(event:ScanEvent)=>void){
+export async function osintRun(actor:OsintActor,kind:string,target:unknown,requestId:string,onProgress?:(event:ScanEvent)=>void,delivery:'WEB'|'DISCORD'='DISCORD'){
  await loadServerSettings();
  if(config().demo)throw new DomainError('OSINT_DISABLED','Demo modunda araştırma kapalı.',403);
  if(!/^[a-zA-Z0-9:_-]{10,100}$/.test(requestId))throw new DomainError('INVALID_REQUEST','Geçersiz işlem anahtarı.',400);
@@ -127,7 +133,9 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  const beforeQuota=await osintQuota(actor.id,member);
  if(!beforeQuota.unlimited&&beforeQuota.remaining!<=0)throw new DomainError('OSINT_QUOTA','Araştırma hakkın doldu. Günlük hak 00:00’da yenilenir; ek hak için owner ile iletişime geç.',429);
  if(['mail','mail-inbox'].includes(parsed.kind))await syncUser(database(),actor);
- const provided=comboPresets.some(p=>p.id===parsed.kind)?await runScan(parsed.kind as ScanKind,parsed.target,onProgress)
+ const provided=parsed.kind==='proxy-live'?await liveProxyReport(parsed.target,beforeQuota.unlimited?null:10)
+  :multiCatalog.some(t=>t.id===parsed.kind)?await multiResearch(parsed.kind as MultiKind,parsed.target)
+  :comboPresets.some(p=>p.id===parsed.kind)?await runScan(parsed.kind as ScanKind,parsed.target,onProgress)
   :webIntelligenceCatalog.some(t=>t.id===parsed.kind)?await webIntelligenceResearch(parsed.kind as WebIntelligenceKind,parsed.target)
   :intelligenceCatalog.some(t=>t.id===parsed.kind)?await intelligenceResearch(parsed.kind as IntelligenceKind,parsed.target)
   :extraCatalog.some(t=>t.id===parsed.kind)?await advancedResearch(parsed.kind as ExtraOsintKind,parsed.target)
@@ -141,7 +149,7 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   :parsed.kind==='dns'?await lookupDns(parsed.target)
   :parsed.kind==='headers'?await lookupHeaders(parsed.target)
   :parsed.kind==='geo'?await lookupGeo(parsed.target)
-  :parsed.kind==='usernames'?await lookupWideUsername(parsed.target)
+  :parsed.kind==='usernames'?await lookupWideUsername(parsed.target,onProgress)
   :parsed.kind==='github'?await lookupRepository(parsed.target)
   :parsed.kind==='archives'?await lookupArchives(parsed.target)
   :parsed.kind==='ioc'?normalizeIoc(parsed.target)
@@ -158,14 +166,16 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   :parsed.kind==='proxy'?await lookupProxy(parsed.target,beforeQuota.proxyResultLimit)
   :parsed.kind==='proxy-check'?await lookupProxyCheck(parsed.target):null;
  const result:OsintResult=provided?{...provided,kind:parsed.kind,target:comboPresets.some(p=>p.id===parsed.kind)?parseScan(parsed.kind as ScanKind,parsed.target).target.value:parsed.kind==='proxy'?'Filtreli proxy sorgusu':parsed.kind==='metadata'?'Yerel dosya meta verisi':parsed.kind==='mail'||parsed.kind==='mail-inbox'?'Kişisel geçici e-posta':parsed.target}:urlInspect(parsed.target);
+ if(!('security' in result)&&['dns','email','headers','reports','spf','dmarc','dnssec','domain-multi','dns-multi'].includes(parsed.kind)){const host=parsed.kind==='headers'?new URL(parsed.target).hostname:parsed.target;const security=await assessDomainSecurity(host,{web:['headers','reports','domain-multi'].includes(parsed.kind),dns:true,url:parsed.kind==='headers'?parsed.target:undefined});Object.assign(result,{security});result.items.unshift(...securityReport(security).items);}
+ if(provided&&'billable' in provided&&provided.billable===false){const reportId=delivery==='WEB'?await transaction(async tx=>{await syncUser(tx,actor);return saveResearchReport(tx,actor.id,requestId,result);}):undefined;return {result,reportId,quota:await osintQuota(actor.id),duplicate:false};}
  const profile=await memberProfile(actor.id),tier=osintTier(profile.level),billingMember=await guildMember(actor.id);
  const fingerprint=createHash('sha256').update(parsed.kind+':'+parsed.target).digest('hex');
  const billing=await transaction(async tx=>{
   await tx.query('SELECT pg_advisory_xact_lock(hashtext($1))',['osint:'+config().guildId+':'+actor.id]);
   await syncUser(tx,actor);
-  return consumeOsintCredit(tx,actor.id,requestId,parsed.kind,fingerprint,tier.dailyLimit+boosterDailyBonus(billingMember));
+  const consumed=await consumeOsintCredit(tx,actor.id,requestId,parsed.kind,fingerprint,tier.dailyLimit+boosterDailyBonus(billingMember));const reportId=delivery==='WEB'?await saveResearchReport(tx,actor.id,requestId,result):undefined;return {...consumed,reportId};
  });
- return {result,quota:await osintQuota(actor.id),duplicate:billing.duplicate};
+ return {result,reportId:billing.reportId,quota:await osintQuota(actor.id),duplicate:billing.duplicate};
 }
 export function proxyResultLimit(level:number){return 10+5*(Number.isSafeInteger(level)&&level>=0?level:0);}
 
