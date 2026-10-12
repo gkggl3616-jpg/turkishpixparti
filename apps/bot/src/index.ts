@@ -1,4 +1,5 @@
 import {InviteTracker} from './invites';
+import {handleOsintInteraction} from './osint';
 import {reportYouTubeAudioReady} from './youtube-audio';
 import {reportSoundCloudReady} from './soundcloud-audio';
 import {BackgroundTasks} from './background';
@@ -78,6 +79,7 @@ client.on(Events.InteractionCreate,interaction=>{void safeInteraction(interactio
  if(await handleArcadeInteraction(interaction,settings))return;
  if(await handleExpansionInteraction(interaction,settings))return;
  if(await handleSupportInteraction(interaction,settings))return;
+ if(await handleOsintInteraction(interaction))return;
  if(await handleFeatureInteraction(interaction,settings))return;
  if(await handleEntertainmentInteraction(interaction,settings.entertainment))return;
  if(interaction.isChatInputCommand()){
