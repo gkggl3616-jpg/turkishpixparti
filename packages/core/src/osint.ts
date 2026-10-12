@@ -7,36 +7,38 @@ import {database,transaction} from './db';
 import {memberProfile} from './features';
 import {guildMember,syncUser} from './discord';
 import {rateLimit} from './auth';
+import {assertOsintAllowed} from './osint-access';
+import {lookupRdap,lookupAsn,lookupCve,lookupCt,lookupEmail,lookupHash,lookupProxy,lookupProxyCheck,parseProxyFilters} from './osint-providers';
 
 export const osintTools=[
  {id:'dns',name:'Domain Intelligence',label:'DNS & kayıt sorgusu',enabled:true,icon:'🌐'},
  {id:'ip',name:'IP Intelligence',label:'IP ve ters DNS',enabled:true,icon:'🛰️'},
  {id:'url',name:'URL Analyzer',label:'Pasif URL risk analizi',enabled:true,icon:'🔗'},
- {id:'rdap',name:'RDAP / WHOIS',label:'Alan adı kayıt bilgileri',enabled:false,icon:'📑'},
+ {id:'rdap',name:'RDAP / WHOIS',label:'Alan adı kayıt bilgileri',enabled:true,icon:'📑'},
  {id:'threat',name:'Threat Intelligence',label:'Tehdit itibar sorgusu',enabled:false,icon:'🛡️'},
  {id:'mail',name:'Temp Mail',label:'Geçici e-posta',enabled:false,icon:'✉️'},
  {id:'number',name:'Temp Number',label:'Sağlayıcıyla sanal SMS',enabled:false,icon:'📱'},
- {id:'proxy',name:'Proxy Manager',label:'Yasal proxy havuzu ve kontrolü',enabled:false,icon:'🧩'},
+ {id:'proxy',name:'Proxy Manager',label:'Yasal proxy havuzu ve kontrolü',enabled:true,icon:'🧩'},
  {id:'malware',name:'Malware Scanner',label:'Dosya ve hash kontrolü',enabled:false,icon:'🦠'},
- {id:'tls',name:'SSL / TLS Inspector',label:'Sertifika zinciri ve süreleri',enabled:false,icon:'🔐'},
- {id:'subdomains',name:'Subdomain Discovery',label:'Pasif alt alan adı keşfi',enabled:false,icon:'🧭'},
+ {id:'tls',name:'SSL / TLS Inspector',label:'Sertifika zinciri ve süreleri',enabled:true,icon:'🔐'},
+ {id:'subdomains',name:'Subdomain Discovery',label:'Pasif alt alan adı keşfi',enabled:true,icon:'🧭'},
  {id:'dns-history',name:'DNS History',label:'Geçmiş DNS kayıtları',enabled:false,icon:'🕓'},
- {id:'asn',name:'ASN / BGP Explorer',label:'Operatör, ASN ve yönlendirme bilgileri',enabled:false,icon:'🌍'},
- {id:'email',name:'Email Intelligence',label:'E-posta alan adı güvenlik kayıtları',enabled:false,icon:'📨'},
+ {id:'asn',name:'ASN / BGP Explorer',label:'Operatör, ASN ve yönlendirme bilgileri',enabled:true,icon:'🌍'},
+ {id:'email',name:'Email Intelligence',label:'E-posta alan adı güvenlik kayıtları',enabled:true,icon:'📨'},
  {id:'usernames',name:'Public Username Search',label:'Açık profillerde kullanıcı adı araması',enabled:false,icon:'👤'},
  {id:'github',name:'Repository Intelligence',label:'Açık kaynak depo analizi',enabled:false,icon:'💻'},
  {id:'archives',name:'Web Archive',label:'Geçmiş sayfa anlık görüntüleri',enabled:false,icon:'🗃️'},
  {id:'metadata',name:'File Metadata',label:'Yerel dosya meta veri analizi',enabled:false,icon:'🗂️'},
  {id:'headers',name:'HTTP Header Review',label:'Güvenli yanıt başlığı inceleme',enabled:false,icon:'📃'},
  {id:'ioc',name:'IOC Normalizer',label:'Gösterge doğrulama ve normalizasyon',enabled:false,icon:'🧬'},
- {id:'cve',name:'CVE Intelligence',label:'Açık CVE veritabanı araştırması',enabled:false,icon:'🛠️'},
- {id:'hash',name:'Hash Reputation',label:'Dosya karması itibar karşılaştırma',enabled:false,icon:'🔏'},
+ {id:'cve',name:'CVE Intelligence',label:'Açık CVE veritabanı araştırması',enabled:true,icon:'🛠️'},
+ {id:'hash',name:'Hash Reputation',label:'Dosya karması itibar karşılaştırma',enabled:!!process.env.VIRUSTOTAL_API_KEY,icon:'🔏'},
  {id:'reports',name:'Research Reports',label:'Araştırma raporu ve dışa aktarma',enabled:false,icon:'📊'},
- {id:'proxy-check',name:'Proxy Validator',label:'Yetkili proxy otomatik ve manuel test',enabled:false,icon:'✅'},
+ {id:'proxy-check',name:'Proxy Validator',label:'Yetkili proxy otomatik ve manuel test',enabled:true,icon:'✅'},
  {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:false,icon:'📍'}
 ] as const;
 
-export type OsintKind='dns'|'ip'|'url';
+export type OsintKind='dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check';
 export type OsintActor={id:string;username:string;avatar?:string|null};
 export type OsintResult={kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string};
 const targetSchema=z.string().trim().min(2).max(250);
@@ -101,11 +103,17 @@ function urlInspect(input:string):OsintResult{
  return {kind:'url',target:host,title:'URL Analyzer',summary:risk,items:[{name:'Protokol',value:url.protocol.slice(0,-1)},{name:'Alan adı',value:host},{name:'Yol',value:clean(url.pathname,120)},{name:'Biçimsel uyarılar',value:flags.join('\n')||'Yok'}],notice:'Bu yalnızca pasif sözdizimi kontrolüdür. Site açılmadı; phishing, virüs veya güvenlik garantisi sağlamaz.'};
 }
 export function validateOsint(kind:string,target:unknown){
- const type=z.enum(['dns','ip','url']).parse(kind);
+ const type=z.enum(['dns','ip','url','rdap','subdomains','tls','asn','cve','email','hash','proxy','proxy-check']).parse(kind);
  const input=targetSchema.parse(target);
  if(type==='dns')domain(input);
  if(type==='ip'&&!isIP(input))throw new DomainError('INVALID_IP','Geçerli bir IP adresi girin.',400);
  if(type==='url')urlInspect(input);
+ if(['rdap','subdomains','tls','email'].includes(type))domain(input);
+ if(type==='asn'&&!isIP(input))throw new DomainError('INVALID_IP','Geçerli IP adresi girin.',400);
+ if(type==='cve'&&!/^CVE-\d{4}-\d{4,8}$/i.test(input))throw new DomainError('INVALID_CVE','CVE kimliği gerekli.',400);
+ if(type==='hash'&&!/^[a-f0-9]{64}$/i.test(input))throw new DomainError('INVALID_HASH','SHA-256 özeti gerekli.',400);
+ if(type==='proxy')parseProxyFilters(input);
+ if(type==='proxy-check'&&!/^(https?|socks4|socks5):\/\/([0-9.]+|\[[0-9a-f:]+\]):\d{1,5}$/i.test(input))throw new DomainError('INVALID_PROXY','protocol://IP:port biçimi gerekli.',400);
  return {kind:type,target:input};
 }
 export async function osintRun(actor:OsintActor,kind:string,target:unknown,requestId:string){
@@ -113,10 +121,19 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  if(!/^[a-zA-Z0-9:_-]{10,100}$/.test(requestId))throw new DomainError('INVALID_REQUEST','Geçersiz işlem anahtarı.',400);
  const parsed=validateOsint(kind,target);
  await guildMember(actor.id);
+ await assertOsintAllowed(actor.id);
  await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
  const beforeQuota=await osintQuota(actor.id);
  if(beforeQuota.remaining<=0)throw new DomainError('OSINT_QUOTA','Günlük araştırma hakkın doldu. Türkiye saatiyle gece yarısı yenilenir.',429);
- const result=parsed.kind==='dns'?await dnsInspect(parsed.target):parsed.kind==='ip'?await ipInspect(parsed.target):urlInspect(parsed.target);
+ const provided=parsed.kind==='rdap'?await lookupRdap(parsed.target)
+  :parsed.kind==='subdomains'||parsed.kind==='tls'?await lookupCt(parsed.target,parsed.kind)
+  :parsed.kind==='asn'?await lookupAsn(parsed.target)
+  :parsed.kind==='cve'?await lookupCve(parsed.target)
+  :parsed.kind==='email'?await lookupEmail(parsed.target)
+  :parsed.kind==='hash'?await lookupHash(parsed.target)
+  :parsed.kind==='proxy'?await lookupProxy(parsed.target)
+  :parsed.kind==='proxy-check'?await lookupProxyCheck(parsed.target):null;
+ const result:OsintResult=provided?{...provided,kind:parsed.kind,target:parsed.kind==='proxy'?'Filtreli proxy sorgusu':parsed.target}:parsed.kind==='dns'?await dnsInspect(parsed.target):parsed.kind==='ip'?await ipInspect(parsed.target):urlInspect(parsed.target);
  const profile=await memberProfile(actor.id),tier=osintTier(profile.level);
  const fingerprint=createHash('sha256').update(parsed.kind+':'+parsed.target).digest('hex');
  const billing=await transaction(async tx=>{
