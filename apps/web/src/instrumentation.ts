@@ -9,7 +9,7 @@ export async function register(){
  state.osintInboxWorker=setInterval(async()=>{if(busy)return;busy=true;try{await loadServerSettings();await liveInboxTick();}catch(e){console.error('OSINT_INBOX_WORKER',e instanceof Error?e.name:'ERROR');}finally{busy=false;}},1000);
  state.osintInboxWorker.unref();
  let probing=false;
- const probe=async()=>{if(probing)return;probing=true;try{await loadServerSettings();await probeOsintProviders();}catch(e){console.error('OSINT_SOURCE_CHECK',e instanceof Error?e.name:'ERROR');}finally{probing=false;}};
+ const probe=async()=>{if(probing)return;probing=true;try{await loadServerSettings();await probeOsintProviders(['cloudflare','mullvad']);}catch(e){console.error('OSINT_SOURCE_CHECK',e instanceof Error?e.name:'ERROR');}finally{probing=false;}};
  setTimeout(()=>void probe(),5000).unref();
  setInterval(()=>void probe(),15*60000).unref();
 }

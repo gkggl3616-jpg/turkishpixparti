@@ -57,8 +57,8 @@ async function probeOsintProvider(id:string){
  return {success:true,provider:id,checkedAt:new Date().toISOString()};
 }
 
-export async function probeOsintProviders(){
- const status=await osintProviderStatus(),pending=status.filter(p=>p.category!=='username'&&p.configured&&(!p.checkedAt||new Date(p.checkedAt).getTime()<Date.now()-900000));
+export async function probeOsintProviders(forceIds:string[]=[]){
+ const status=await osintProviderStatus(),pending=status.filter(p=>p.category!=='username'&&p.configured&&(forceIds.includes(p.id)||!p.checkedAt||new Date(p.checkedAt).getTime()<Date.now()-900000));
  let checked=0,ok=0;const failed:{id:string;code:string}[]=[];
  for(let i=0;i<pending.length;i+=3){const results=await Promise.allSettled(pending.slice(i,i+3).map(p=>probeOsintProvider(p.id)));checked+=results.length;ok+=results.filter(r=>r.status==='fulfilled').length;results.forEach((r,j)=>{if(r.status==='rejected')failed.push({id:pending[i+j].id,code:r.reason instanceof DomainError?r.reason.code:'NETWORK'});});}
  if(checked)console.log('OSINT_PROVIDER_PROBE',JSON.stringify({checked,ok,failed:checked-ok,failedSources:failed,keysRequired:status.filter(p=>!p.configured).length}));

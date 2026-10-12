@@ -1,3 +1,5 @@
+import http2 from 'node:http2';
+import {EventEmitter} from 'node:events';
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
@@ -10,7 +12,7 @@ import {providerDefinitions,openOsintSecret,setOsintProviderKey} from '../packag
 import {parseLiveProxy} from '../packages/core/src/osint-proxy-live';
 import {lookupProxy} from '../packages/core/src/osint-providers';
 import {analyzeSecurity,scoreSecurity} from '../packages/core/src/osint-security';
-import {multiResearch,parseDnsPacket,dnsQuestion,cachedSource,validProviderPayload} from '../packages/core/src/osint-multi';
+import {multiResearch,parseDnsPacket,dnsQuestion,cachedSource,validProviderPayload,wireDns} from '../packages/core/src/osint-multi';
 import {assignProviderNumber,scopeProviderSms,signalWireCredentials} from '../packages/core/src/osint-number-providers';
 import {liveInboxAction,liveInboxState,pollLiveInbox,readLiveInboxMessage,liveInboxTick} from '../packages/core/src/osint-live-inbox';
 import {GET as getInboxes,POST as postInboxes} from '../apps/web/src/app/api/osint/inboxes/route';
@@ -29,6 +31,7 @@ before(async()=>{pg=new PGlite();setTestDatabase({query:async(sql,params=[])=>{c
  if(u.hostname==='api.guerrillamail.com'){if(u.searchParams.get('f')==='get_email_address')return Response.json({email_addr:'random-owned@sharklasers.com',sid_token:'private-guerrilla-session-token'});if(u.searchParams.get('f')==='get_email_list')return Response.json({email:'random-owned@sharklasers.com',list:[]});}
  if(u.hostname==='api.twilio.com'){if(u.pathname.endsWith('IncomingPhoneNumbers.json'))return Response.json({incoming_phone_numbers:[{phone_number:'+12025550123',capabilities:{sms:true}}]});if(u.pathname.endsWith('Messages.json'))return Response.json({messages:[{to:'+12025550123',direction:'inbound',date_created:new Date().toISOString(),from:'+12025550124',body:smsBody},{to:'+12025550123',direction:'inbound',date_created:'2020-01-01',from:'+12025550124',body:'previous-user-private'}]});}
  if(u.hostname==='fixture.signalwire.com'){if(u.pathname.endsWith('/IncomingPhoneNumbers'))return Response.json({incoming_phone_numbers:[{phone_number:'+12025550129',capabilities:{sms:true},sid:'owned-signalwire-number'}]});if(u.pathname.endsWith('/Messages'))return Response.json({messages:[{sid:'sms-owned-1',to:'+12025550129',direction:'inbound',date_created:new Date().toISOString(),from:'+12025550124',body:'signalwire-own-message'},{sid:'sms-old',to:'+12025550129',direction:'inbound',date_created:'2020-01-01',body:'old-user-sms'}]});}
+ if(u.hostname==='cloudflare-dns.com')return Response.json({Status:0,AD:true,Answer:[{name:'example.com',type:1,TTL:300,data:'1.1.1.1'}]});
  if(u.hostname==='ipwho.is')return Response.json({ip:u.pathname.slice(1),success:true,country_code:'TR'});if(u.hostname==='get.geojs.io')return Response.json({ip:'1.1.1.1',country_code:'US'});if(u.hostname==='api.country.is')return Response.json({ip:'1.1.1.1',country:'AU'});if(u.hostname==='ipapi.co')return Response.json({error:true,reason:'fixture-limit'});if(u.hostname==='api.ipapi.is')return Response.json({ip:'1.1.1.1',country:'AU'});
  throw Error('Unexpected fixture request '+u.hostname+u.pathname);
  };});
@@ -56,3 +59,5 @@ test('Report history requires authentication and refuses expired, invalid and ot
 
 test('Provider payload validation rejects successful-looking empty objects and preserves valid negative-match responses',()=>{for(const id of ['virustotal','abuseipdb','ipinfo','ipregistry','ipgeolocation','ipdata','ip2location','shodan','whoisxml','openpagerank','pulsedive','urlhaus','threatfox','malwarebazaar'])assert.equal(validProviderPayload(id,{}),false,id);assert.equal(validProviderPayload('virustotal',{data:{attributes:{last_analysis_stats:{}}}}),true);assert.equal(validProviderPayload('urlhaus',{query_status:'no_results'}),true);assert.equal(validProviderPayload('google-safebrowsing',{}),true);assert.equal(validProviderPayload('google-webrisk',{}),true);assert.equal(validProviderPayload('google-webrisk',{threat:{threatTypes:'bad-format'}}),false);});
 test('Public source status distinguishes API data from profile adapters and never reveals credentials or private message contents',async()=>{const r=await sourceStatus(new Request('https://osint.example/api/osint?status=1'));assert.equal(r.status,200);const d=await r.json();assert.equal(d.apiSources,68);assert.equal(d.profileSources,696);assert.ok(d.providers.some((p:any)=>p.state==='KEY_REQUIRED'));const text=JSON.stringify(d);for(const secret of ['private-mail-session-token','own-private-preview','apiToken','key_cipher','credentials_cipher','SIGNALWIRE_CREDENTIALS'])assert.ok(!text.includes(secret));});
+
+test('A failed HTTP2 DNS transport falls back to the same provider JSON API with validated response data',async()=>{const original=http2.connect;(http2 as any).connect=()=>{const c=new EventEmitter() as any;c.destroy=()=>{};c.close=()=>{};c.request=()=>{const r=new EventEmitter() as any;r.close=()=>{};r.end=()=>queueMicrotask(()=>{r.emit('error',new Error('fixture HTTP2 unavailable'));r.emit('close');});return r;};return c;};try{const r=await wireDns('cloudflare','https://cloudflare-dns.com/dns-query','example.com',1);assert.equal('transport' in r?r.transport:undefined,'JSON_FALLBACK');assert.equal(r.answers[0].value,'1.1.1.1');assert.equal(r.ad,true);}finally{(http2 as any).connect=original;}});
