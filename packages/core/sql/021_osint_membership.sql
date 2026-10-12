@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS osint_member_accounts (
 );
 DO $$ BEGIN
  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='turkishpix_runtime') THEN
-  GRANT SELECT,INSERT ON osint_member_accounts TO turkishpix_runtime;
+  GRANT SELECT,INSERT,UPDATE ON osint_member_accounts TO turkishpix_runtime;
  END IF;
 END $$;
 INSERT INTO schema_migrations(version) VALUES('021_osint_membership') ON CONFLICT DO NOTHING;
