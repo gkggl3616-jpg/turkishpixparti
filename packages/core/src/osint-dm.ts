@@ -8,10 +8,10 @@ import type {OsintResult,OsintActor} from './osint';
 export type OsintDmPayload={content:string;embeds?:any[];file?:{name:string;text:string}};
 export type DeliveryOutcome={id:string;delivered:boolean;error?:string};
 const safe=(s:string)=>s.replace(/[@`*_~|<>]/g,'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
-export function formatOsintDm(r:OsintResult,remaining:number):string{
- return ('🛰️ **TURKISHPİX · '+safe(r.title)+'**\n'+safe(r.summary)+'\n\n📎 **Tam sonuç dosyan ektedir.**\n📊 Kalan günlük sorgu: **'+remaining+'**\n-# '+safe(r.notice)).slice(0,1850);
+export function formatOsintDm(r:OsintResult,remaining:number|null):string{
+ return ('🛰️ **TURKISHPİX · '+safe(r.title)+'**\n'+safe(r.summary)+'\n\n📎 **Tam sonuç dosyan ektedir.**\n📊 Kalan sorgu hakkı: **'+(remaining===null?'Sınırsız (Owner)':remaining)+'**\n-# '+safe(r.notice)).slice(0,1850);
 }
-export function osintDmPayload(r:OsintResult,remaining:number):OsintDmPayload{
+export function osintDmPayload(r:OsintResult,remaining:number|null):OsintDmPayload{
  const proxies=r.kind==='proxy'?r.items.filter(item=>/^\d+ · /.test(item.name)).map(item=>item.value.split(' · ')[0]):null;
  const full=r.title+'\n'+r.summary+'\nHedef: '+r.target+'\n\n'+r.items.map(x=>x.name+'\n'+x.value).join('\n\n')+'\n\n'+r.notice+'\n';
  return {
@@ -55,7 +55,7 @@ export async function queueOsintDm(actor:OsintActor,requestId:string,payload:Osi
  });
  return retryOsintDelivery(stored,actor.id);
 }
-export async function sendOsintResult(actor:OsintActor,result:OsintResult,remaining:number,requestId:string){return queueOsintDm(actor,requestId,osintDmPayload(result,remaining));}
+export async function sendOsintResult(actor:OsintActor,result:OsintResult,remaining:number|null,requestId:string){return queueOsintDm(actor,requestId,osintDmPayload(result,remaining));}
 export async function retryOsintDelivery(id:string,userId:string,manual=false):Promise<DeliveryOutcome>{
  const g=config().guildId;
  const previous=(await database().query('SELECT status,expires_at,last_error FROM osint_dm_deliveries WHERE id=$1 AND guild_id=$2 AND user_id=$3',[id,g,userId])).rows[0];

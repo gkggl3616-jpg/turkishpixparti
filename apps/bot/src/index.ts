@@ -1,3 +1,5 @@
+import {probeOsintProviders,probeOsintHead} from '../../../packages/core/src/osint-admin';
+import {purgeExpiredMailboxes} from '../../../packages/core/src/osint-mail';
 import {CommandRegistrar} from './command-registration';
 import {discordErrorDetails} from '../../../packages/core/src/discord';
 import {retryPendingOsintDeliveries} from '../../../packages/core/src/osint-dm';
@@ -185,6 +187,9 @@ async function worker(){while(!stopped){try{
   background.run('invite-baseline',30000,()=>invites.start());
   background.run('music',1000,()=>music.tick(settings));
   background.run('osint-dm',30000,()=>retryPendingOsintDeliveries());
+  background.run('osint-mail-expiry',300000,()=>purgeExpiredMailboxes());
+  background.run('osint-provider-health',300000,()=>probeOsintProviders());
+  background.run('osint-public-head',3600000,()=>probeOsintHead());
   background.run('features',5000,()=>featureTick(client,settings,false));
   background.run('voice-xp',1000,()=>voiceXPTick(client,settings));
   background.run('rooms-voice',5000,()=>expansionTick(client,settings));

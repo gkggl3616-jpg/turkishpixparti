@@ -7,7 +7,7 @@ import {osintTools,validateOsint} from '../packages/core/src/osint';
 test('Turkish Osint lists >=20 categories but does not pretend integrations are connected',()=>{
  assert.ok(osintTools.length>=20);
  const ids=new Set(osintTools.map(t=>t.id));assert.equal(ids.size,osintTools.length);
- assert.ok(osintTools.find(t=>t.id==='mail'&&!t.enabled));
+ assert.ok(osintTools.find(t=>t.id==='mail'&&t.enabled));
  assert.ok(osintTools.find(t=>t.id==='number'&&!t.enabled));
 });
 test('Proxy options reject invalid countries, protocols, high volumes and latency',()=>{
