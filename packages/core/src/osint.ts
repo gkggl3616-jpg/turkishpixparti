@@ -53,7 +53,7 @@ export function osintTier(level:number){
 export async function osintQuota(userId:string){
  const profile=await memberProfile(userId),tier=osintTier(profile.level);
  const used=Number((await database().query("SELECT count(*)::int AS n FROM osint_usage WHERE guild_id=$1 AND user_id=$2 AND day=(now() AT TIME ZONE 'Europe/Istanbul')::date",[config().guildId,userId])).rows[0]?.n||0);
- return {xp:profile.xp,level:profile.level,tier:tier.name,dailyLimit:tier.dailyLimit,used,remaining:Math.max(0,tier.dailyLimit-used),resetTimezone:'Europe/Istanbul'};
+ return {xp:profile.xp,level:profile.level,proxyResultLimit:proxyResultLimit(profile.level),tier:tier.name,dailyLimit:tier.dailyLimit,used,remaining:Math.max(0,tier.dailyLimit-used),resetTimezone:'Europe/Istanbul'};
 }
 function domain(input:string){
  const value=input.toLowerCase().replace(/\.$/,'');
@@ -133,7 +133,7 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   :parsed.kind==='cve'?await lookupCve(parsed.target)
   :parsed.kind==='email'?await lookupEmail(parsed.target)
   :parsed.kind==='hash'?await lookupHash(parsed.target)
-  :parsed.kind==='proxy'?await lookupProxy(parsed.target)
+  :parsed.kind==='proxy'?await lookupProxy(parsed.target,beforeQuota.proxyResultLimit)
   :parsed.kind==='proxy-check'?await lookupProxyCheck(parsed.target):null;
  const result:OsintResult=provided?{...provided,kind:parsed.kind,target:parsed.kind==='proxy'?'Filtreli proxy sorgusu':parsed.target}:parsed.kind==='dns'?await dnsInspect(parsed.target):parsed.kind==='ip'?await ipInspect(parsed.target):urlInspect(parsed.target);
  const profile=await memberProfile(actor.id),tier=osintTier(profile.level);
@@ -149,5 +149,6 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   await tx.query('INSERT INTO osint_usage(guild_id,user_id,request_id,query_kind,target_sha256) VALUES($1,$2,$3,$4,$5)',[config().guildId,actor.id,requestId,parsed.kind,fingerprint]);
   return {used:used+1,duplicate:false};
  });
- return {result,quota:{xp:profile.xp,level:profile.level,tier:tier.name,dailyLimit:tier.dailyLimit,used:billing.used,remaining:Math.max(0,tier.dailyLimit-billing.used),resetTimezone:'Europe/Istanbul'},duplicate:billing.duplicate};
+ return {result,quota:{xp:profile.xp,level:profile.level,proxyResultLimit:proxyResultLimit(profile.level),tier:tier.name,dailyLimit:tier.dailyLimit,used:billing.used,remaining:Math.max(0,tier.dailyLimit-billing.used),resetTimezone:'Europe/Istanbul'},duplicate:billing.duplicate};
 }
+export function proxyResultLimit(level:number){return 10+5*(Number.isSafeInteger(level)&&level>=0?level:0);}

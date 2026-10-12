@@ -1,5 +1,5 @@
 import {releases} from './releases';
-import {osintCommand} from './osint-policy';
+import {osintCommand,proxyPanelCommand,tempMailPanelCommand} from './osint-policy';
 import {brightEmbed,theme} from './presentation';
 import {expansionCommand} from './expansion-policy';
 import {supportCommands} from './support-commands';
@@ -27,7 +27,7 @@ export const commands=[
  {name:'botpanel',description:'Bot yönetim merkezini aç.'},
  {name:'guncellemeler',description:'Yeni özellikleri, komutları ve önceki sürüm notlarını görüntüle.',options:[{type:3,name:'surum',description:'Görüntülenecek sürüm; boşsa en yeni sürüm',required:false,choices:releases.map(r=>({name:'v'+r.version+' · '+r.title,value:r.version}))}]},
  {name:'yardim',description:'Tüm komutların kategorilerini ve tüm alt komutları keşfet.'},
- osintCommand,
+ osintCommand,proxyPanelCommand,tempMailPanelCommand,
  expansionCommand,
  ...musicCommands,
  ...supportCommands,
@@ -41,6 +41,6 @@ export function commandReply(name:string){
 }
 
 // Discord allows 100 guild CHAT_INPUT commands plus a separate global quota.
-const globalNames=new Set(['inv','kick','ban','sil','osint']);
+const globalNames=new Set(['inv','kick','ban','sil','osint','proxy','tempmail']);
 export const guildCommands=commands.filter(c=>!globalNames.has(c.name));
 export const globalCommands=commands.filter(c=>globalNames.has(c.name));
