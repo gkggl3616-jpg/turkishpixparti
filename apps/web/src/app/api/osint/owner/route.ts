@@ -1,23 +1,28 @@
+import {loadServerSettings} from '../../../../../../../packages/core/src/setup';
 import {NextResponse} from 'next/server';
-import {session,csrf,DomainError,osintOwnerList,osintSetBlocked,purgeOldOsintLogs} from '../../../../../../../packages/core/src/index';
+import {session,csrf,DomainError,osintAdminState,osintSetBlocked,purgeOldOsintLogs,osintGrant,revokeOsintGrant,setOsintProviderKey,testOsintProvider,osintAuditExport,osintMemberDetails,rateLimit,assertOsintOwner} from '../../../../../../../packages/core/src/index';
 export const dynamic='force-dynamic';export const runtime='nodejs';
-function failure(e:unknown){return NextResponse.json({error:e instanceof DomainError?e.message:'Owner işlemi tamamlanamadı.'},{status:e instanceof DomainError?e.status:500,headers:{'Cache-Control':'no-store'}});}
-export async function GET(req:Request){
- try{
-  const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);
-  const data=await osintOwnerList(me.id,120);
-  await purgeOldOsintLogs();
-  return NextResponse.json({...data,csrf:me.csrf},{headers:{'Cache-Control':'no-store'}});
- }catch(e){return failure(e);}
-}
-export async function POST(req:Request){
- try{
-  const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);
-  csrf(req,me);
-  if((req.headers.get('content-length')&&Number(req.headers.get('content-length'))>1000))throw new DomainError('BAD_REQUEST','İstek fazla büyük.',413);
-  const data=await req.json();
-  if(typeof data?.userId!=='string'||typeof data?.blocked!=='boolean'||typeof data?.reason!=='string')throw new DomainError('BAD_REQUEST','Üye, işlem ve gerekçe gerekli.',400);
-  const result=await osintSetBlocked(me,data.userId,data.blocked,data.reason);
-  return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
- }catch(e){return failure(e);}
-}
+const headers={'Cache-Control':'no-store'};
+function failure(e:unknown){return NextResponse.json({error:e instanceof DomainError?e.message:'Owner işlemi tamamlanamadı.'},{status:e instanceof DomainError?e.status:500,headers});}
+export async function GET(req:Request){try{
+ await loadServerSettings();
+ const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);
+ const url=new URL(req.url),search=url.searchParams.get('q')||'',offset=Number(url.searchParams.get('offset')||0);
+ if(url.searchParams.get('member'))return NextResponse.json(await osintMemberDetails(me.id,url.searchParams.get('member')!),{headers});
+ if(url.searchParams.get('export')==='1'){const data=await osintAuditExport(me.id,search,offset);return NextResponse.json(data,{headers:{...headers,'Content-Disposition':'attachment; filename="turkishpix-osint-audit.json"'}});}
+ assertOsintOwner(me.id);await purgeOldOsintLogs();const data=await osintAdminState(me.id,search,offset);return NextResponse.json({...data,csrf:me.csrf},{headers});
+}catch(e){return failure(e);}}
+export async function POST(req:Request){try{
+ await loadServerSettings();
+ const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);csrf(req,me);
+ const raw=await req.text();if(raw.length>2000)throw new DomainError('BAD_REQUEST','İstek fazla büyük.',413);
+ let d:any;try{d=JSON.parse(raw);}catch{throw new DomainError('BAD_REQUEST','Geçerli JSON gerekli.',400);}
+ let result:any;
+ if(d?.action==='grant')result=await osintGrant(me,d.userId,d.credits,d.expiresAt);
+ else if(d?.action==='revoke')result=await revokeOsintGrant(me,d.id);
+ else if(d?.action==='provider-key'&&typeof d.provider==='string'&&typeof d.key==='string')result=await setOsintProviderKey(me,d.provider,d.key);
+ else if(d?.action==='provider-test'&&typeof d.provider==='string'){await rateLimit('osint-provider-test:'+me.id,6,60);result=await testOsintProvider(me.id,d.provider);}
+ else if(typeof d?.userId==='string'&&typeof d?.blocked==='boolean'&&typeof d?.reason==='string')result=await osintSetBlocked(me,d.userId,d.blocked,d.reason);
+ else throw new DomainError('BAD_REQUEST','Geçerli owner işlemi gerekli.',400);
+ return NextResponse.json(result,{headers});
+}catch(e){return failure(e);}}

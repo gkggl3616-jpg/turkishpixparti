@@ -1,3 +1,5 @@
+import {audit} from './audit';
+import {loadServerSettings} from './setup';
 import {isIP} from 'node:net';
 import {config,DomainError} from './config';
 import {database,transaction} from './db';
@@ -13,11 +15,13 @@ export function observedIp(req:Request):string|null{
 }
 export function eventPreview(kind:string,target:unknown):string{
  const value=typeof target==='string'?target.trim().slice(0,250):'';
- if(['url'].includes(kind)){
+ if(['url','headers'].includes(kind)){
   try{const u=new URL(value);return (u.protocol+'//'+u.host+u.pathname).slice(0,140);}catch{return '[geçersiz URL]';}
  }
  if(['proxy'].includes(kind))return '[proxy filtreleri]';
  if(['proxy-check'].includes(kind))return '[proxy adresi]';
+ if(kind==='metadata')return '[yerel dosya meta verisi]';
+ if(['mail','mail-inbox'].includes(kind))return '[kişisel geçici e-posta]';
  return value.slice(0,140).replace(/[\x00-\x1f\x7f]/g,'');
 }
 let lastPrune=0;
@@ -29,6 +33,7 @@ export async function assertOsintAllowed(id:string){
  if(row)throw new DomainError('OSINT_BLOCKED','OSINT araştırma erişimin owner tarafından kapatılmış.',403);
 }
 export async function osintOwnerList(ownerId:string,limit=100){
+ await loadServerSettings();
  if(!config().owners.includes(ownerId))throw new DomainError('FORBIDDEN','Bu panel yalnızca owner hesabına açıktır.',403);
  const [events,blocks]=await Promise.all([
   database().query("SELECT e.id,e.user_id,u.username,e.event_type,e.source,e.query_kind,e.target_preview,e.observed_ip,e.error_code,e.created_at FROM osint_access_events e LEFT JOIN users u ON u.id=e.user_id WHERE e.guild_id=$1 AND e.created_at>now()-interval '14 days' ORDER BY e.created_at DESC LIMIT $2",[config().guildId,Math.max(1,Math.min(250,limit))]),
@@ -37,6 +42,7 @@ export async function osintOwnerList(ownerId:string,limit=100){
  return {events:events.rows,blocks:blocks.rows,retentionDays:14,ipNotice:'IP ağ gözlemidir; VPN/proxy ve ağ geçitleri nedeniyle kesin kullanıcı konumu veya kimliği değildir.'};
 }
 export async function osintSetBlocked(owner:{id:string;username:string},targetId:string,blocked:boolean,reason:string){
+ await loadServerSettings();
  if(!config().owners.includes(owner.id))throw new DomainError('FORBIDDEN','Yalnızca owner erişimi değiştirebilir.',403);
  if(!/^\d{17,20}$/.test(targetId))throw new DomainError('INVALID_USER','Geçerli Discord üye ID gerekli.',400);
  if(config().owners.includes(targetId))throw new DomainError('OWNER_PROTECTED','Owner hesabı bu panelden engellenemez.',403);
@@ -48,6 +54,7 @@ export async function osintSetBlocked(owner:{id:string;username:string},targetId
   if(!exists.rows.length)throw new DomainError('USER_UNKNOWN','Kullanıcı daha önce sistemde tanımlanmamış.',404);
   if(blocked)await tx.query("INSERT INTO osint_access_blocks(guild_id,user_id,blocked_by,reason) VALUES($1,$2,$3,$4) ON CONFLICT(guild_id,user_id) DO UPDATE SET blocked_by=EXCLUDED.blocked_by,reason=EXCLUDED.reason,created_at=now()",[config().guildId,targetId,owner.id,reason]);
   else await tx.query('DELETE FROM osint_access_blocks WHERE guild_id=$1 AND user_id=$2',[config().guildId,targetId]);
+  await audit(tx,owner.id,blocked?'OSINT_BLOCK':'OSINT_UNBLOCK',targetId,{reason});
   await tx.query("INSERT INTO osint_access_events(guild_id,user_id,event_type,source,target_preview) VALUES($1,$2,$3,'OWNER',$4)",[config().guildId,targetId,blocked?'BLOCK':'UNBLOCK',reason.slice(0,140)]);
  });
  return {success:true,blocked,userId:targetId};

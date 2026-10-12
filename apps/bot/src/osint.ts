@@ -2,7 +2,7 @@ import {MessageFlags,PermissionFlagsBits} from 'discord.js';
 import {config,DomainError} from '../../../packages/core/src/config';
 import {database,transaction} from '../../../packages/core/src/db';
 import {rateLimit} from '../../../packages/core/src/auth';
-import {osintRun,osintQuota,osintTools} from '../../../packages/core/src/osint';
+import {osintRun,osintQuota,osintTools,osintCatalog} from '../../../packages/core/src/osint';
 import {osintLog,assertOsintAllowed} from '../../../packages/core/src/osint-access';
 import {sendOsintResult,queueOsintDm,retryOsintDelivery,type DeliveryOutcome} from '../../../packages/core/src/osint-dm';
 import {guildMember,discordRequest,isDiscordMissing,syncUser} from '../../../packages/core/src/discord';
@@ -61,13 +61,13 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    await i.showModal(modal);return true;
   }
   if(i.isStringSelectMenu?.()&&i.customId==='tp-osint:tool'){
-   const selected=i.values?.[0],available=osintTools.some(t=>t.id===selected&&t.enabled);
+   const selected=i.values?.[0],available=(await osintCatalog()).some(t=>t.id===selected&&t.enabled);
    const modal=available?osintQueryModal(selected):null;
    if(!modal)throw new DomainError('INVALID_TOOL','Bu araç şu an kullanılamıyor.',400);
    await i.showModal(modal);return true;
   }
   if(i.isButton?.()&&i.customId==='tp-osint:research'){
-   await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **Araştırma aracını seç.** Sonuç yalnızca özel mesajına gönderilecek.',components:[{type:1,components:[{type:3,custom_id:'tp-osint:tool',placeholder:'Sorgu türünü seç',min_values:1,max_values:1,options:osintTools.filter(t=>t.enabled&&!!osintQueryModal(t.id)).map(t=>({label:t.name,value:t.id,description:t.label,emoji:{name:t.icon}}))}]}],allowedMentions:{parse:[]}});
+   await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **Araştırma aracını seç.** Sonuç yalnızca özel mesajına gönderilecek.',components:[{type:1,components:[{type:3,custom_id:'tp-osint:tool',placeholder:'Sorgu türünü seç',min_values:1,max_values:1,options:(await osintCatalog()).filter(t=>t.enabled&&!!osintQueryModal(t.id)).map(t=>({label:t.name,value:t.id,description:t.label,emoji:{name:t.icon}}))}]}],allowedMentions:{parse:[]}});
    return true;
   }
   await i.deferReply({flags:MessageFlags.Ephemeral});
@@ -87,15 +87,14 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   const subcommand=i.customId.slice('tp-osint:'.length);
   if(subcommand==='profil'||subcommand==='profile'){
    const q=await osintQuota(i.user.id);
-   await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+q.remaining+' / '+q.dailyLimit+'**\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
+   await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+(q.unlimited?'Sınırsız · Owner':q.remaining+' toplam / '+q.dailyLimit+' günlük · '+q.extraCredits+' ek hak')+'**\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
   }
   if(subcommand==='yardim'){
    await notice(i,'ARAŞTIRMA ARAÇLARI',osintTools.filter(t=>t.enabled).map(t=>t.icon+' **'+t.name+'**').join('\n')+'\n\nSonuçlar yalnızca DM ile gönderilir.\n'+osintWebLink());return true;
   }
-  if(['temp-mail','temp-number','mail-status','mail-inbox'].includes(subcommand)){
-   await notice(i,subcommand==='temp-number'?'TEMP NUMBER':'TEMP MAIL',subcommand==='temp-number'?'📱 Telefon/SMS sağlayıcısı henüz bağlanmadı. Şu anda numara tahsis edilemiyor.':'✉️ E-posta sağlayıcısı henüz bağlanmadı. Şu anda geçici adres ve gelen kutusu oluşturulamıyor.');return true;
-  }
-  if(subcommand==='proxy'){
+  if(['mail-create','mail-inbox'].includes(subcommand)){
+   kind=subcommand==='mail-create'?'mail':'mail-inbox';target=subcommand==='mail-create'?'account':'inbox';
+  }else if(subcommand==='proxy'){
    kind='proxy';target=JSON.stringify({protocol:'all',country:'',anonymity:'all',maxLatency:3000,minUptime:0});
   }else if(i.isModalSubmit?.()&&subcommand.startsWith('modal:')){
    kind=subcommand.slice('modal:'.length);

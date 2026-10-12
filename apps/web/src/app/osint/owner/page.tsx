@@ -1,3 +1,4 @@
+import './owner.css';
 import OsintOwnerPanel from '../../../components/OsintOwnerPanel';
 import '../osint.css';
 import type {Metadata} from 'next';

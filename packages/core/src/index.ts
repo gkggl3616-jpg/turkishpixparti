@@ -60,3 +60,9 @@ export * from './osint-access';
 export * from './osint-providers';
 
 export * from './osint-dm';
+
+export * from './osint-entitlements';
+export * from './osint-network';
+export * from './osint-research';
+export * from './osint-mail';
+export * from './osint-admin';

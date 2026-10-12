@@ -14,29 +14,30 @@ import {
 } from 'lucide-react';
 
 type Tool={id:string;name:string;label:string;enabled:boolean;icon:string};
-type Quota={xp:number;level:number;profileFound:boolean;levelSource:string;proxyResultLimit:number;tier:string;dailyLimit:number;used:number;remaining:number;resetTimezone:string};
+type Quota={xp:number;level:number;profileFound:boolean;levelSource:string;proxyResultLimit:number;tier:string;dailyLimit:number|null;used:number;unlimited:boolean;extraCredits:number;grants:{id:string;remaining:number;expiresAt:string}[];remaining:number|null;resetTimezone:string};
 type Member={username:string;id:string;avatar?:string|null;displayName?:string;discordJoinedAt?:string|null;siteJoinedAt?:string|null};
 type Result={kind:string;target:string;title:string;summary:string;notice:string;items:{name:string;value:string}[]};
 type Data={authenticated:boolean;me?:Member;csrf?:string;quota?:Quota;tools:Tool[];owner?:boolean;loginUrl?:string;error?:string};
 
 const GROUPS:{id:string;label:string;caption:string;icon:LucideIcon;tools:string[]}[]=[
  {id:'proxy',label:'Proxy & Network',caption:'01 / ROUTING',icon:Network,tools:['proxy','proxy-check']},
- {id:'infrastructure',label:'Altyapı Analizi',caption:'02 / INFRASTRUCTURE',icon:Globe2,tools:['dns','ip','rdap','tls','subdomains','dns-history','asn','email','headers','geo']},
+ {id:'infrastructure',label:'Altyapı Analizi',caption:'02 / INFRASTRUCTURE',icon:Globe2,tools:['combo-domain','combo-ip','dns','ip','rdap','tls','subdomains','dns-history','asn','email','headers','geo']},
  {id:'threats',label:'Tehdit Araştırması',caption:'03 / INTELLIGENCE',icon:ShieldAlert,tools:['threat','malware','url','cve','hash','ioc']},
- {id:'communication',label:'İletişim & Kimlik',caption:'04 / IDENTITY',icon:Fingerprint,tools:['mail','number','usernames']},
+ {id:'communication',label:'İletişim & Kimlik',caption:'04 / IDENTITY',icon:Fingerprint,tools:['mail','mail-inbox','number','usernames']},
  {id:'research',label:'Araştırma & Dosyalar',caption:'05 / INVESTIGATION',icon:FolderOpen,tools:['github','archives','metadata','reports']}
 ];
-const TOOL_ICONS:Record<string,LucideIcon>={dns:Globe2,ip:Radio,url:ShieldCheck,rdap:BookOpen,threat:ShieldAlert,mail:Mail,number:Phone,proxy:Network,malware:Shield, tls:KeyRound,subdomains:Layers3,'dns-history':Clock3,asn:Server,email:Mail,usernames:UserRound,github:Database,archives:FolderOpen,metadata:HardDrive,headers:FileSearch,ioc:Fingerprint,cve:ShieldAlert,hash:Hash,reports:BookOpen,'proxy-check':Wifi,geo:Globe2};
+const TOOL_ICONS:Record<string,LucideIcon>={'combo-domain':Globe2,'combo-ip':Radio,'mail-inbox':Mail,dns:Globe2,ip:Radio,url:ShieldCheck,rdap:BookOpen,threat:ShieldAlert,mail:Mail,number:Phone,proxy:Network,malware:Shield, tls:KeyRound,subdomains:Layers3,'dns-history':Clock3,asn:Server,email:Mail,usernames:UserRound,github:Database,archives:FolderOpen,metadata:HardDrive,headers:FileSearch,ioc:Fingerprint,cve:ShieldAlert,hash:Hash,reports:BookOpen,'proxy-check':Wifi,geo:Globe2};
 const PLACEHOLDERS:Record<string,string>={
+ 'dns-history':'example.com',reports:'example.com',malware:'SHA-256 — 64 haneli dosya özeti','combo-domain':'example.com','combo-ip':'1.1.1.1',headers:'https://example.com',geo:'1.1.1.1',threat:'1.1.1.1',usernames:'octocat',github:'owner/repo',archives:'example.com',ioc:'example[.]com',
  dns:'example.com',ip:'8.8.8.8',url:'https://example.com',rdap:'example.com',subdomains:'example.com',
  tls:'example.com',asn:'8.8.8.8',email:'example.com',cve:'CVE-2024-12345',hash:'SHA-256 hash — 64 karakter',
  'proxy-check':'http://1.2.3.4:8080'
 };
 const LABELS:Record<string,string>={
- proxy:'Proxy Generator','proxy-check':'Proxy Checker',dns:'DNS Intelligence',ip:'IP Intelligence',
+ 'combo-domain':'Domain Kombosu','combo-ip':'IP Kombosu','mail-inbox':'Geçici Gelen Kutusu',proxy:'Proxy Generator','proxy-check':'Proxy Checker',dns:'DNS Intelligence',ip:'IP Intelligence',
  rdap:'RDAP / WHOIS',tls:'SSL / Sertifika',subdomains:'Subdomain Discovery','dns-history':'DNS History',
  asn:'ASN / BGP',email:'E-posta Güvenliği',headers:'HTTP Headers',geo:'GeoIP',
- threat:'Threat Intelligence',malware:'Malware Scanner',url:'URL Analyzer',cve:'CVE Intelligence',
+ threat:'Threat Intelligence',malware:'Malware Hash Report',url:'URL Analyzer',cve:'CVE Intelligence',
  hash:'Hash Reputation',ioc:'IOC Normalizer',mail:'Temp Mail',number:'Temp Number',
  usernames:'Username Research',github:'GitHub Intelligence',archives:'Web Archives',
  metadata:'File Metadata',reports:'Research Reports'
@@ -52,6 +53,7 @@ export default function OsintDashboard(){
  const [groups,setGroups]=useState<string[]>(['proxy','infrastructure']),[sidebarCollapsed,setSidebarCollapsed]=useState(false);
  const [mobileOpen,setMobileOpen]=useState(false),[search,setSearch]=useState('');
  const [target,setTarget]=useState(''),[result,setResult]=useState<Result|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[dm,setDm]=useState<boolean|null>(null);
+ const [metadataFile,setMetadataFile]=useState<File|null>(null);
  const [deliveryId,setDeliveryId]=useState(''),[retrying,setRetrying]=useState(false),[loginError,setLoginError]=useState('');
  const [country,setCountry]=useState(''),[protocol,setProtocol]=useState('all'),[anonymity,setAnonymity]=useState('all'),[latency,setLatency]=useState('3000'),[uptime,setUptime]=useState('0');
 
@@ -79,17 +81,18 @@ export default function OsintDashboard(){
  const xp=data?.quota?.xp||0,level=data?.quota?.level||0;
  const proxyLimit=data?.quota?.proxyResultLimit??10+5*level;
  const {nextXp,percent:levelPct}=levelProgress(xp,level);
- const usedPct=data?.quota?Math.min(100,data.quota.used/Math.max(1,data.quota.dailyLimit)*100):0;
+ const usedPct=data?.quota?Math.min(100,data.quota.unlimited?0:data.quota.used/Math.max(1,data.quota.dailyLimit||1)*100):0;
 
  const matching=useMemo(()=>catalog.filter(x=>((LABELS[x.id]||x.name)+' '+x.label).toLocaleLowerCase('tr-TR').includes(search.toLocaleLowerCase('tr-TR').trim())),[catalog,search]);
- function openTool(id:string){setPage(id);setTarget('');setResult(null);setDm(null);setError('');setMobileOpen(false);window.scrollTo({top:0,behavior:'smooth'});}
+ function openTool(id:string){setPage(id);setMetadataFile(null);setTarget('');setResult(null);setDm(null);setError('');setMobileOpen(false);window.scrollTo({top:0,behavior:'smooth'});}
  function home(){setPage('overview');setResult(null);setError('');setMobileOpen(false);window.scrollTo({top:0,behavior:'smooth'});}
  function toggleGroup(id:string){setGroups(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);}
  async function run(e:React.FormEvent<HTMLFormElement>){
-  e.preventDefault();if(!data?.authenticated||!data.csrf||!tool?.enabled||busy||!data.quota?.remaining)return;
+  e.preventDefault();if(!data?.authenticated||!data.csrf||!tool?.enabled||busy||(!data.quota?.unlimited&&!data.quota?.remaining))return;
   setBusy(true);setError('');setResult(null);setDm(null);
   try{
-   const input=page==='proxy'?JSON.stringify({protocol,country,anonymity,maxLatency:Number(latency),minUptime:Number(uptime),limit:proxyLimit}):target;
+   let input=page==='proxy'?JSON.stringify({protocol,country,anonymity,maxLatency:Number(latency),minUptime:Number(uptime),limit:proxyLimit}):page==='mail'?'account':page==='mail-inbox'?'inbox':target;
+   if(page==='metadata'){if(!metadataFile)throw Error('Dosya seç.');if(metadataFile.size>25*1024*1024)throw Error('Yerel dosya sınırı 25 MB.');const buffer=await metadataFile.arrayBuffer(),bytes=new Uint8Array(buffer),sha256=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buffer))].map(b=>b.toString(16).padStart(2,'0')).join('');input=JSON.stringify({name:metadataFile.name.slice(0,120),size:metadataFile.size,mime:metadataFile.type.slice(0,100),sha256,magic:[...bytes.slice(0,16)].map(b=>b.toString(16).padStart(2,'0')).join(''),lastModified:metadataFile.lastModified});}
    const r=await fetch('/api/osint/run',{method:'POST',headers:{'Content-Type':'application/json','x-csrf-token':data.csrf},body:JSON.stringify({kind:page,target:input,requestId:crypto.randomUUID()})});
    const body=await r.json();if(!r.ok)throw Error(body.error||'Araştırma tamamlanamadı.');
    setResult(body.result);setDeliveryId(body.deliveryId||'');setDm(Boolean(body.dmDelivered));setData(previous=>previous?{...previous,quota:body.quota}:previous);
@@ -138,7 +141,7 @@ export default function OsintDashboard(){
     <div className="os-sidebar-rule"/>
     {data?.owner&&<Link className="os-sidebar-action" href="/osint/owner"><Shield size={17}/><span>Owner Denetim Paneli</span><ArrowUpRight size={13}/></Link>}
     <a className="os-sidebar-action" href="https://discord.gg/turkishpix" target="_blank" rel="noreferrer"><ExternalLink size={17}/><span>TurkishPix Discord</span><ArrowUpRight size={13}/></a>
-    <div className="os-sidebar-foot"><span className="os-online-dot"/> OSINT CORE <span>v2.2</span></div>
+    <div className="os-sidebar-foot"><span className="os-online-dot"/> OSINT CORE <span>v2.18</span></div>
    </div>
   </aside>
 
@@ -200,9 +203,9 @@ export default function OsintDashboard(){
 
      <div className="os-section-heading"><div><span className="os-kicker">DAILY OPERATING QUOTA</span><h2>İşlem kapasitesi</h2></div><span className="os-section-note">Türkiye saatiyle her gün 00:00'da yenilenir</span></div>
      <div className="os-stats-row">
-      <div className="os-stat"><span>GÜNLÜK SORGU HAKKI</span><strong>{data?.quota?.dailyLimit??'—'}</strong><small>XP seviyene göre tanımlanır</small><div className="os-stat-mark"><Activity size={19}/></div></div>
-      <div className="os-stat"><span>KALAN SORGU</span><strong>{data?.quota?.remaining??'—'}</strong><small>{data?.quota?data.quota.used+' sorgu kullanıldı':'Oturum gerekli'}</small><div className="os-stat-mark"><Database size={19}/></div></div>
-      <div className="os-stat"><span>AKTİF ARAÇLAR</span><strong>{activeCount.toString().padStart(2,'0')} <em>/ {catalog.length.toString().padStart(2,'0')}</em></strong><small>Servis bağlantısı bulunan modüller</small><div className="os-stat-mark"><Layers3 size={19}/></div></div>
+      <div className="os-stat"><span>GÜNLÜK SORGU HAKKI</span><strong>{data?.quota?.unlimited?'Sınırsız':data?.quota?.dailyLimit??'—'}</strong><small>{data?.quota?.unlimited?'Tanımlı owner hesabı':'XP seviyene göre tanımlanır'}</small><div className="os-stat-mark"><Activity size={19}/></div></div>
+      <div className="os-stat"><span>KALAN SORGU</span><strong>{data?.quota?.unlimited?'Sınırsız':data?.quota?.remaining??'—'}</strong><small>{data?.quota?data.quota.used+' günlük sorgu · '+data.quota.extraCredits+' ek hak':'Oturum gerekli'}</small><div className="os-stat-mark"><Database size={19}/></div></div>
+      <div className="os-stat"><span>SORGUYA AÇIK ARAÇLAR</span><strong>{activeCount.toString().padStart(2,'0')} <em>/ {catalog.length.toString().padStart(2,'0')}</em></strong><small>Bağlantı durumu owner panelinde</small><div className="os-stat-mark"><Layers3 size={19}/></div></div>
       <div className="os-stat"><span>ERİŞİM SINIFI</span><strong className="os-stat-rank">{data?.quota?rank.name:'—'}</strong><small>{data?.quota?.tier||'Discord doğrulaması gerekli'}</small><div className="os-stat-mark"><KeyRound size={19}/></div></div>
      </div>
      <div className="os-quota-track"><span>KULLANIM ORANI</span><div className="os-track"><div style={{width:usedPct+'%'}}/></div><strong>%{Math.round(usedPct)}</strong></div>
@@ -210,17 +213,17 @@ export default function OsintDashboard(){
      <div className="os-section-heading"><div><span className="os-kicker">DIRECT ACCESS</span><h2>Araştırma merkezleri</h2></div><span className="os-section-note">Modülü seçerek konsolu aç</span></div>
      <div className="os-centers">
       <button className="os-center-card" onClick={()=>openTool('proxy')}><img src="/osint-assets/proxy-mesh.svg" alt="" aria-hidden="true"/><div className="os-center-content"><span>01 / NETWORK ROUTING</span><h3>Proxy Intelligence</h3><p>Proxy generator, filtreleme, son kontrol kayıtları ve ağ altyapısı.</p><div className="os-center-open">Modüle git <ArrowUpRight size={15}/></div></div></button>
-      <button className="os-center-card" onClick={()=>openTool('dns')}><img src="/osint-assets/network-constellation.svg" alt="" aria-hidden="true"/><div className="os-center-content"><span>02 / INFRASTRUCTURE</span><h3>Domain & Network</h3><p>DNS, IP, RDAP, ASN, sertifika geçmişi ve pasif alan adı araştırmaları.</p><div className="os-center-open">Modüle git <ArrowUpRight size={15}/></div></div></button>
+      <button className="os-center-card" onClick={()=>openTool('combo-domain')}><img src="/osint-assets/network-constellation.svg" alt="" aria-hidden="true"/><div className="os-center-content"><span>02 / INFRASTRUCTURE</span><h3>Domain & Network</h3><p>DNS, IP, RDAP, ASN, sertifika geçmişi ve pasif alan adı araştırmaları.</p><div className="os-center-open">Modüle git <ArrowUpRight size={15}/></div></div></button>
       <button className="os-center-card" onClick={()=>openTool('cve')}><img src="/osint-assets/threat-matrix.svg" alt="" aria-hidden="true"/><div className="os-center-content"><span>03 / THREAT RESEARCH</span><h3>Threat Intelligence</h3><p>CVE, hash itibarı, URL incelemesi ve güvenlik araştırması.</p><div className="os-center-open">Modüle git <ArrowUpRight size={15}/></div></div></button>
      </div>
 
-     <footer className="os-page-footer">NEXUS OSINT / TURKISHPIX <span>Halka açık veriler üzerinden yasal, pasif araştırma · Sorgu meta verileri 14 güne kadar saklanır.</span></footer>
+     <footer className="os-page-footer">NEXUS OSINT / TURKISHPIX <span>Açık kaynak araştırması ve yetkili genel başlık incelemesi · Sorgu meta verileri 14 güne kadar saklanır.</span></footer>
     </>:
     <section className="os-tool-page">
      <div className="os-tool-banner">
       <img src={toolGroup?.id==='proxy'?'/osint-assets/proxy-mesh.svg':toolGroup?.id==='threats'?'/osint-assets/threat-matrix.svg':'/osint-assets/network-constellation.svg'} alt="" aria-hidden="true"/>
       <div className="os-tool-banner-content"><span className="os-eyebrow"><span className="os-eyebrow-line"/> {toolGroup?.caption||'INTELLIGENCE MODULE'}</span><div className="os-module-icon"><IconOf id={page} size={23}/></div>
-       <h1>{LABELS[page]||tool?.name||'Araştırma aracı'}</h1><p>{tool?.label||'Araştırma modülü'} · {tool?.enabled?'Servis bağlantısı yapılandırılmıştır.':'Modül API entegrasyonu bekliyor.'}</p>
+       <h1>{LABELS[page]||tool?.name||'Araştırma aracı'}</h1><p>{tool?.label||'Araştırma modülü'} · {tool?.enabled?'Kaynak bağlantısı sorgu sırasında doğrulanır.':'Sağlayıcı anahtarı veya entegrasyon gerekli.'}</p>
        <span className={'os-tool-status'+(tool?.enabled?' is-enabled':'')}>{tool?.enabled?<><span className="os-online-dot"/> SORGUYA AÇIK</>:<><LockKeyhole size={13}/> YAKINDA</>}</span>
       </div>
      </div>
@@ -237,17 +240,17 @@ export default function OsintDashboard(){
          <div><label htmlFor="os-latency">Azami gecikme (ms)</label><input id="os-latency" type="number" min={100} max={30000} value={latency} onChange={e=>setLatency(e.target.value)}/></div>
          <div><label htmlFor="os-uptime">Minimum uptime (%)</label><input id="os-uptime" type="number" min={0} max={100} value={uptime} onChange={e=>setUptime(e.target.value)}/></div>
          <div><label htmlFor="os-count">Level {level} · Proxy hakkın</label><input id="os-count" type="number" value={proxyLimit} readOnly aria-describedby="os-count-rule"/><small id="os-count-rule">10 + level × 5</small></div>
-        </div>:<div className="os-input-wrap"><Search size={19}/><input id="os-query-target" placeholder={PLACEHOLDERS[page]||'Sorgu hedefi'} value={target} maxLength={250} onChange={e=>setTarget(e.target.value)} autoComplete="off" required/></div>}
-        <div className="os-query-actions"><button className="os-primary-action" type="submit" disabled={!data?.authenticated||!data?.quota?.remaining||busy}>{busy?<RefreshCw size={17} className="os-spin"/>:<Search size={17}/>} {busy?'Sorgu işleniyor':page==='proxy'?'Filtreli listeyi oluştur':'Sorguyu çalıştır'} <ArrowRight size={16}/></button><span><LockKeyhole size={13}/> Kullanım günlük XP kotasına bağlıdır.</span></div>
+        </div>:page==='metadata'?<div className="os-input-wrap"><input id="os-query-target" type="file" onChange={e=>setMetadataFile(e.target.files?.[0]||null)} required aria-label="Yerel dosya · en fazla 25 MB"/><small>İçerik tarayıcıda kalır. Yalnızca ad, boyut, başlangıç imzası ve SHA-256 rapora gönderilir.</small></div>:['mail','mail-inbox'].includes(page)?<div className="os-inline-message">{page==='mail'?'Kişisel geçici adresin oluşturulur; aktif adresin varsa tekrar kullanılır.':'Yalnızca kendi geçici gelen kutun okunur.'} Sağlayıcı: <a href="https://mail.tm" target="_blank" rel="noreferrer">Mail.tm</a> · 24 saat platform erişimi.</div>:<div className="os-input-wrap"><Search size={19}/><input id="os-query-target" placeholder={PLACEHOLDERS[page]||'Sorgu hedefi'} value={target} maxLength={250} onChange={e=>setTarget(e.target.value)} autoComplete="off" required/></div>}
+        <div className="os-query-actions"><button className="os-primary-action" type="submit" disabled={!data?.authenticated||(!data?.quota?.unlimited&&!data?.quota?.remaining)||busy}>{busy?<RefreshCw size={17} className="os-spin"/>:<Search size={17}/>} {busy?'Sorgu işleniyor':page==='proxy'?'Filtreli listeyi oluştur':'Sorguyu çalıştır'} <ArrowRight size={16}/></button><span><LockKeyhole size={13}/> Günlük hak + süreli ek hak · Owner sınırsız.</span></div>
         {!data?.authenticated&&<div className="os-inline-message">Araçları kullanmak için <a href="/api/auth/login?return=%2Fosint">Discord ile giriş yapmalısın.</a></div>}
         {data?.authenticated&&data?.quota?.remaining===0&&<div className="os-inline-message">Günlük araştırma hakkın tükendi. Türkiye saatiyle 00:00'da yenilenir.</div>}
        </form>}
        {error&&<div className="os-error" role="alert"><ShieldAlert size={17}/>{error}</div>}
-       {result&&<section className="os-result-panel"><div className="os-result-heading"><div><span className="os-kicker">QUERY COMPLETE</span><h3>{result.title}</h3><p>{result.summary}</p></div><button onClick={()=>navigator.clipboard.writeText(resultText)} title="Sonuçları kopyala"><Copy size={17}/> Kopyala</button></div><div className="os-result-rows">{result.items.map((row,i)=><div key={i}><span>{row.name}</span><pre>{row.value}</pre></div>)}</div><div className="os-result-notice">{result.notice}</div><div className="os-result-dm">{dm?<><Check size={16}/> Sonuç Discord özel mesajına da gönderildi.</>:<><ShieldAlert size={16}/> DM gizlilik ayarını açıp yeniden gönderebilirsin.</>}</div>{dm===false&&deliveryId&&<button className="os-primary-action" type="button" onClick={()=>void retryDm()} disabled={retrying}><Mail size={16}/>{retrying?'Gönderiliyor':'DM’ye Tekrar Gönder'}</button>}</section>}
+       {result&&<section className="os-result-panel"><div className="os-result-heading"><div><span className="os-kicker">QUERY COMPLETE</span><h3>{result.title}</h3><p>{result.summary}</p></div><button onClick={()=>navigator.clipboard.writeText(resultText)} title="Sonuçları kopyala"><Copy size={17}/> Kopyala</button><button onClick={()=>{const url=URL.createObjectURL(new Blob([resultText],{type:'text/plain;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='turkishpix-'+result.kind+'-rapor.txt';a.click();URL.revokeObjectURL(url);}}>TXT indir</button></div><div className="os-result-rows">{result.items.map((row,i)=><div key={i}><span>{row.name}</span><pre>{row.value}</pre></div>)}</div><div className="os-result-notice">{result.notice}</div><div className="os-result-dm">{dm?<><Check size={16}/> Sonuç Discord özel mesajına da gönderildi.</>:<><ShieldAlert size={16}/> DM gizlilik ayarını açıp yeniden gönderebilirsin.</>}</div>{dm===false&&deliveryId&&<button className="os-primary-action" type="button" onClick={()=>void retryDm()} disabled={retrying}><Mail size={16}/>{retrying?'Gönderiliyor':'DM’ye Tekrar Gönder'}</button>}</section>}
       </section>
       <aside className="os-tool-aside">
-       <div className="os-aside-header"><ShieldCheck size={19}/><h3>Oturum durumu</h3></div><div className="os-aside-data"><span>OPERATÖR</span><strong>{profile?.displayName||'Bağlı değil'}</strong></div><div className="os-aside-data"><span>LEVEL KAYNAĞI</span><strong>{data?.quota?.levelSource||'TurkishPix XP'}</strong>{data?.quota&&!data.quota.profileFound&&<small>Henüz XP kaydı yok · Başlangıç seviye 0</small>}</div><div className="os-aside-data"><span>ERİŞİM UNVANI</span><strong>{data?.quota?rank.name:'—'}</strong></div><div className="os-aside-data"><span>KALAN HAK</span><strong>{data?.quota?data.quota.remaining+' / '+data.quota.dailyLimit:'—'}</strong></div>
-       <div className="os-aside-note"><CircleHelp size={18}/><p>Proxy Checker mevcut sağlayıcı kayıtlarını doğrular; doğrudan, bağımsız canlı bağlantı testi yapmaz. Araç sonuçları tek başına güvenlik garantisi değildir.</p></div>
+       <div className="os-aside-header"><ShieldCheck size={19}/><h3>Oturum durumu</h3></div><div className="os-aside-data"><span>OPERATÖR</span><strong>{profile?.displayName||'Bağlı değil'}</strong></div><div className="os-aside-data"><span>LEVEL KAYNAĞI</span><strong>{data?.quota?.levelSource||'TurkishPix XP'}</strong>{data?.quota&&!data.quota.profileFound&&<small>Henüz XP kaydı yok · Başlangıç seviye 0</small>}</div><div className="os-aside-data"><span>ERİŞİM UNVANI</span><strong>{data?.quota?rank.name:'—'}</strong></div><div className="os-aside-data"><span>KALAN HAK</span><strong>{data?.quota?data.quota.unlimited?'Sınırsız · Owner':data.quota.remaining+' toplam / '+data.quota.dailyLimit+' günlük':'—'}</strong></div>
+       <div className="os-aside-note"><CircleHelp size={18}/><p>{['proxy','proxy-check'].includes(page)?'Proxy Checker sağlayıcının son kontrol kayıtlarını gösterir; bağımsız canlı bağlantı garantisi değildir.':['combo-domain','reports','headers'].includes(page)?'Görünen IP CDN’ye ait olabilir. Yapılandırma gözlemleri doğrulanmış zafiyet değildir. Genel başlık incelemesini yetkili olduğun hedeflerde kullan.':'Sonuçları kaynak ve gözlem tarihiyle değerlendir. Araç raporu tek başına güvenlik veya kimlik doğrulaması değildir.'}</p></div>
        <button className="os-tool-return" onClick={home}> <Home size={16}/> Genel bakışa dön <ArrowRight size={16}/></button>
       </aside>
      </div>
