@@ -2,6 +2,7 @@
 
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
+import {RANKS,rankOf,levelProgress} from './osint-levels';
 import type {LucideIcon} from 'lucide-react';
 import {
  Activity,ArrowRight,ArrowUpRight,Ban,BookOpen,Check,ChevronDown,ChevronRight,
@@ -31,7 +32,6 @@ const PLACEHOLDERS:Record<string,string>={
  tls:'example.com',asn:'8.8.8.8',email:'example.com',cve:'CVE-2024-12345',hash:'SHA-256 hash — 64 karakter',
  'proxy-check':'http://1.2.3.4:8080'
 };
-const RANKS=[{level:0,name:'Acemi',code:'INITIATE'},{level:5,name:'Deneyimli',code:'OPERATOR'},{level:10,name:'Analist',code:'ANALYST'},{level:20,name:'Uzman',code:'SPECIALIST'},{level:40,name:'Elit',code:'ELITE'}] as const;
 const LABELS:Record<string,string>={
  proxy:'Proxy Generator','proxy-check':'Proxy Checker',dns:'DNS Intelligence',ip:'IP Intelligence',
  rdap:'RDAP / WHOIS',tls:'SSL / Sertifika',subdomains:'Subdomain Discovery','dns-history':'DNS History',
@@ -44,7 +44,6 @@ const LABELS:Record<string,string>={
 const dateText=(value?:string|null)=>{if(!value)return 'Kayıt bulunamadı';const d=new Date(value);return Number.isNaN(d.getTime())?'Kayıt bulunamadı':new Intl.DateTimeFormat('tr-TR',{day:'2-digit',month:'long',year:'numeric',timeZone:'Europe/Istanbul'}).format(d);};
 const durationText=(value?:string|null)=>{if(!value)return '';const d=new Date(value);if(Number.isNaN(d.getTime()))return '';const days=Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));return days===0?'Bugünden beri':days+' gündür';};
 const memberAvatar=(m?:Member)=>m?.id&&/^\d{17,20}$/.test(m.id)&&m?.avatar&&/^a?_[a-f0-9]{12,}$|^[a-f0-9]{12,}$/i.test(m.avatar)?'https://cdn.discordapp.com/avatars/'+m.id+'/'+m.avatar+(m.avatar.startsWith('a_')?'.gif':'.png')+'?size=256':null;
-const rankOf=(level:number)=>[...RANKS].reverse().find(r=>level>=r.level)||RANKS[0];
 
 function IconOf({id,size=17}:{id:string;size?:number}){const Icon=TOOL_ICONS[id]||Database;return <Icon size={size} strokeWidth={1.7}/>;}
 
@@ -72,11 +71,10 @@ export default function OsintDashboard(){
  const profile=data?.me;
  const avatar=memberAvatar(profile);
  const xp=data?.quota?.xp||0,level=data?.quota?.level||0;
- const previousXp=100*level*level,nextXp=100*(level+1)*(level+1);
- const levelPct=Math.min(100,Math.max(0,(xp-previousXp)/Math.max(1,nextXp-previousXp)*100));
+ const {nextXp,percent:levelPct}=levelProgress(xp,level);
  const usedPct=data?.quota?Math.min(100,data.quota.used/Math.max(1,data.quota.dailyLimit)*100):0;
 
- const matching=useMemo(()=>catalog.filter(x=>(LABELS[x.id]||x.name)+' '+x.label ? ((LABELS[x.id]||x.name)+' '+x.label).toLocaleLowerCase('tr-TR').includes(search.toLocaleLowerCase('tr-TR').trim()):true),[catalog,search]);
+ const matching=useMemo(()=>catalog.filter(x=>((LABELS[x.id]||x.name)+' '+x.label).toLocaleLowerCase('tr-TR').includes(search.toLocaleLowerCase('tr-TR').trim())),[catalog,search]);
  function openTool(id:string){setPage(id);setTarget('');setResult(null);setDm(null);setError('');setMobileOpen(false);window.scrollTo({top:0,behavior:'smooth'});}
  function home(){setPage('overview');setResult(null);setError('');setMobileOpen(false);window.scrollTo({top:0,behavior:'smooth'});}
  function toggleGroup(id:string){setGroups(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);}
