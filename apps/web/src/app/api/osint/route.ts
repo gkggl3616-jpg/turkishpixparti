@@ -1,3 +1,4 @@
+import {socialSourceStatus} from '../../../../../../packages/core/src/osint-social';
 import {loadServerSettings} from '../../../../../../packages/core/src/setup';
 import {NextResponse} from 'next/server';
 import {ZodError} from 'zod';
@@ -6,7 +7,7 @@ export const runtime='nodejs';export const dynamic='force-dynamic';
 export async function GET(req:Request){
  try{
   await loadServerSettings();
-  if(new URL(req.url).searchParams.get('status')==='1'){const providers=await osintProviderStatus();return NextResponse.json({scope:'OSINT',apiSources:providers.filter(p=>p.category!=='username').length,profileSources:providers.filter(p=>p.category==='username').length,providers:providers.map(p=>({id:p.id,name:p.name,kind:p.category==='username'?'PUBLIC_PROFILE':'API_DATA_SOURCE',configured:p.configured,state:p.state,checkedAt:p.checkedAt,code:p.code,latencyMs:p.latencyMs}))},{headers:{'Cache-Control':'no-store'}});}
+  if(new URL(req.url).searchParams.get('status')==='1'){const providers=await osintProviderStatus();return NextResponse.json({scope:'OSINT',socialSources:await socialSourceStatus(),apiSources:providers.filter(p=>p.category!=='username').length,profileSources:providers.filter(p=>p.category==='username').length,providers:providers.map(p=>({id:p.id,name:p.name,kind:p.category==='username'?'PUBLIC_PROFILE':'API_DATA_SOURCE',configured:p.configured,state:p.state,checkedAt:p.checkedAt,code:p.code,latencyMs:p.latencyMs}))},{headers:{'Cache-Control':'no-store'}});}
   const me=await session(req);
   if(!me)return NextResponse.json({authenticated:false,tools:await osintCatalog(),loginUrl:'/api/auth/login?return=%2Fosint'},{headers:{'Cache-Control':'no-store'}});
   const member=await guildMember(me.id);

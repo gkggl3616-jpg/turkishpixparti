@@ -85,3 +85,42 @@ The recording’s external mail domains and public SMS sites appear in the direc
 ## Verification
 
 Regression tests cover WEB delivery without DM writes, single-credit scans, stream events, partial source failures, missing credentials, target/module validation, SQL catalog compatibility, migration idempotency, private proxy rejection, source uncertainty, real documented API parsing and verified personal forwarding boundaries. Build/typecheck and full regression suite must pass before deployment. Production provider credentials and real user OAuth cannot be asserted from fixtures. Browser QA is unavailable in the current managed environment because the supported control-browser capability is absent.
+
+## OSINT 2.22 — public social profiles and controlled web validation
+
+The existing NEXUS styles are retained. There are now 132 tools and 9 combo presets. The 696 username presence adapters and 68 API/data-provider counts remain separate; the eleven structured social adapters reuse existing services and are not counted as eleven newly discovered APIs.
+
+The `social-*` tools normalize publicly returned fields, exact identity evidence, source URL, timestamp and error state. `social-all` completes all eleven adapters with four workers. GitHub, GitLab and DEV support explicit `id:123`; Bluesky supports full handles and DID; Discord accepts a Snowflake or a single exact username within the configured shared guild. Account IDs belong to their platform and cannot be reused as cross-platform identifiers. Avatar/banner URLs use fixed HTTPS image hosts. Images load only after the user opts in, with no referrer; unsupported hosts have no embedded image. JSON exports, field/status filters, server report history and the identity combo preserve these results. HTML biographies render as text.
+
+| Platform | Implemented query | Public fields, when returned |
+| --- | --- | --- |
+| GitHub | username / explicit numeric ID | ID, login/name, avatar, bio, public email, website/company/location, follow counts, public repositories/Gists, dates |
+| GitLab | exact username / explicit ID | ID, name/avatar, profile URL, bio, public email, organization/location/site, public social handles and dates; authentication/privacy may restrict fields |
+| Bluesky | handle / DID | DID, handle, display name, avatar/banner, bio, counts, dates and public labels |
+| Codeberg | username | Forgejo public user ID/name/avatar, description, public email/site/location/counts |
+| Bitbucket | supported name / UUID / account ID | UUID/account ID, name/avatar, location/site/date when public; privacy and API permissions apply |
+| DEV | username / explicit ID | ID, name/avatar, bio, site/location, public GitHub/X handles and join date |
+| Hugging Face | username | Hub ID/name/avatar, public bio/site, published counters and organizations |
+| Lichess | username | ID/name/title, public profile, game counts/performance and timestamps; no invented avatar |
+| Chess.com | username | player ID/name/avatar/title, public country/location/counts/status/timestamps |
+| Hacker News | exact username | ID, public about text, karma/date/submission count; API has no avatar |
+| Discord | Snowflake / exact shared-guild username | public ID/name/avatar/banner, flags, bot/system markers, creation time; no email/MFA/private connections/messages |
+| Instagram | capability report only | Business Discovery requires authorized professional-account setup; personal/private account dumps are unavailable |
+| TikTok | capability report only | Display API requires account OAuth and basic/profile/stats scopes; arbitrary nickname lookup is not that endpoint |
+| WhatsApp | capability report only | Cloud API reads the authorized business's profile; arbitrary personal phone/photo/status lookup is unavailable |
+| X | capability report only | API project/token/access billing required; connector not implemented in this release |
+| LinkedIn | capability report only | consented OpenID user information; connector not implemented in this release |
+
+The capability report clearly marks the five unconnected platforms; it makes no upstream profile query and consumes no query credit. All-error structured social queries also consume no credit. A genuine API `NOT_FOUND` is a completed lookup, not a transport failure. An hourly, concurrency-three probe uses known public examples (and the configured Discord application ID). `/api/osint?status=1` publishes only last social-adapter health metadata, never returned account fields or bot credentials. Fixture validation does not prove uninterrupted live upstream availability.
+
+### Web pentest preparation combo
+
+`combo-pentest` combines passive SQL-error/debug/stack-trace/directory-list/DOM/form signals, HTTP/TLS/CSP/CORS/cookie/isolation controls, WAF/method hints and domain/DNS context. Each signal carries evidence, source, severity and a remediation. Signals have weight zero so that absence of a signature never increases the configuration score or coverage. These are observations, not verified SQLi, XSS, auth bypass or CVE exploitability.
+
+The optional `web-authorized` module first shows a daily UTC DNS TXT record at `_osint-verify.<host>`. Its HMAC is tied to that hostname, the authenticated Discord actor and the server key. The checkbox defaults off and resets when the target changes. The exact current-day TXT value must match before any additional probe. Resolver failure, missing/incorrect TXT or missing session context cannot open the probe transport.
+
+After verification, only HTTPS URLs with exactly one short `q/query/search/s/id/item/page/category/filter` parameter and a usable same-URL, same-origin baseline are eligible. Obvious action routes are excluded. At most two additional GETs run: append one single quote to that parameter, and replace it with a random alphanumeric marker. No redirects are followed, each fetch revalidates/pins public DNS addresses, and existing time/body caps remain. No cookies, authenticated application session, POST/write methods, delays, UNION, extraction, code execution or payload enumeration. Results retain only matched error signatures, never response-body dumps. A new SQL error is a candidate requiring application-log review; reflection is not XSS. A blocked response or pre-existing SQL error is unknown. No observed error does not rule out blind/boolean/time SQLi. Sole challenge/unsupported-query reports do not consume a query credit.
+
+This implementation does not provide a complete pentest, private profile access, public shared SMS reading, or 300 verified new APIs. Only the OSINT deployment is updated; the management bot and primary web service stay pinned to their existing releases.
+
+Official sources checked 2026-10-13: [GitHub users](https://docs.github.com/en/rest/users/users), [GitLab users](https://docs.gitlab.com/api/users/), [Discord user resource](https://docs.discord.com/developers/resources/user), [TikTok user info](https://developers.tiktok.com/doc/tiktok-api-v2-get-user-info/), [Meta WhatsApp business profile](https://www.postman.com/meta/whatsapp-business-platform/request/i21qxwn/get-business-profile), [Bitbucket users](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-users/), [Forem](https://developers.forem.com/api/v0), [HF Hub](https://huggingface.co/docs/hub/api), [HN official API](https://github.com/HackerNews/API), [Chess Published Data](https://www.chess.com/news/view/published-data-api), [X lookup](https://docs.x.com/x-api/users/lookup/introduction), [LinkedIn OIDC](https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2), [OWASP SQL injection testing](https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection). Meta Instagram documentation was not retrievable from the research environment; its restricted capability is documented without claiming a validated connector.

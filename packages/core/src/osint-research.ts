@@ -14,7 +14,7 @@ type DnsRecord={name:string;type:number;TTL:number;data:string};
 export type DnsAnswer={status:number;ad:boolean;records:DnsRecord[];provider:string};
 const dnsCache=new Map<string,{expires:number;value:DnsAnswer}>();
 export async function dnsQuery(name:string,type:keyof typeof dnsTypes):Promise<DnsAnswer>{
- if(!domainPattern.test(name.replace(/^_(?:dmarc|mta-sts|smtp\._tls)\./,'').replace(/^[a-z0-9_-]{1,63}\._domainkey\./i,'')))throw new DomainError('INVALID_DOMAIN','DNS hedefi geçersiz.',400);
+ if(!domainPattern.test(name.replace(/^_(?:dmarc|mta-sts|smtp\._tls|osint-verify)\./,'').replace(/^[a-z0-9_-]{1,63}\._domainkey\./i,'')))throw new DomainError('INVALID_DOMAIN','DNS hedefi geçersiz.',400);
  const key=name+':'+type,old=dnsCache.get(key);if(old&&old.expires>Date.now())return old.value;
  const fetchRecord=async(id:string,url:string)=>{const d=await providerJson(id,url,150000,{headers:{Accept:'application/dns-json'}});if(!Number.isInteger(d.Status)||![0,3].includes(d.Status))throw new DomainError('DNS_FAILED','DNS çözümleyici başarısız yanıt verdi.',503);return {status:d.Status,ad:d.AD===true,records:Array.isArray(d.Answer)?d.Answer.slice(0,80).filter((r:any)=>typeof r.data==='string'&&Number.isInteger(r.type)).map((r:any)=>({name:clean(r.name,253),type:r.type,TTL:Number(r.TTL)||0,data:clean(r.data,1600)})):[],provider:id};};
  const params='name='+encodeURIComponent(name)+'&type='+dnsTypes[type];
@@ -42,7 +42,7 @@ export function publicResearchIp(ip:string){return isIP(ip)===4?!privateV4.check
 export function researchUrl(input:string){let u:URL;try{u=new URL(input);}catch{throw new DomainError('INVALID_URL','HTTP(S) adresi gerekli.',400);}if(!['http:','https:'].includes(u.protocol)||u.username||u.password||u.port&&u.port!==(u.protocol==='https:'?'443':'80'))throw new DomainError('UNSAFE_URL','Yalnızca kimlik bilgisi içermeyen 80/443 HTTP(S) adresleri kabul edilir.',400);const h=u.hostname.replace(/^\[|\]$/g,'');if(isIP(h)?!publicResearchIp(h):!domainPattern.test(h))throw new DomainError('UNSAFE_URL','Yalnızca genel internet hedefleri kabul edilir.',400);u.hash='';return u;}
 export type HeadObservation={url:string;status:number;headers:http.IncomingHttpHeaders;certificate?:{issuer:string;subject:string;validFrom:string;validTo:string;fingerprint:string};redirects?:{url:string;status:number}[];body?:string;cookieAttributes?:string[]};
 export function cookieSecurityAttributes(cookies:string[]){return cookies.slice(0,20).map(cookie=>cookie.split(';').slice(1).map(s=>s.trim()).filter(s=>/^(?:Secure|HttpOnly|Partitioned|SameSite=(?:Lax|Strict|None))$/i.test(s)).join('; ')||'Güvenlik niteliği gözlenmedi');}
-export async function publicWeb(input:string,method:'HEAD'|'GET'='HEAD',redirects=0):Promise<HeadObservation>{
+export async function publicWeb(input:string,method:'HEAD'|'GET'='HEAD',redirects=0,options:{followRedirects?:boolean}={}):Promise<HeadObservation>{
  const url=researchUrl(input),host=url.hostname.replace(/^\[|\]$/g,'');
  let addresses:{address:string;family:number}[];
  try{addresses=isIP(host)?[{address:host,family:isIP(host)}]:await Promise.race([lookup(host,{all:true}),new Promise<never>((_,reject)=>{const timer=setTimeout(()=>reject(new DomainError('DNS_TIMEOUT','Hedef DNS çözümlemesi zaman aşımına uğradı.',503)),6000);timer.unref();})]);}catch(e){throw e instanceof DomainError?e:new DomainError('PUBLIC_DNS_FAILED','Genel HTTP hedefinin DNS çözümlemesi tamamlanamadı.',503);}
@@ -57,7 +57,7 @@ export async function publicWeb(input:string,method:'HEAD'|'GET'='HEAD',redirect
    const chunks:Buffer[]=[];let bytes=0;r.on('data',(chunk:Buffer)=>{bytes+=chunk.length;if(bytes>300000){reject(new DomainError('WEB_SIZE','Genel sayfa 300 KB yanıt sınırını aştı.',503));r.destroy();}else chunks.push(chunk);});r.on('end',()=>resolve({...result,body:Buffer.concat(chunks).toString('utf8')}));r.on('error',()=>reject(new DomainError('WEB_FAILED','Genel sayfa okuması tamamlanamadı.',503)));
   });request.on('error',()=>reject(new DomainError('HEAD_FAILED','Hedefin genel HTTP(S) başlık bağlantısı tamamlanamadı.',503)));request.end();
  });
- if([301,302,303,307,308].includes(observed.status)&&observed.headers.location){if(redirects>=2)throw new DomainError('TOO_MANY_REDIRECTS','Yönlendirme sınırı aşıldı.',503);const next=await publicWeb(new URL(observed.headers.location,observed.url).href,method,redirects+1);return {...next,redirects:[{url:observed.url,status:observed.status},...(next.redirects||[])]};}
+ if(options.followRedirects!==false&&[301,302,303,307,308].includes(observed.status)&&observed.headers.location){if(redirects>=2)throw new DomainError('TOO_MANY_REDIRECTS','Yönlendirme sınırı aşıldı.',503);const next=await publicWeb(new URL(observed.headers.location,observed.url).href,method,redirects+1,options);return {...next,redirects:[{url:observed.url,status:observed.status},...(next.redirects||[])]};}
  return observed;
 }
 export async function publicHead(input:string,redirects=0){return publicWeb(input,'HEAD',redirects);}

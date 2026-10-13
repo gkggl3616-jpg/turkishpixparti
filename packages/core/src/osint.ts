@@ -1,3 +1,6 @@
+import {socialCatalog,type SocialKind,type SocialProfile} from './osint-social-catalog';
+import {socialResearch,validateSocial} from './osint-social';
+import {webRiskReport} from './osint-web-risks';
 import {saveResearchReport} from './osint-reports';
 import {multiCatalog,type MultiKind} from './osint-multi-catalog';
 import {multiResearch,validateMulti} from './osint-multi';
@@ -57,12 +60,12 @@ export const osintTools=[
  {id:'hash',name:'Hash Reputation',label:'Dosya karması itibar karşılaştırma',enabled:!!process.env.VIRUSTOTAL_API_KEY,icon:'🔏'},
  {id:'reports',name:'Research Reports',label:'Domain araştırma raporu ve TXT dışa aktarma',enabled:true,icon:'📊'},
  {id:'proxy-check',name:'Proxy Validator',label:'Yetkili proxy otomatik ve manuel test',enabled:true,icon:'✅'},
- {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'},...extraCatalog,...intelligenceCatalog,...webIntelligenceCatalog,...comboCatalog,...multiCatalog
+ {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'},...extraCatalog,...intelligenceCatalog,...webIntelligenceCatalog,...comboCatalog,...multiCatalog,...socialCatalog,{id:'web-risks',name:'Web Açık İzleri',label:'SQL hata, debug, form ve politika kanıtları',enabled:true,icon:'🔬'}
 ] as const;
 
-export type OsintKind=MultiKind|'aliases'|ExtraOsintKind|WebIntelligenceKind|IntelligenceKind|ScanKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
+export type OsintKind=SocialKind|'web-risks'|MultiKind|'aliases'|ExtraOsintKind|WebIntelligenceKind|IntelligenceKind|ScanKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
 export type OsintActor={id:string;username:string;avatar?:string|null};
-export type OsintResult={security?:SecurityAssessment;kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
+export type OsintResult={socialProfiles?:SocialProfile[];security?:SecurityAssessment;kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
 const targetSchema=z.string().trim().min(2).max(250);
 const domainPattern=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 export function osintTier(level:number){
@@ -103,6 +106,8 @@ function urlInspect(input:string):OsintResult{
 export function validateOsint(kind:string,target:unknown){
  const type=z.enum(osintTools.map(t=>t.id) as [OsintKind,...OsintKind[]]).parse(kind);
  const input=type==='proxy-live'?z.string().trim().min(2).max(64000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(12000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
+ if(socialCatalog.some(t=>t.id===type))validateSocial(type as SocialKind,input);
+ if(type==='web-risks')researchUrl(input);
  if(multiCatalog.some(t=>t.id===type))validateMulti(type as MultiKind,input);
  if(comboPresets.some(p=>p.id===type))parseScan(type as ScanKind,input);
  const webTool=webIntelligenceCatalog.find(t=>t.id===type);if(webTool){if(webTool.input==='url')researchUrl(input);else domain(input);}
@@ -134,8 +139,10 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  if(!beforeQuota.unlimited&&beforeQuota.remaining!<=0)throw new DomainError('OSINT_QUOTA','Araştırma hakkın doldu. Günlük hak 00:00’da yenilenir; ek hak için owner ile iletişime geç.',429);
  if(['mail','mail-inbox'].includes(parsed.kind))await syncUser(database(),actor);
  const provided=parsed.kind==='proxy-live'?await liveProxyReport(parsed.target,beforeQuota.unlimited?null:10)
+  :socialCatalog.some(t=>t.id===parsed.kind)?await socialResearch(parsed.kind as SocialKind,parsed.target)
+  :parsed.kind==='web-risks'?await webRiskReport(parsed.target)
   :multiCatalog.some(t=>t.id===parsed.kind)?await multiResearch(parsed.kind as MultiKind,parsed.target)
-  :comboPresets.some(p=>p.id===parsed.kind)?await runScan(parsed.kind as ScanKind,parsed.target,onProgress)
+  :comboPresets.some(p=>p.id===parsed.kind)?await runScan(parsed.kind as ScanKind,parsed.target,onProgress,actor.id)
   :webIntelligenceCatalog.some(t=>t.id===parsed.kind)?await webIntelligenceResearch(parsed.kind as WebIntelligenceKind,parsed.target)
   :intelligenceCatalog.some(t=>t.id===parsed.kind)?await intelligenceResearch(parsed.kind as IntelligenceKind,parsed.target)
   :extraCatalog.some(t=>t.id===parsed.kind)?await advancedResearch(parsed.kind as ExtraOsintKind,parsed.target)
