@@ -8,6 +8,12 @@ import {osintProviderStatus,providerDefinitions,providerJson} from './osint-netw
 import {levelInfo} from './features';
 import {audit,canonical} from './audit';
 import {loadServerSettings} from './setup';
+/** Startup checks use fixed public examples, never user inboxes or Discord posts. */
+export async function probeOsintUtilityFeatures(){
+ const {generateQr,searchRepositories}=await import('./osint-utilities'),{searchApiDirectory}=await import('./osint-api-directory'),{robloxUsername,minecraftStatus}=await import('./osint-game-tools');
+ const checks:[string,()=>Promise<unknown>][]=[['qr-code',()=>generateQr('https://example.com')],['repository-search',()=>searchRepositories(JSON.stringify({query:'discord bot typescript',license:'mit'}))],['api-directory',()=>searchApiDirectory('Weather')],['roblox-username',()=>robloxUsername('Roblox')],['minecraft-status',()=>minecraftStatus('mc.hypixel.net:25565')]];
+ return Promise.all(checks.map(async([tool,check])=>{try{await check();return {tool,state:'OK',checkedAt:new Date().toISOString()};}catch(e){return {tool,state:'ERROR',code:e instanceof DomainError?e.code:'CHECK_FAILED',checkedAt:new Date().toISOString()};}}));
+}
 export async function osintAdminState(ownerId:string,search='',offset=0){
  await loadServerSettings();assertOsintOwner(ownerId);await guildMember(ownerId);
  if(search.length>100||!Number.isSafeInteger(offset)||offset<0||offset>1000000)throw new DomainError('INVALID_FILTER','Geçerli arama ve sayfa gerekli.',400);
@@ -40,6 +46,8 @@ export async function testOsintProvider(ownerId:string,id:string){
 }
 async function probeOsintProvider(id:string){
  const def=providerDefinitions.find(p=>p.id===id);if(!def)throw new DomainError('INVALID_PROVIDER','Sağlayıcı tanımlı değil.',400);
+ if(id==='public-api-catalog'){await (await import('./osint-api-directory')).searchApiDirectory('all');return {success:true,provider:id,checkedAt:new Date().toISOString()};}
+ if(id==='roblox-users'){await (await import('./osint-game-tools')).robloxUsername('Roblox');return {success:true,provider:id,checkedAt:new Date().toISOString()};}
  if(def.category==='username'){const {usernameSources,profileProviderId,checkUsernameSource}=await import('./osint-usernames');const source=usernameSources.find(s=>profileProviderId(s.name)===id)!;const r=await checkUsernameSource(source,source.claimed||'octocat');if(['UNVERIFIABLE','NOT_CHECKED'].includes(r.status))throw new DomainError('PROVIDER_UNAVAILABLE',r.evidence,503);return {success:true,provider:id,checkedAt:r.checkedAt,evidence:r.status};}
  if((await import('./osint-multi-catalog')).extraProviderDefinitions.some(p=>p.id===id)&&!['twilio','dropmail','guerrilla','mailslurp','signalwire'].includes(id)){const {multiResearch}=await import('./osint-multi');const kind=['quad9','adguard','mullvad','dns-sb','alidns'].includes(id)?'dns-multi':['ipapi-co','ipapi-is','ipinfo','ipregistry','ipgeolocation','ipdata','ip2location'].includes(id)?'geo-multi':id==='cisa-kev'?'cve-multi':['google-safebrowsing','google-webrisk','urlhaus'].includes(id)?'url-multi':['whoisxml','openpagerank'].includes(id)?'domain-multi':'ip-multi';const target=kind==='dns-multi'||kind==='domain-multi'?'example.com':kind==='cve-multi'?'CVE-2024-3094':kind==='url-multi'?'https://example.com':'1.1.1.1';const r=await multiResearch(kind,target),observation='observations' in r?r.observations.find(o=>o.provider===id):null;if(!observation||observation.status!=='OK')throw new DomainError(observation?.code||'PROVIDER_UNAVAILABLE',observation?.error||'Sağlayıcı testi tamamlanmadı.',503);return {success:true,provider:id,checkedAt:observation.checkedAt};}
  if(id==='temp-mail-io'){const key=await (await import('./osint-network')).providerKey(id);if(!key)throw new DomainError('PROVIDER_KEY_REQUIRED','Premium API anahtarı gerekir.',503);const d=await providerJson(id,'https://api.temp-mail.io/v1/domains',100000,{headers:{'X-API-Key':key}});if(!Array.isArray(d.domains))throw new DomainError('PROVIDER_FORMAT','Domain yanıtı doğrulanmadı.',503);return {success:true,provider:id};}

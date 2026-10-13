@@ -1,7 +1,7 @@
 export async function register(){
  if(process.env.NEXT_RUNTIME!=='nodejs'||process.env.OSINT_ONLY!=='true')return;
  const {liveInboxTick}=await import('../../../packages/core/src/osint-live-inbox');
- const {probeOsintProviders}=await import('../../../packages/core/src/osint-admin');
+ const {probeOsintProviders,probeOsintUtilityFeatures}=await import('../../../packages/core/src/osint-admin');
  const {probeSocialProviders}=await import('../../../packages/core/src/osint-social');
  const {loadServerSettings}=await import('../../../packages/core/src/setup');
  const {refreshOsintGuildMembers}=await import('../../../packages/core/src/osint-live-admin');
@@ -15,6 +15,7 @@ export async function register(){
  let probing=false;
  const probe=async()=>{if(probing)return;probing=true;try{await loadServerSettings();await probeOsintProviders(['cloudflare','mullvad']);}catch(e){console.error('OSINT_SOURCE_CHECK',e instanceof Error?e.name:'ERROR');}finally{probing=false;}};
  let socialBusy=false;const socialProbe=async()=>{if(socialBusy)return;socialBusy=true;try{await loadServerSettings();await probeSocialProviders();}catch(e){console.error('OSINT_SOCIAL_CHECK',e instanceof Error?e.name:'ERROR');}finally{socialBusy=false;}};
+ setTimeout(()=>void probeOsintUtilityFeatures().then(results=>console.log('OSINT_UTILITY_CHECK',JSON.stringify(results))).catch(()=>console.error('OSINT_UTILITY_CHECK_FAILED')),10000).unref();
  setTimeout(()=>void socialProbe(),8000).unref();
  setInterval(()=>void socialProbe(),60*60000).unref();
  setTimeout(()=>void probe(),5000).unref();

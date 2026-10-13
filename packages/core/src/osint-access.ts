@@ -14,6 +14,7 @@ export function observedIp(req:Request):string|null{
  return candidates.length?candidates[candidates.length-1]:null;
 }
 export function eventPreview(kind:string,target:unknown):string{
+ if(kind==='qr-code')return '[QR içeriği]';
  let value=typeof target==='string'?target.trim().slice(0,250):'';
  if(kind==='scan'||kind.startsWith('combo-')){try{if(value.startsWith('{'))value=String(JSON.parse(value).target||'');}catch{return '[tarama ayarları]';}}
  if(['gravatar'].includes(kind)&&value.includes('@'))return '[açık profil / '+value.split('@').at(-1)+']';

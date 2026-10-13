@@ -9,6 +9,8 @@ import sources from './osint-profile-sources.json';
 import {extraProviderDefinitions} from './osint-multi-catalog';
 export const providerDefinitions:{id:string;name:string;key:boolean;env?:string;category?:string}[]=[
  ...extraProviderDefinitions,
+ {id:'public-api-catalog',name:'Public APIs topluluk kataloğu (API bağlantısı değildir)',key:false,category:'catalog'},
+ {id:'roblox-users',name:'Roblox resmî Users API',key:false},
  {id:'temp-mail-io',name:'Temp-Mail.io premium API',key:true,env:'TEMP_MAIL_IO_API_KEY'},
  {id:'tempmail-lol',name:'TempMail.lol tokenlu kutu API',key:false},
  {id:'cloudflare',name:'Cloudflare DNS',key:false},{id:'google-dns',name:'Google DNS (alternatif)',key:false},
@@ -64,7 +66,7 @@ export async function providerHealth(id:string,ok:boolean,code:string,ms:number)
 }
 export async function boundedProviderText(id:string,url:string,maximum=3000000,init:RequestInit={}):Promise<string>{
  if((cooldown.get(id)||0)>Date.now())throw new DomainError('PROVIDER_COOLDOWN','Sağlayıcının hız sınırı nedeniyle bekleniyor: '+id,503);
- const limits:Record<string,number>={'temp-mail-io':30,'tempmail-lol':30,guerrilla:30,dropmail:30,mailslurp:60,twilio:30,'ipapi-co':30,'ipapi-is':30,certspotter:2,observatory:10,ssllabs:5,cloudflare:600,'google-dns':600,rdap:25,'iana-rdap':25,ripe:120,ipwho:16,crtsh:8,hackertarget:5,nvd:5,mitre:30,github:30,gitlab:30,wayback:8,virustotal:4,abuseipdb:20,urlscan:20,securitytrails:10,malwarebazaar:20,proxyscrape:20,'proxyscrape-origin':20};
+ const limits:Record<string,number>={'public-api-catalog':2,'roblox-users':20,'temp-mail-io':30,'tempmail-lol':30,guerrilla:30,dropmail:30,mailslurp:60,twilio:30,'ipapi-co':30,'ipapi-is':30,certspotter:2,observatory:10,ssllabs:5,cloudflare:600,'google-dns':600,rdap:25,'iana-rdap':25,ripe:120,ipwho:16,crtsh:8,hackertarget:5,nvd:5,mitre:30,github:30,gitlab:30,wayback:8,virustotal:4,abuseipdb:20,urlscan:20,securitytrails:10,malwarebazaar:20,proxyscrape:20,'proxyscrape-origin':20};
  if(id==='tranco')await rateLimit('osint-provider:tranco-second',1,1);
  if(id==='nominatim')await rateLimit('osint-provider:nominatim-second',1,1);
  if(!['mailtm','mailgw'].includes(id)){await rateLimit('osint-provider:'+id,limits[id]||60,60);if(id==='ipwho')await rateLimit('osint-provider:ipwho-day',1000,86400);if(id==='github')await rateLimit('osint-provider:github-hour',60,3600);}

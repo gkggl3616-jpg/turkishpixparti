@@ -1,3 +1,5 @@
+import {osintUtilityCommands,utilityCommandInput} from '../../../packages/core/src/osint-utility-commands';
+import {ZodError} from 'zod';
 import {osintCategories} from '../../../packages/core/src/osint-navigation';
 import {liveInboxState,liveInboxAction,liveInboxProviders} from '../../../packages/core/src/osint-live-inbox';
 import {MessageFlags,PermissionFlagsBits} from 'discord.js';
@@ -50,8 +52,9 @@ async function installPanel(i:any,kind:OsintPanelKind){
 }
 export async function handleOsintInteraction(i:any):Promise<boolean>{
  const slash=!!i.isChatInputCommand?.()&&i.commandName==='kur';
+ const direct=!!i.isChatInputCommand?.()&&osintUtilityCommands.some(c=>c.name===i.commandName);
  const component=typeof i.customId==='string'&&i.customId.startsWith('tp-osint:');
- if(!slash&&!component)return false;
+ if(!slash&&!component&&!direct)return false;
  let kind='',target='';
  try{
   const privateFilter=component&&i.customId.startsWith('tp-osint:inbox-filter:');if(i.guildId||!privateFilter)requireGuild(i);
@@ -94,7 +97,8 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    await rateLimit('osint-dm-retry:'+i.user.id,4,60);
    await i.editReply(deliveryReply(await retryOsintDelivery(id,i.user.id,true)));return true;
   }
-  const subcommand=i.customId.slice('tp-osint:'.length);
+  if(direct&&i.commandName==='temp-mail'){await rateLimit('discord-inbox:'+i.user.id,4,60);const state=await liveInboxState(i.user.id),existing=state.inboxes.find(b=>!['twilio','signalwire','mailslurp-sms'].includes(b.provider)),provider=existing?.provider||state.providers.find(p=>p.kind==='mail'&&p.configured)?.id;if(!provider)throw new DomainError('PROVIDER_UNAVAILABLE','Kişisel mail sağlayıcısı şu an bağlı değil.',503);const box=existing||await liveInboxAction(actor(i),{action:'create',provider});if(!('address' in box))throw new DomainError('INBOX_CREATE','Adres oluşturulamadı.',503);await i.editReply({content:'📬 **Kişisel Temp Mail adresin:** '+box.address+'\nGelen kutunu /kur iletisim panelinden veya web mail ekranından açabilirsin.',components:[{type:1,components:[{type:2,style:5,label:'Kendi mail kutum',url:osintWebLink()+'?tool=mail'}]}],allowedMentions:{parse:[]}});return true;}
+  const subcommand=component?i.customId.slice('tp-osint:'.length):'';
   if(subcommand==='profil'||subcommand==='profile'){
    const q=await osintQuota(i.user.id);
    await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+(q.unlimited?'Sınırsız · Owner':q.remaining+' toplam / '+q.dailyLimit+' günlük · '+q.extraCredits+' ek hak')+'**'+(q.boosterBonus?'\n🚀 Booster bonusun: **+20 günlük sorgu** · tüm araçlarda ortak.':'')+'\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
@@ -102,7 +106,7 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   if(subcommand==='yardim'){
    await notice(i,'ARAŞTIRMA ARAÇLARI',osintTools.filter(t=>t.enabled).map(t=>t.icon+' **'+t.name+'**').join('\n')+'\n\nSonuçlar yalnızca DM ile gönderilir.\n'+osintWebLink());return true;
   }
-  if(['mail-create','mail-inbox'].includes(subcommand)){
+  if(direct){const input=utilityCommandInput(i);if(!input)throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);kind=input.kind;target=input.target;}else if(['mail-create','mail-inbox'].includes(subcommand)){
    kind=subcommand==='mail-create'?'mail':'mail-inbox';target=subcommand==='mail-create'?'account':'inbox';
   }else if(subcommand==='proxy'){
    kind='proxy';target=JSON.stringify({protocol:'all',country:'',anonymity:'all',maxLatency:3000,minUptime:0});
@@ -125,7 +129,7 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
   }finally{running.delete(key);}
  }catch(e){
   await osintLog(i.user.id,'DENIED','DISCORD',kind,target,null,e instanceof DomainError?e.code:'ERROR').catch(()=>{});
-  const message={content:'⚠️ '+(e instanceof DomainError?e.message:'İşlem tamamlanamadı. Botun kanal izinlerini kontrol edip yeniden dene.'),components:[],allowedMentions:{parse:[]}};
+  const message={content:'⚠️ '+(e instanceof DomainError?e.message:e instanceof ZodError?e.issues[0]?.message:'İşlem tamamlanamadı. Botun kanal izinlerini kontrol edip yeniden dene.'),components:[],allowedMentions:{parse:[]}};
   if(i.deferred||i.replied)await i.editReply(message).catch(()=>{});else await i.reply({...message,flags:MessageFlags.Ephemeral}).catch(()=>{});
  }
  return true;

@@ -1,3 +1,7 @@
+import {parseApiSearch,searchApiDirectory} from './osint-api-directory';
+import {parseMinecraftTarget,validateRobloxName,robloxUsername,minecraftStatus} from './osint-game-tools';
+import {utilityCatalog,type UtilityKind,type QrArtifact,type RepositorySearch,type ApiDirectory} from './osint-utility-catalog';
+import {validateUtility,generateQr,searchRepositories} from './osint-utilities';
 import {socialCatalog,type SocialKind,type SocialProfile} from './osint-social-catalog';
 import {socialResearch,validateSocial} from './osint-social';
 import {webRiskReport} from './osint-web-risks';
@@ -31,6 +35,7 @@ import {assertOsintAllowed} from './osint-access';
 import {lookupRdap,lookupAsn,lookupCve,lookupCt,lookupProxy,lookupProxyCheck,parseProxyFilters} from './osint-providers';
 
 export const osintTools=[
+ ...utilityCatalog,
  {id:'aliases',name:'Personal Mail Aliases',label:'Kendi sağlayıcında alias ve doğrulanmış yönlendirme',enabled:true,icon:'📮'},
  {id:'combo-domain',name:'Domain Kombosu',label:'DNS, IP, subdomain, TLS ve yapılandırma raporu',enabled:true,icon:'🌐'},
  {id:'combo-ip',name:'IP Kombosu',label:'ASN, ağ, tahmini konum ve bağlı itibar kaynakları',enabled:true,icon:'🛰️'},
@@ -63,9 +68,9 @@ export const osintTools=[
  {id:'geo',name:'GeoIP Explorer',label:'Tahmini bölge/ülke sağlayıcı sorgusu',enabled:true,icon:'📍'},...extraCatalog,...intelligenceCatalog,...webIntelligenceCatalog,...comboCatalog,...multiCatalog,...socialCatalog,{id:'web-risks',name:'Web Açık İzleri',label:'SQL hata, debug, form ve politika kanıtları',enabled:true,icon:'🔬'}
 ] as const;
 
-export type OsintKind=SocialKind|'web-risks'|MultiKind|'aliases'|ExtraOsintKind|WebIntelligenceKind|IntelligenceKind|ScanKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
+export type OsintKind=UtilityKind|SocialKind|'web-risks'|MultiKind|'aliases'|ExtraOsintKind|WebIntelligenceKind|IntelligenceKind|ScanKind|'number'|'sms-inbox'|'dns'|'ip'|'url'|'rdap'|'subdomains'|'tls'|'asn'|'cve'|'email'|'hash'|'proxy'|'proxy-check'|'combo-domain'|'combo-ip'|'headers'|'geo'|'usernames'|'github'|'ioc'|'archives'|'mail'|'mail-inbox'|'threat'|'dns-history'|'malware'|'reports'|'metadata';
 export type OsintActor={id:string;username:string;avatar?:string|null};
-export type OsintResult={socialProfiles?:SocialProfile[];security?:SecurityAssessment;kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
+export type OsintResult={qr?:QrArtifact;repositorySearch?:RepositorySearch;apiDirectory?:ApiDirectory;socialProfiles?:SocialProfile[];security?:SecurityAssessment;kind:OsintKind;target:string;title:string;summary:string;items:{name:string;value:string}[];notice:string;profiles?:ProfileObservation[];searchLinks?:{name:string;url:string}[]};
 const targetSchema=z.string().trim().min(2).max(250);
 const domainPattern=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 export function osintTier(level:number){
@@ -105,7 +110,11 @@ function urlInspect(input:string):OsintResult{
 }
 export function validateOsint(kind:string,target:unknown){
  const type=z.enum(osintTools.map(t=>t.id) as [OsintKind,...OsintKind[]]).parse(kind);
- const input=type==='proxy-live'?z.string().trim().min(2).max(64000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(12000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
+ const input=utilityCatalog.some(t=>t.id===type)?z.string().trim().min(type==='qr-code'?1:2).max(1800).parse(target):type==='proxy-live'?z.string().trim().min(2).max(64000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(12000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
+ if(type==='qr-code'||type==='repository-search')validateUtility(type,input);
+ if(type==='api-directory')parseApiSearch(input);
+ if(type==='minecraft-status')parseMinecraftTarget(input);
+ if(type==='roblox-username')validateRobloxName(input);
  if(socialCatalog.some(t=>t.id===type))validateSocial(type as SocialKind,input);
  if(type==='web-risks')researchUrl(input);
  if(multiCatalog.some(t=>t.id===type))validateMulti(type as MultiKind,input);
@@ -138,7 +147,12 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
  const beforeQuota=await osintQuota(actor.id,member);
  if(!beforeQuota.unlimited&&beforeQuota.remaining!<=0)throw new DomainError('OSINT_QUOTA','Araştırma hakkın doldu. Günlük hak 00:00’da yenilenir; ek hak için owner ile iletişime geç.',429);
  if(['mail','mail-inbox'].includes(parsed.kind))await syncUser(database(),actor);
- const provided=parsed.kind==='proxy-live'?await liveProxyReport(parsed.target,beforeQuota.unlimited?null:10)
+ const provided=parsed.kind==='qr-code'?await generateQr(parsed.target)
+  :parsed.kind==='repository-search'?await searchRepositories(parsed.target)
+  :parsed.kind==='api-directory'?await searchApiDirectory(parsed.target)
+  :parsed.kind==='roblox-username'?await robloxUsername(parsed.target)
+  :parsed.kind==='minecraft-status'?await minecraftStatus(parsed.target)
+  :parsed.kind==='proxy-live'?await liveProxyReport(parsed.target,beforeQuota.unlimited?null:10)
   :socialCatalog.some(t=>t.id===parsed.kind)?await socialResearch(parsed.kind as SocialKind,parsed.target)
   :parsed.kind==='web-risks'?await webRiskReport(parsed.target)
   :multiCatalog.some(t=>t.id===parsed.kind)?await multiResearch(parsed.kind as MultiKind,parsed.target)
@@ -172,7 +186,7 @@ export async function osintRun(actor:OsintActor,kind:string,target:unknown,reque
   :['hash','malware'].includes(parsed.kind)?await lookupMalwareHash(parsed.target)
   :parsed.kind==='proxy'?await lookupProxy(parsed.target,beforeQuota.proxyResultLimit)
   :parsed.kind==='proxy-check'?await lookupProxyCheck(parsed.target):null;
- const result:OsintResult=provided?{...provided,kind:parsed.kind,target:comboPresets.some(p=>p.id===parsed.kind)?parseScan(parsed.kind as ScanKind,parsed.target).target.value:parsed.kind==='proxy'?'Filtreli proxy sorgusu':parsed.kind==='metadata'?'Yerel dosya meta verisi':parsed.kind==='mail'||parsed.kind==='mail-inbox'?'Kişisel geçici e-posta':parsed.target}:urlInspect(parsed.target);
+ const result:OsintResult=provided?{...provided,kind:parsed.kind,target:parsed.kind==='qr-code'?'[QR içeriği]':comboPresets.some(p=>p.id===parsed.kind)?parseScan(parsed.kind as ScanKind,parsed.target).target.value:parsed.kind==='proxy'?'Filtreli proxy sorgusu':parsed.kind==='metadata'?'Yerel dosya meta verisi':parsed.kind==='mail'||parsed.kind==='mail-inbox'?'Kişisel geçici e-posta':parsed.target}:urlInspect(parsed.target);
  if(!('security' in result)&&['dns','email','headers','reports','spf','dmarc','dnssec','domain-multi','dns-multi'].includes(parsed.kind)){const host=parsed.kind==='headers'?new URL(parsed.target).hostname:parsed.target;const security=await assessDomainSecurity(host,{web:['headers','reports','domain-multi'].includes(parsed.kind),dns:true,url:parsed.kind==='headers'?parsed.target:undefined});Object.assign(result,{security});result.items.unshift(...securityReport(security).items);}
  if(provided&&'billable' in provided&&provided.billable===false){const reportId=delivery==='WEB'?await transaction(async tx=>{await syncUser(tx,actor);return saveResearchReport(tx,actor.id,requestId,result);}):undefined;return {result,reportId,quota:await osintQuota(actor.id),duplicate:false};}
  const profile=await memberProfile(actor.id),tier=osintTier(profile.level),billingMember=await guildMember(actor.id);
