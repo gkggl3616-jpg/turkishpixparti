@@ -1,3 +1,4 @@
+import {checkUsernameSource,usernameSources,classifyProfile} from '../packages/core/src/osint-usernames';
 import https from 'node:https';
 import {EventEmitter} from 'node:events';
 import {test,before,after} from 'node:test';
@@ -51,3 +52,5 @@ test('Real public HTTP transport returns a redirect without following it when bo
 test('Social image CSP is baked for OSINT routes without build environment variables and other routes retain their policy',async()=>{const {default:config}=await import(new URL('../apps/web/next.config.mjs',import.meta.url).href);const rules=await config.headers(),base=rules.find((r:any)=>r.source==='/:path*'),osint=rules.find((r:any)=>r.source==='/osint/:path*');const baseCsp=base.headers.find((h:any)=>h.key==='Content-Security-Policy').value,osintCsp=osint.headers[0].value;assert.ok(!baseCsp.includes('avatars.githubusercontent.com'));for(const host of socialImageHosts)assert.ok(osintCsp.includes('https://'+host));assert.match(osintCsp,/frame-ancestors 'none'/);assert.match(osintCsp,/connect-src 'self'/);});
 
 test('Bitbucket nicknames are never queried as user IDs and UUID/account-ID identity is exact',async()=>{const count=calls.length,r=await socialResearch('social-bitbucket','fixture');assert.equal(r.socialProfiles[0].status,'UNSUPPORTED');assert.equal(r.billable,false);assert.equal(calls.length,count);const id=await socialResearch('social-bitbucket','00000000-0000-0000-0000-000000000001');assert.equal(id.socialProfiles[0].status,'FOUND');});
+
+test('Wide Bitbucket nickname research never reports a removed API as account absence or sends the obsolete request',async()=>{const source=usernameSources.find(s=>s.name==='BitBucket')!,count=calls.length;assert.equal(classifyProfile(source,'fixture',404,'',source.url).status,'UNVERIFIABLE');const r=await checkUsernameSource(source,'fixture');assert.equal(r.status,'NOT_CHECKED');assert.equal(calls.length,count);assert.match(r.evidence,/account_id/);});

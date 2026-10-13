@@ -30,6 +30,7 @@ const adapters:Record<string,{url:string;proof:(d:any,u:string)=>boolean}>={
 };
 const blocked=/just a moment|checking your browser|verify (?:you are|you're) human|cf-chl-|captcha|access denied|too many requests|temporarily blocked/i;
 export function classifyProfile(s:Source,u:string,status:number,body:string,url:string):{status:ProfileStatus;evidence:string}{
+ if(s.name==='BitBucket')return {status:'UNVERIFIABLE',evidence:'Bitbucket kullanıcı adı endpointi kaldırıldı; UUID/account_id gerekli.'};
  if([401,403,429,451].includes(status)||status>=500||blocked.test(body))return {status:'UNVERIFIABLE',evidence:'Erişim engeli / HTTP '+status};
  if([404,410].includes(status)||s.missingCode===status&&status!==200)return {status:'NOT_FOUND',evidence:'Kaynak HTTP '+status+' döndürdü'};
  if(status<200||status>=300)return {status:'UNVERIFIABLE',evidence:'Yönlendirme / HTTP '+status};
@@ -44,6 +45,7 @@ const cooldown=new Map<string,number>();
 async function boundedBody(r:Response){const reader=r.body?.getReader();if(!reader)return '';const decoder=new TextDecoder();let body='',size=0;try{for(;;){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>300000)throw Error('RESPONSE_SIZE');body+=decoder.decode(value,{stream:true});}return body+decoder.decode();}finally{await reader.cancel().catch(()=>{});}}
 export async function checkUsernameSource(s:Source,u:string):Promise<ProfileObservation>{
  const encoded=encodeURIComponent(u),id=profileProviderId(s.name),started=Date.now(),base={platform:s.name,url:s.url.replaceAll('{}',encoded),source:new URL(adapters[s.name]?.url||s.probe).hostname,checkedAt:new Date().toISOString()};
+ if(s.name==='BitBucket')return {...base,status:'NOT_CHECKED',evidence:'Bitbucket nick API’si kaldırıldı; social-bitbucket aracında UUID veya account_id kullan. Nick yokluğu doğrulanmadı.'};
  if(typeof s.regex==='string'&&s.regex&&!new RegExp(s.regex).test(u))return {...base,status:'INVALID_FORMAT',evidence:'Platformun nick biçimiyle uyumsuz'};
  if((cooldown.get(id)||0)>Date.now())return {...base,status:'UNVERIFIABLE',evidence:'Sağlayıcının bekleme süresi devam ediyor'};
  try{
