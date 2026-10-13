@@ -71,6 +71,7 @@ webIntelligenceCatalog.forEach(t=>{LABELS[t.id]=t.name;PLACEHOLDERS[t.id]=t.inpu
 intelligenceCatalog.forEach(t=>{LABELS[t.id]=t.name;PLACEHOLDERS[t.id]=t.input==='domain'?'example.com':t.input==='ip'||t.input==='indicator'?'8.8.8.8':t.input==='username'?'octocat':t.input==='email'?'ad@example.com':t.input==='discord'?'1557484052133707896':'İşletme veya yer adı';});
 comboPresets.forEach(p=>LABELS[p.id]=p.name);
 socialCatalog.forEach(t=>{LABELS[t.id]=t.name;PLACEHOLDERS[t.id]=t.id==='social-discord'?'Snowflake ID veya ortak sunucuda tam kullanıcı adı':t.id==='social-bluesky'?'ad.bsky.social veya did:plc:…':t.id==='social-whatsapp'?'+905xxxxxxxxx':'Kullanıcı adı · destekleniyorsa id:123';});
+PLACEHOLDERS['social-bitbucket']='UUID veya Atlassian account_id';
 LABELS['web-risks']='Web Açık İzleri';PLACEHOLDERS['web-risks']='https://example.com';
 LABELS.aliases='Alias & Yönlendirme';
 multiCatalog.forEach(t=>{LABELS[t.id]=t.name;PLACEHOLDERS[t.id]=t.input==='ip'?'8.8.8.8':t.input==='url'?'https://example.com':t.input==='cve'?'CVE-2024-3094':t.input==='hash'?'SHA-256':'example.com';const group=GROUPS.find(g=>g.id===(t.input==='panel'?'communication':t.input==='domain'?'infrastructure':'threats'));if(group&&!group.tools.includes(t.id))group.tools.push(t.id);});
