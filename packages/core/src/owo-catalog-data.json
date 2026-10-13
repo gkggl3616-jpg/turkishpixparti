@@ -1,0 +1,1929 @@
+{
+  "snapshot": "9aec92b274bae64ea078fc04540398713e7f7928",
+  "checkedAt": "2026-10-13",
+  "notice": "Yayıncının erişilebilir açık kaynak tanımları ve videoda görülen ek komutlar. Canlı botun özel/yeni komutları bu kaynakta olmayabilir. Komutların çalıştırılacağına veya analizin her biçimi çözeceğine dair garanti değildir.",
+  "entries": [
+    {
+      "name": "bite",
+      "aliases": [
+        "bite"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "bonk",
+      "aliases": [
+        "bonk",
+        "bomk"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/bonk.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "boop",
+      "aliases": [
+        "boop"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "bully",
+      "aliases": [
+        "bully"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/bully.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "cuddle",
+      "aliases": [
+        "cuddle"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "fuck",
+      "aliases": [
+        "fuck"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "greet",
+      "aliases": [
+        "greet"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "guillotine",
+      "aliases": [
+        "guillotine"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/guillotine.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "handholding",
+      "aliases": [
+        "handholding"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "highfive",
+      "aliases": [
+        "highfive"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "hold",
+      "aliases": [
+        "hold"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "hug",
+      "aliases": [
+        "hug"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "kill",
+      "aliases": [
+        "kill"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "kiss",
+      "aliases": [
+        "kiss"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "lick",
+      "aliases": [
+        "lick"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "nom",
+      "aliases": [
+        "nom"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pat",
+      "aliases": [
+        "pat"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pats",
+      "aliases": [
+        "pats"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "poke",
+      "aliases": [
+        "poke"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "punch",
+      "aliases": [
+        "punch"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sex",
+      "aliases": [
+        "sex"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "slap",
+      "aliases": [
+        "slap"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "snuggle",
+      "aliases": [
+        "snuggle"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "stare",
+      "aliases": [
+        "stare"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "tickle",
+      "aliases": [
+        "tickle"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "wave",
+      "aliases": [
+        "wave"
+      ],
+      "category": "actions",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "ab",
+      "aliases": [
+        "ab",
+        "acceptbattle"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/ab.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "autohunt",
+      "aliases": [
+        "autohunt",
+        "huntbot",
+        "hb",
+        "ah"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/autohunt.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "battle",
+      "aliases": [
+        "battle",
+        "b",
+        "fight"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/battle.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "battlesetting",
+      "aliases": [
+        "battlesetting",
+        "bs",
+        "battlesettings"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/battleSetting.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "crate",
+      "aliases": [
+        "crate",
+        "weaponcrate",
+        "wc"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/crate.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "db",
+      "aliases": [
+        "db",
+        "declinebattle"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/db.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "describe",
+      "aliases": [
+        "describe",
+        "desc"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/shop/describe.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "equip",
+      "aliases": [
+        "equip",
+        "use"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/shop/equip.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "hunt",
+      "aliases": [
+        "hunt",
+        "h",
+        "catch"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/catch.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "inventory",
+      "aliases": [
+        "inventory",
+        "inv"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/shop/inventory.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "lootbox",
+      "aliases": [
+        "lootbox",
+        "lb"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/lootbox.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "owodex",
+      "aliases": [
+        "owodex",
+        "od",
+        "dex",
+        "d"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/owodex.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pets",
+      "aliases": [
+        "pets",
+        "pet"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/pet.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "rename",
+      "aliases": [
+        "rename"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/rename.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sacrifice",
+      "aliases": [
+        "sacrifice",
+        "essence",
+        "butcher",
+        "sac",
+        "sc"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/sacrifice.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sell",
+      "aliases": [
+        "sell"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/sell.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "team",
+      "aliases": [
+        "team",
+        "squad",
+        "tm"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/team.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "teams",
+      "aliases": [
+        "teams",
+        "setteam",
+        "squads",
+        "useteams"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/teams.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "upgrade",
+      "aliases": [
+        "upgrade",
+        "upg"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/upgrade.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "weapon",
+      "aliases": [
+        "weapon",
+        "w",
+        "weapons",
+        "wep"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/weapon.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "weaponshard",
+      "aliases": [
+        "weaponshard",
+        "ws",
+        "weaponshards",
+        "dismantle"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/battle/weaponshards.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "zoo",
+      "aliases": [
+        "zoo",
+        "z"
+      ],
+      "category": "animals",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/zoo/zoo.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "buy",
+      "aliases": [
+        "buy"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/shop/buy.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "checklist",
+      "aliases": [
+        "checklist",
+        "task",
+        "tasks",
+        "cl"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/checklist.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "claim",
+      "aliases": [
+        "claim",
+        "reward",
+        "compensation"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/economy/claim.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "cowoncy",
+      "aliases": [
+        "cowoncy",
+        "money",
+        "currency",
+        "cash",
+        "credit",
+        "balance"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/economy/cowoncy.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "daily",
+      "aliases": [
+        "daily"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/economy/daily.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "give",
+      "aliases": [
+        "give",
+        "send"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/economy/give.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "quest",
+      "aliases": [
+        "quest",
+        "q"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/economy/quest.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "shop",
+      "aliases": [
+        "shop",
+        "market"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/shop/shop.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "trade",
+      "aliases": [
+        "trade",
+        "tr",
+        "gift"
+      ],
+      "category": "economy",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/shop/trade.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "blush",
+      "aliases": [
+        "blush"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "cry",
+      "aliases": [
+        "cry"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "dance",
+      "aliases": [
+        "dance"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "deredere",
+      "aliases": [
+        "deredere"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "grin",
+      "aliases": [
+        "grin"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "happy",
+      "aliases": [
+        "happy"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "lewd",
+      "aliases": [
+        "lewd"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pout",
+      "aliases": [
+        "pout"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "scoff",
+      "aliases": [
+        "scoff"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "shrug",
+      "aliases": [
+        "shrug"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sleepy",
+      "aliases": [
+        "sleepy"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "smile",
+      "aliases": [
+        "smile"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "smug",
+      "aliases": [
+        "smug"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "teehee",
+      "aliases": [
+        "teehee"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "thinking",
+      "aliases": [
+        "thinking"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "thonking",
+      "aliases": [
+        "thonking"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "thumbs",
+      "aliases": [
+        "thumbs"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "thumbsup",
+      "aliases": [
+        "thumbsup"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "triggered",
+      "aliases": [
+        "triggered"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "wag",
+      "aliases": [
+        "wag"
+      ],
+      "category": "emotes",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/data/emotes.json",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "choose",
+      "aliases": [
+        "choose",
+        "pick",
+        "decide"
+      ],
+      "category": "fun",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/choose.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "define",
+      "aliases": [
+        "define"
+      ],
+      "category": "fun",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/define.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "eightball",
+      "aliases": [
+        "eightball",
+        "8b",
+        "ask",
+        "8ball"
+      ],
+      "category": "fun",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/eightball.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "gif",
+      "aliases": [
+        "gif",
+        "pic"
+      ],
+      "category": "fun",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/emotes/images.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "roll",
+      "aliases": [
+        "roll",
+        "d20"
+      ],
+      "category": "fun",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/dice.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "blackjack",
+      "aliases": [
+        "blackjack",
+        "bj",
+        "21"
+      ],
+      "category": "gambling",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/gamble/blackjack.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "coinflip",
+      "aliases": [
+        "coinflip",
+        "cf",
+        "coin",
+        "flip"
+      ],
+      "category": "gambling",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/gamble/coinflip.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "drop",
+      "aliases": [
+        "drop",
+        "pickup"
+      ],
+      "category": "gambling",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/gamble/drop.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "lottery",
+      "aliases": [
+        "lottery",
+        "bet",
+        "lotto"
+      ],
+      "category": "gambling",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/gamble/lottery.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "mines",
+      "aliases": [
+        "mines",
+        "mine"
+      ],
+      "category": "gambling",
+      "source": "8846.mp4 / 57–66 s",
+      "evidence": "USER_VIDEO"
+    },
+    {
+      "name": "slots",
+      "aliases": [
+        "slots",
+        "slot",
+        "s"
+      ],
+      "category": "gambling",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/gamble/slots.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "snailgarden",
+      "aliases": [
+        "snailgarden",
+        "wsg"
+      ],
+      "category": "gambling",
+      "source": "Kullanıcı tarifindeki mesaj alanları; sağlayıcı komut kataloğunda doğrulanmadı.",
+      "evidence": "UNVERIFIED"
+    },
+    {
+      "name": "communism",
+      "aliases": [
+        "communism",
+        "communismcat"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/communism.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "distractedbf",
+      "aliases": [
+        "distractedbf",
+        "distracted"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/distracted.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "drake",
+      "aliases": [
+        "drake"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/drake.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "eject",
+      "aliases": [
+        "eject",
+        "amongus"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/eject.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "emergency",
+      "aliases": [
+        "emergency",
+        "emergencymeeting"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/emergency.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "headpat",
+      "aliases": [
+        "headpat"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/headpat.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "isthisa",
+      "aliases": [
+        "isthisa"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/isthisa.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "slapcar",
+      "aliases": [
+        "slapcar",
+        "slaproof"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/slapcar.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "spongebobchicken",
+      "aliases": [
+        "spongebobchicken",
+        "schicken"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/spongebobchicken.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "tradeoffer",
+      "aliases": [
+        "tradeoffer"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/tradeoffer.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "waddle",
+      "aliases": [
+        "waddle"
+      ],
+      "category": "memegeneration",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/memegen/waddle.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "02kiss",
+      "aliases": [
+        "02kiss"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/02kiss.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "alastor",
+      "aliases": [
+        "alastor"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/alastor.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "army",
+      "aliases": [
+        "army"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/army.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "babyyoda",
+      "aliases": [
+        "babyyoda"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/babyyoda.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "bell",
+      "aliases": [
+        "bell",
+        "strengthtest"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/strengthtest.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "birthstone",
+      "aliases": [
+        "birthstone",
+        "bstone",
+        "bsn"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/birthstone.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "bunny",
+      "aliases": [
+        "bunny"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/bunny.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "butterfly",
+      "aliases": [
+        "butterfly",
+        "btf"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/butterfly.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "cake",
+      "aliases": [
+        "cake"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/cake.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "candycane",
+      "aliases": [
+        "candycane"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/candycane.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "chicken",
+      "aliases": [
+        "chicken",
+        "jester"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/chicken.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "coffee",
+      "aliases": [
+        "coffee",
+        "java"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/coffee.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "compliment",
+      "aliases": [
+        "compliment",
+        "bnice"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/compliment.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "crown",
+      "aliases": [
+        "crown"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/crown.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "cupachicake",
+      "aliases": [
+        "cupachicake",
+        "cpc"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/cupachicake.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "death",
+      "aliases": [
+        "death"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/death.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "dish",
+      "aliases": [
+        "dish"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/dish.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "donut",
+      "aliases": [
+        "donut"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/donut.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "dragon",
+      "aliases": [
+        "dragon",
+        "dgn"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/dragon.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "dtn",
+      "aliases": [
+        "dtn"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/destiny.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "duwasvivu",
+      "aliases": [
+        "duwasvivu"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/duwasvivu.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "frogegg",
+      "aliases": [
+        "frogegg"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/frogEgg.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "gauntlet",
+      "aliases": [
+        "gauntlet"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/gauntlet.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "goldenegg",
+      "aliases": [
+        "goldenegg"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/goldenegg.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "grim",
+      "aliases": [
+        "grim"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/grim.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "hauntedhouse",
+      "aliases": [
+        "hauntedhouse"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/hauntedhouse.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "icecream",
+      "aliases": [
+        "icecream"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/icecream.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "life",
+      "aliases": [
+        "life"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/life.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "lollipop",
+      "aliases": [
+        "lollipop"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/lollipop.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "love",
+      "aliases": [
+        "love"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/love.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "meshi",
+      "aliases": [
+        "meshi"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/meshi.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "milk",
+      "aliases": [
+        "milk"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/milk.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "nier",
+      "aliases": [
+        "nier"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/nier.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "obw",
+      "aliases": [
+        "obw"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/obw.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pika",
+      "aliases": [
+        "pika",
+        "pikapika"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/pika.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "piku",
+      "aliases": [
+        "piku"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/piku.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pizza",
+      "aliases": [
+        "pizza"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/pizza.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "planet",
+      "aliases": [
+        "planet"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/planet.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "poutine",
+      "aliases": [
+        "poutine"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/poutine.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "puppy",
+      "aliases": [
+        "puppy",
+        "pup"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/puppy.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "queen",
+      "aliases": [
+        "queen"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/queen.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "rainbow",
+      "aliases": [
+        "rainbow",
+        "raindrop",
+        "wet"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/rain.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "rose",
+      "aliases": [
+        "rose",
+        "bouquet"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/rose.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "rum",
+      "aliases": [
+        "rum"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/rum.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "run",
+      "aliases": [
+        "run"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/run.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sakura",
+      "aliases": [
+        "sakura"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/sakura.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sharingan",
+      "aliases": [
+        "sharingan"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/sharingan.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "shifu",
+      "aliases": [
+        "shifu",
+        "ufo"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/catto.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "slime",
+      "aliases": [
+        "slime"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/slime.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "snowball",
+      "aliases": [
+        "snowball"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/snowball.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "sunflower",
+      "aliases": [
+        "sunflower"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/sunflower.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "taco",
+      "aliases": [
+        "taco"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/taco.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "tarot",
+      "aliases": [
+        "tarot"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/tarot.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "truthordare",
+      "aliases": [
+        "truthordare",
+        "td"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/truthordare.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "water",
+      "aliases": [
+        "water"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/water.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "yinyang",
+      "aliases": [
+        "yinyang",
+        "yy"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/yinyang.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "zodiackey",
+      "aliases": [
+        "zodiackey",
+        "zk"
+      ],
+      "category": "patreon",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/patreon/zodiackey.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "my",
+      "aliases": [
+        "my",
+        "me",
+        "guild"
+      ],
+      "category": "rankings",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/ranking/me.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "points",
+      "aliases": [
+        "points"
+      ],
+      "category": "rankings",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/points.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "top",
+      "aliases": [
+        "top",
+        "rank",
+        "ranking"
+      ],
+      "category": "rankings",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/ranking/top.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "acceptmarriage",
+      "aliases": [
+        "acceptmarriage",
+        "am"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/acceptMarriage.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "avatar",
+      "aliases": [
+        "avatar",
+        "user"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/avatar.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "beehive",
+      "aliases": [
+        "beehive",
+        "hive",
+        "bh"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/beehive.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "cookie",
+      "aliases": [
+        "cookie",
+        "rep"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/cookie.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "declinemarriage",
+      "aliases": [
+        "declinemarriage",
+        "dm"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/declineMarriage.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "discordplays",
+      "aliases": [
+        "discordplays",
+        "twitchplays",
+        "emulator"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/discordplays.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "divorce",
+      "aliases": [
+        "divorce"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/divorce.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "emoji",
+      "aliases": [
+        "emoji",
+        "enlarge",
+        "jumbo"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/emoji.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "level",
+      "aliases": [
+        "level",
+        "lvl",
+        "levels",
+        "xp"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/level.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "owo",
+      "aliases": [
+        "owo",
+        "owoify",
+        "ify"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/owoify.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "pray",
+      "aliases": [
+        "pray",
+        "curse"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/pray.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "profile",
+      "aliases": [
+        "profile"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/profile.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "propose",
+      "aliases": [
+        "propose",
+        "marry",
+        "marriage",
+        "wife",
+        "husband"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/marry.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "ship",
+      "aliases": [
+        "ship",
+        "combine"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/ship.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "translate",
+      "aliases": [
+        "translate",
+        "listlang",
+        "tl"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/translate.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "wallpaper",
+      "aliases": [
+        "wallpaper",
+        "wp",
+        "wallpapers",
+        "background",
+        "backgrounds"
+      ],
+      "category": "social",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/social/wallpaper.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "announce",
+      "aliases": [
+        "announce",
+        "changelog",
+        "announcement",
+        "announcements"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/announcement.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "censor",
+      "aliases": [
+        "censor"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/censor.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "color",
+      "aliases": [
+        "color",
+        "randcolor",
+        "colour",
+        "randcolour"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/color.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "covid",
+      "aliases": [
+        "covid",
+        "cv",
+        "covid19",
+        "coronavirus"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/covid.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "disable",
+      "aliases": [
+        "disable"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/disable.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "distorted",
+      "aliases": [
+        "distorted",
+        "dt"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/distored.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "enable",
+      "aliases": [
+        "enable"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/enable.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "guildlink",
+      "aliases": [
+        "guildlink"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/guildlink.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "help",
+      "aliases": [
+        "help"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/help.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "invite",
+      "aliases": [
+        "invite",
+        "link"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/invite.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "math",
+      "aliases": [
+        "math",
+        "calc",
+        "calculate"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/math.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "patreon",
+      "aliases": [
+        "patreon",
+        "donate",
+        "support",
+        "supporter"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/patreon.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "ping",
+      "aliases": [
+        "ping",
+        "pong"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/ping.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "prefix",
+      "aliases": [
+        "prefix"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/prefix.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "rule",
+      "aliases": [
+        "rule",
+        "rules"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/rules.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "shards",
+      "aliases": [
+        "shards",
+        "shard"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/shard.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "stats",
+      "aliases": [
+        "stats",
+        "stat",
+        "info"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/stats.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "suggest",
+      "aliases": [
+        "suggest"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/suggest.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "survey",
+      "aliases": [
+        "survey"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/survey.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "uncensor",
+      "aliases": [
+        "uncensor"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/uncensor.js",
+      "evidence": "PUBLISHER_SOURCE"
+    },
+    {
+      "name": "vote",
+      "aliases": [
+        "vote"
+      ],
+      "category": "utility",
+      "source": "https://github.com/ChristopherBThai/Discord-OwO-Bot/blob/9aec92b274bae64ea078fc04540398713e7f7928/src/commands/commandList/utils/vote.js",
+      "evidence": "PUBLISHER_SOURCE"
+    }
+  ]
+}

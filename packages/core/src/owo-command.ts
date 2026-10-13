@@ -6,5 +6,7 @@ export const owoCommand={name:'owo',description:'Rol/owner yetkili, süreli OwO 
  {type:1,name:'durdur',description:'Kendi analiz oturumunu hemen kapat.'},
  {type:1,name:'kur',description:'İzlenecek kanal ve doğrulanacak kaynak bot hesabını seç.',options:[{type:7,name:'kanal',description:'İzinli metin kanalı (boşsa bu kanal)',required:false,channel_types:[0]},{type:6,name:'kaynak',description:'Oyun mesajlarını yayımlayan bot (boşsa resmî OwO)',required:false}]},
  {type:1,name:'tara',description:'Yapılandırılan kanalın erişilebilir geçmişini sayfalı tara; sonucu birleştir.'},
- {type:1,name:'istatistik',description:'Kanal sonuçları, kullanıcı netleri ve açıklanan Mines tahtalarını incele.'}
+ {type:1,name:'istatistik',description:'Kanal sonuçları, kullanıcı netleri ve açıklanan Mines tahtalarını incele.'},
+ {type:1,name:'benim',description:'Yalnız kendi oyunlarını, net sonuçlarını ve Mines hücre geçmişini incele.'},
+ {type:1,name:'komutlar',description:'OwO komut/alias rehberini kaynak ve analiz kapsamıyla gör.',options:[{type:3,name:'arama',description:'Komut veya kısa adı (bj, cf, mine, hunt...)',required:false,max_length:50},{type:3,name:'kategori',description:'gambling, economy, animals, social, utility, emotes...',required:false,max_length:30},{type:4,name:'sayfa',description:'Katalog sayfası',required:false,min_value:1,max_value:100}]}
 ]};
