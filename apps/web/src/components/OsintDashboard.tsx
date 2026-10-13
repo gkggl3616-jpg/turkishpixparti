@@ -9,6 +9,7 @@ import Link from 'next/link';
 import {webIntelligenceCatalog} from '../../../../packages/core/src/osint-web-intelligence-catalog';
 import OsintReportHistory from './OsintReportHistory';
 import OsintLiveInbox from './OsintLiveInbox';
+import OsintActivity from './OsintActivity';
 import OsintSecurityReport from './OsintSecurityReport';
 import type {SecurityAssessment} from '../../../../packages/core/src/osint-security';
 import {multiCatalog} from '../../../../packages/core/src/osint-multi-catalog';
@@ -131,7 +132,7 @@ export default function OsintDashboard(){
  const activeCount=catalog.filter(t=>t.enabled).length;
  const resultText=result?result.title+'\n'+result.items.map(x=>x.name+': '+x.value).join('\n')+'\n'+result.notice:'';
 
- return <div className={'osint-portal'+(sidebarCollapsed?' is-collapsed':'')}>
+ return <div className={'osint-portal'+(sidebarCollapsed?' is-collapsed':'')}><OsintActivity csrf={data?.authenticated?data.csrf:undefined}/>
   {mobileOpen&&<button className="os-mobile-overlay" aria-label="Menüyü kapat" onClick={()=>setMobileOpen(false)}/>}
   <aside className={'os-sidebar'+(mobileOpen?' is-mobile-open':'')}>
    <div className="os-brand">

@@ -1,3 +1,4 @@
+import {osintActiveUsers,osintGuildMembers} from '../../../../../../../packages/core/src/osint-live-admin';
 import {ownedProviderNumbers,assignProviderNumber,type NumberProvider} from '../../../../../../../packages/core/src/osint-number-providers';
 import {loadServerSettings} from '../../../../../../../packages/core/src/setup';
 import {NextResponse} from 'next/server';
@@ -9,6 +10,7 @@ export async function GET(req:Request){try{
  await loadServerSettings();
  const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);
  const url=new URL(req.url),search=url.searchParams.get('q')||'',offset=Number(url.searchParams.get('offset')||0);
+ if(url.searchParams.get('activity')==='1'||url.searchParams.get('guild-members')==='1'){assertOsintOwner(me.id);await rateLimit('osint-live-owner:'+me.id,30,60);return NextResponse.json(url.searchParams.get('activity')==='1'?await osintActiveUsers(me.id):await osintGuildMembers(me.id,search,offset,url.searchParams.get('kind')||'all',url.searchParams.get('role')||''),{headers});}
  if(url.searchParams.get('sms')==='1')return NextResponse.json({...(await ownedProviderNumbers(me.id,(url.searchParams.get('provider')||'twilio') as NumberProvider)),assignments:await smsAssignments(me.id)},{headers});
  if(url.searchParams.get('member'))return NextResponse.json(await osintMemberDetails(me.id,url.searchParams.get('member')!),{headers});
  if(url.searchParams.get('export')==='1'){const data=await osintAuditExport(me.id,search,offset);return NextResponse.json(data,{headers:{...headers,'Content-Disposition':'attachment; filename="turkishpix-osint-audit.json"'}});}
