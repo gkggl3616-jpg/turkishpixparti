@@ -1,3 +1,4 @@
+import {readTargetAttachment,bulkKinds} from '../../../packages/core/src/osint-bulk';
 import {osintUtilityCommands,utilityCommandInput} from '../../../packages/core/src/osint-utility-commands';
 import {ZodError} from 'zod';
 import {osintCategories} from '../../../packages/core/src/osint-navigation';
@@ -8,11 +9,12 @@ import {database,transaction} from '../../../packages/core/src/db';
 import {rateLimit} from '../../../packages/core/src/auth';
 import {osintRun,osintQuota,osintTools,osintCatalog} from '../../../packages/core/src/osint';
 import {osintLog,assertOsintAllowed} from '../../../packages/core/src/osint-access';
-import {sendOsintResult,queueOsintDm,retryOsintDelivery,type DeliveryOutcome} from '../../../packages/core/src/osint-dm';
+import {sendOsintResult,osintChannelPayload,retryOsintDelivery,type DeliveryOutcome} from '../../../packages/core/src/osint-dm';
 import {guildMember,discordRequest,isDiscordMissing,syncUser,DiscordAPIError} from '../../../packages/core/src/discord';
 import {osintPanel,osintWebLink,osintQueryModal,osintProxyModal,osintMailModal,osintToolMenus,type OsintPanelKind} from '../../../packages/core/src/osint-panels';
 
 const running=new Set<string>();
+const subPublic=(id:string)=>id==='tp-osint:proxy';
 const actor=(i:any)=>({id:i.user.id,username:i.user.username,avatar:i.user.avatar});
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 function requireGuild(i:any){
@@ -26,8 +28,7 @@ function deliveryReply(delivery:DeliveryOutcome){
  };
 }
 async function notice(i:any,title:string,content:string){
- const outcome=await queueOsintDm(actor(i),i.id,{content:'🛰️ **TURKISHPİX · '+title+'**\n\n'+content});
- await i.editReply(deliveryReply(outcome));
+ await i.editReply({content:('🛰️ **TURKISHPİX · '+title+'**\n\n'+content).slice(0,1950),allowedMentions:{parse:[]}});
 }
 async function installPanel(i:any,kind:OsintPanelKind){
  const member=await i.guild.members.fetch({user:i.user.id,force:true});
@@ -74,12 +75,13 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    await i.showModal(modal);return true;
   }
   if(i.isButton?.()&&i.customId.startsWith('tp-osint:category:')){await guildMember(i.user.id);await assertOsintAllowed(i.user.id);const category=osintCategories.find(c=>c.id===i.customId.slice('tp-osint:category:'.length));if(!category)throw new DomainError('INVALID_CATEGORY','Kategori tanımlı değil.',400);await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **'+category.label+' · aracını seç**',components:osintToolMenus((await osintCatalog()).filter(t=>category.tools.includes(t.id))),allowedMentions:{parse:[]}});return true;}
-  if(i.isButton?.()&&i.customId.startsWith('tp-osint:help:')){const category=osintCategories.find(c=>c.id===i.customId.slice('tp-osint:help:'.length));if(!category)throw new DomainError('INVALID_CATEGORY','Kategori tanımlı değil.',400);await i.reply({flags:MessageFlags.Ephemeral,content:'❔ **'+category.label+'**\n'+category.description+'\n\n**Örnek:** '+category.example+'\n\nSonuçlar Discord özel mesajına gönderilir. Eksik anahtar/hata boş sonuç değildir.',allowedMentions:{parse:[]}});return true;}
+  if(i.isButton?.()&&i.customId.startsWith('tp-osint:help:')){const category=osintCategories.find(c=>c.id===i.customId.slice('tp-osint:help:'.length));if(!category)throw new DomainError('INVALID_CATEGORY','Kategori tanımlı değil.',400);await i.reply({flags:MessageFlags.Ephemeral,content:'❔ **'+category.label+'**\n'+category.description+'\n\n**Örnek:** '+category.example+'\n\nSonuçlar burada gösterilir; uzun raporlar ek dosya içerir. Eksik anahtar/hata boş sonuç değildir.',allowedMentions:{parse:[]}});return true;}
   if(i.isButton?.()&&i.customId==='tp-osint:research'){
-   await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **Araştırma aracını seç.** Sonuç yalnızca özel mesajına gönderilecek.',components:osintToolMenus(await osintCatalog()),allowedMentions:{parse:[]}});
+   await i.reply({flags:MessageFlags.Ephemeral,content:'🔎 **Araştırma aracını seç.** Sonuç komutun kullanıldığı yerde gösterilir.',components:osintToolMenus(await osintCatalog()),allowedMentions:{parse:[]}});
    return true;
   }
-  await i.deferReply({flags:MessageFlags.Ephemeral});
+  const publicResult=direct&&i.commandName!=='temp-mail'||i.isModalSubmit?.()&&!['tp-osint:modal:mail'].includes(i.customId)||component&&subPublic(i.customId);
+  await i.deferReply(publicResult?{}:{flags:MessageFlags.Ephemeral});
   if(slash){
    const sub=i.options.getSubcommand();
    const chosen=osintCategories.find(c=>c.command===sub)?.id as OsintPanelKind|undefined;
@@ -104,9 +106,9 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    await notice(i,'LEVEL & KOTA','⭐ **Seviye '+q.level+'** · '+q.xp+' XP\n📍 Kaynak: '+q.levelSource+(q.profileFound?'':' · Henüz XP kaydı yok; başlangıç seviye 0.')+'\n🌐 Her proxy isteğinde **'+q.proxyResultLimit+' sonuç**\n📊 Günlük sorgu hakkın: **'+(q.unlimited?'Sınırsız · Owner':q.remaining+' toplam / '+q.dailyLimit+' günlük · '+q.extraCredits+' ek hak')+'**'+(q.boosterBonus?'\n🚀 Booster bonusun: **+20 günlük sorgu** · tüm araçlarda ortak.':'')+'\n🔁 Türkiye saati 00:00’da yenilenir.\n\n'+osintWebLink());return true;
   }
   if(subcommand==='yardim'){
-   await notice(i,'ARAŞTIRMA ARAÇLARI',osintTools.filter(t=>t.enabled).map(t=>t.icon+' **'+t.name+'**').join('\n')+'\n\nSonuçlar yalnızca DM ile gönderilir.\n'+osintWebLink());return true;
+   await notice(i,'ARAŞTIRMA ARAÇLARI',osintTools.filter(t=>t.enabled).map(t=>t.icon+' **'+t.name+'**').join('\n')+'\n\nSonuçlar burada gösterilir; kişisel gelen kutuları özel kalır.\n'+osintWebLink());return true;
   }
-  if(direct){const input=utilityCommandInput(i);if(!input)throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);kind=input.kind;target=input.target;}else if(['mail-create','mail-inbox'].includes(subcommand)){
+  if(direct&&i.commandName==='roblox-isim-kontrol'){const file=i.options.getAttachment?.('dosya');const names=i.options.getString('kullanici_adi')||'';target=[names,file?await readTargetAttachment(file):''].filter(Boolean).join('\n');if(!target)throw new DomainError('BULK_INPUT','Kullanıcı adı yaz veya TXT dosyası yükle.',400);kind='roblox-username';}else if(direct){const input=utilityCommandInput(i);if(!input)throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);kind=input.kind;target=input.target;}else if(['mail-create','mail-inbox'].includes(subcommand)){
    kind=subcommand==='mail-create'?'mail':'mail-inbox';target=subcommand==='mail-create'?'account':'inbox';
   }else if(subcommand==='proxy'){
    kind='proxy';target=JSON.stringify({protocol:'all',country:'',anonymity:'all',maxLatency:3000,minUptime:0});
@@ -114,18 +116,18 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
    kind=subcommand.slice('modal:'.length);
    if(kind==='proxy')target=JSON.stringify({protocol:i.fields.getTextInputValue('protocol').trim().toLowerCase()||'all',country:i.fields.getTextInputValue('country').trim(),anonymity:i.fields.getTextInputValue('anonymity').trim().toLowerCase()||'all',maxLatency:Number(i.fields.getTextInputValue('latency')),minUptime:Number(i.fields.getTextInputValue('uptime'))});
    else if(kind==='mail')target=JSON.stringify({localPart:i.fields.getTextInputValue('localPart').trim(),domain:i.fields.getTextInputValue('domain').trim()||undefined,replace:i.fields.getTextInputValue('replace').trim().toLocaleLowerCase('tr-TR')==='evet'});
-   else{if(!osintQueryModal(kind))throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);target=i.fields.getTextInputValue('target');}
+   else{if(!osintQueryModal(kind))throw new DomainError('INVALID_TOOL','Araç tanımlı değil.',400);target=i.fields.getTextInputValue('target')||'';const file=bulkKinds.has(kind)||kind.startsWith('social-')?i.fields.getUploadedFiles?.('targets_file',false)?.first?.():null;if(file)target=[target,await readTargetAttachment(file)].filter(Boolean).join('\n');if(!target)throw new DomainError('BULK_INPUT','Hedef yaz veya TXT listesi yükle.',400);}
   }else{
    throw new DomainError('INVALID_ACTION','Bu düğme artık kullanılamıyor. Paneli /kur üzerinden yenile.',400);
   }
   const key=i.guildId+':'+i.user.id;
-  if(running.has(key))throw new DomainError('OSINT_BUSY','Mevcut sorgun tamamlanıyor. DM teslimini bekleyip yeniden dene.',409);
+  if(running.has(key))throw new DomainError('OSINT_BUSY','Mevcut sorgun tamamlanıyor. Sorgunun bitmesini bekleyip yeniden dene.',409);
   running.add(key);
   try{
    const data=await osintRun(actor(i),kind,target,i.id);
    await osintLog(i.user.id,'QUERY','DISCORD',kind,target,null);
-   const delivery=await sendOsintResult(actor(i),data.result,data.quota.remaining,i.id);
-   await i.editReply(deliveryReply(delivery));
+   if(['mail','mail-inbox','number','sms-inbox'].includes(kind)){const delivery=await sendOsintResult(actor(i),data.result,data.quota.remaining,i.id);await i.editReply(deliveryReply(delivery));}
+   else await i.editReply(osintChannelPayload(data.result,data.quota.remaining));
   }finally{running.delete(key);}
  }catch(e){
   await osintLog(i.user.id,'DENIED','DISCORD',kind,target,null,e instanceof DomainError?e.code:'ERROR').catch(()=>{});

@@ -1,3 +1,4 @@
+import {bulkTargets} from './osint-bulk';
 import {lookup} from 'node:dns/promises';
 import {Socket,isIP} from 'node:net';
 import {z} from 'zod';
@@ -8,11 +9,12 @@ import {publicResearchIp} from './osint-research';
 
 export function validateRobloxName(input:string){if(!/^[a-z0-9](?:[a-z0-9_]{1,18})[a-z0-9]$/i.test(input)||input.includes('__')||(input.match(/_/g)||[]).length>1)throw new DomainError('ROBLOX_USERNAME','3–20 karakter; harf, rakam ve ortada en fazla bir alt çizgi kullan.',400);}
 export async function robloxUsername(input:string){
- validateRobloxName(input);
- const data=await providerJson('roblox-users','https://users.roblox.com/v1/usernames/users',150000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usernames:[input],excludeBannedUsers:false})});
+ const names=bulkTargets('roblox-username',input),valid=names.filter(name=>{try{validateRobloxName(name);return true;}catch{return false;}});
+ const data=valid.length?await providerJson('roblox-users','https://users.roblox.com/v1/usernames/users',150000,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usernames:valid,excludeBannedUsers:false})}):{data:[]};
  if(!Array.isArray(data.data))throw new DomainError('PROVIDER_FORMAT','Roblox kullanıcı yanıtı geçersiz.',503);
- const match=data.data.find((r:any)=>typeof r.name==='string'&&r.name.toLowerCase()===input.toLowerCase()&&Number.isSafeInteger(r.id)&&r.id>0);
- return {title:'Roblox Kullanıcı Adı Kontrolü',summary:match?'Tam kullanıcı adıyla açık hesap bulundu.':'Resmî API’de tam eşleşme bulunamadı.',items:[{name:'Aranan ad',value:input},{name:'Durum',value:match?'Kayıtlı açık profil':'Eşleşme yok; kayıt için müsaitlik garantisi değildir'},...(match?[{name:'Kullanıcı ID',value:String(match.id)},{name:'Görünen ad',value:String(match.displayName||match.name).slice(0,100)},{name:'Profil',value:'https://www.roblox.com/users/'+match.id+'/profile'}]:[])],notice:'Roblox Users resmî API · '+new Date().toISOString()+'. Yalnız kullanıcı adıyla yayımlanan hesap eşleşmesi. E-posta, telefon, parola veya özel hesap verisi sorgulanmaz. Eşleşme olmaması adı kaydedebileceğin anlamına gelmez; rezervasyon/moderasyon kuralları farklıdır.'};
+ const matches=new Map<string,any>(data.data.filter((row:any)=>typeof row.name==='string'&&Number.isSafeInteger(row.id)&&row.id>0).map((row:any)=>[row.name.toLowerCase(),row]));
+ if(names.length===1){const name=names[0],match=matches.get(name.toLowerCase());validateRobloxName(name);return {title:'Roblox Kullanıcı Adı Kontrolü',summary:match?'Tam kullanıcı adıyla açık hesap bulundu.':'Bulunamadı: '+name,items:[{name:'Aranan ad',value:name},{name:'Durum',value:match?'Kayıtlı açık profil':'Bulunamadı: '+name+'; kayıt için müsaitlik garantisi değildir'},...(match?[{name:'Kullanıcı ID',value:String(match.id)},{name:'Görünen ad',value:String(match.displayName||match.name).slice(0,100)},{name:'Profil',value:'https://www.roblox.com/users/'+match.id+'/profile'}]:[])],notice:'Roblox resmî API. Eşleşme yokluğu adı kaydedebileceğin anlamına gelmez.'};}
+ return {title:'Roblox Toplu Kullanıcı Adı Kontrolü',summary:names.length+' ad kontrol edildi · '+valid.filter(name=>matches.has(name.toLowerCase())).length+' eşleşme',items:names.map(name=>{const match=matches.get(name.toLowerCase());return {name,value:!valid.includes(name)?'Geçersiz ad: '+name:match?'Bulundu: '+match.name+' · ID: '+match.id+' · '+String(match.displayName||match.name).slice(0,100)+'\nhttps://www.roblox.com/users/'+match.id+'/profile':'Bulunamadı: '+name};}),notice:'Roblox resmî API; büyük/küçük harf farkı ve tekrarlar birleştirilir. Eşleşme yokluğu kayıt müsaitliği garantisi değildir; API hatası bulunamadı sayılmaz.'};
 }
 const minecraftSchema=z.object({host:z.string().trim().min(1).max(253),port:z.number().int().min(1).max(65535).default(25565)}).strict();
 export function parseMinecraftTarget(input:string){

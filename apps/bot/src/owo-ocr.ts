@@ -12,7 +12,7 @@ export async function verifyOwoOcr(){
 export type OcrLine={text:string;confidence:number;minimum:number};
 export type OcrResult={status:'SUCCESS'|'PARTIAL'|'LOW_CONFIDENCE'|'EMPTY';text:string;trustedText:string;confidence:number;lines:OcrLine[];engine:string};
 export function approvedOcrUrl(value:string){
- try{const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port||!['cdn.discordapp.com','media.discordapp.net','cdn.owobot.com'].includes(u.hostname))throw 0;return u.toString();}catch{throw new DomainError('OWO_OCR_HOST','OCR görselinin kaynağı desteklenmiyor.',400);}
+ try{const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port||!['cdn.discordapp.com','media.discordapp.net','images-ext-1.discordapp.net','images-ext-2.discordapp.net','cdn.owobot.com'].includes(u.hostname))throw 0;return u.toString();}catch{throw new DomainError('OWO_OCR_HOST','OCR görselinin kaynağı desteklenmiyor.',400);}
 }
 export function ocrLines(tsv:string):OcrResult{
  const groups=new Map<string,{words:string[];confidence:number[];trusted:boolean[]}>();
@@ -23,8 +23,9 @@ export function ocrLines(tsv:string):OcrResult{
 }
 export async function readOwoImage(bytes:Buffer):Promise<OcrResult>{
  if(bytes.length>maximum)throw new DomainError('OWO_OCR_SIZE','OCR görseli boyut sınırını aşıyor.',400);
+ const gif=bytes.subarray(0,6).toString().match(/^GIF8[79]a$/);
  const png=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),jpeg=bytes[0]===255&&bytes[1]===216&&bytes[2]===255,webp=bytes.subarray(0,4).toString()==='RIFF'&&bytes.subarray(8,12).toString()==='WEBP';
- if(!png&&!jpeg&&!webp)throw new DomainError('OWO_OCR_FORMAT','OCR PNG, JPEG veya WebP bekliyor.',400);
+ if(!png&&!jpeg&&!webp&&!gif)throw new DomainError('OWO_OCR_FORMAT','OCR PNG, JPEG, WebP veya GIF bekliyor.',400);
  const dir=await mkdtemp(join(tmpdir(),'tp-owo-ocr-'));
  try{
   const meta=await sharp(bytes,{limitInputPixels:12000000}).metadata();if(!meta.width||!meta.height)throw new DomainError('OWO_OCR_IMAGE','Görsel okunamadı.',400);
@@ -42,7 +43,9 @@ export async function downloadOwoImage(url:string){
  return Buffer.concat(chunks,size);
 }
 export function sourceImages(message:any){
- const list=(v:any):any[]=>Array.isArray(v)?v:v?.values?[...v.values()]:[],urls=[...list(message.attachments).filter(a=>!a.contentType||/^image\/(png|jpe?g|webp)/i.test(a.contentType)).map(a=>a.url),...list(message.embeds).map(e=>(e.toJSON?.()||e).image?.url)].filter((u):u is string=>typeof u==='string');
+ const list=(v:any):any[]=>Array.isArray(v)?v:v?.values?[...v.values()]:[];
+ const candidates=[...list(message.attachments).filter(a=>!a.contentType||/^image\/(png|jpe?g|webp|gif)/i.test(a.contentType)).map(a=>[a.proxyURL,a.proxy_url,a.url]),...list(message.embeds).map(e=>{const image=(e.toJSON?.()||e).image;return [image?.proxy_url,image?.proxyURL,image?.url];})];
+ const urls=candidates.flatMap(values=>{for(const value of values)if(typeof value==='string')try{return [approvedOcrUrl(value)];}catch{}return values.filter((v):v is string=>typeof v==='string').slice(-1);});
  return [...new Set(urls)].slice(0,2);
 }
 export function snapshotMessage(message:any){

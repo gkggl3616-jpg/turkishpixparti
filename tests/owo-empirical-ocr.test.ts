@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import {owoPeriod} from '../apps/bot/src/owo-period';
-import {blackjackObserved,minesPatterns,observedReport,type Ledger} from '../apps/bot/src/owo-empirical';
+import {blackjackObserved,blackjackActions,advisorText,minesPatterns,observedReport,type Ledger} from '../apps/bot/src/owo-empirical';
 import {approvedOcrUrl,ocrLines,readOwoImage,sourceImages} from '../apps/bot/src/owo-ocr';
 import {renderMinesStatistics} from '../apps/bot/src/owo-render';
 import {mineProfiles} from '../apps/bot/src/owo-math';
@@ -42,4 +42,15 @@ test('Real Tesseract reads rendered OwO labels and amounts, and the 3×3 statist
  const fixture=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="240"><rect width="800" height="240" fill="white"/><g font-family="DejaVu Sans" font-size="32" fill="black"><text x="30" y="55">Blackjack Player [17]</text><text x="30" y="110">Bet: 250000</text><text x="30" y="165">You won 250000 cowoncy</text></g></svg>')).png().toBuffer();
  const result=await readOwoImage(fixture);assert.match(result.text,/Blackjack/);assert.match(result.text,/250000/);assert.ok(result.trustedText.length>0);
  const png=await renderMinesStatistics(mineProfiles([{board,selected:[5,7],mines:3}],3),'2026-10-13 → 2026-10-15','Kişisel'),meta=await sharp(png).metadata();assert.equal(meta.format,'png');assert.equal(meta.width,960);assert.equal(meta.height,918);
+});
+
+test('External OwO embed images use the Discord media proxy instead of an unsupported origin',()=>{
+ const proxy='https://images-ext-1.discordapp.net/external/xyz/https/custom-owo.example/battle.png';
+ assert.deepEqual(sourceImages({embeds:[{image:{url:'https://custom-owo.example/battle.png',proxy_url:'https://media.discordapp.net/external/xyz/image.png'}}]}),['https://media.discordapp.net/external/xyz/image.png']);
+ assert.equal(approvedOcrUrl(proxy),proxy);assert.throws(()=>approvedOcrUrl('https://images-ext-1.discordapp.net.evil.test/a'),{code:'OWO_OCR_HOST'});
+});
+test('Blackjack advice requires observed matching hand/action outcomes and separates Hit from inferred Stand',()=>{
+ const rows:any[]=[],frames:any[]=[];for(let n=0;n<60;n++){const id=String(n),hit=n<30;rows.push({...row(id,hit?'WIN':'LOSS',hit?20:17),state:{score:hit?20:17}});frames.push({message_id:id,phase:'ACTIVE',score:17,soft:false,state:{cards:[7,10],dealer:10},source_edited_at:new Date(1000)});frames.push({message_id:id,phase:hit?'WIN':'LOSS',score:hit?20:17,soft:false,state:{cards:hit?[7,10,3]:[7,10],dealer:10},source_edited_at:new Date(2000)});}
+ const rates=blackjackActions(rows,frames,17,false,10);assert.equal(rates.hit.games,30);assert.equal(rates.stand.games,30);assert.match(advisorText({game:'BLACKJACK',phase:'ACTIVE',score:17,soft:false,dealer:10},rows,frames),/^Kart çek/);
+ assert.match(advisorText({game:'BLACKJACK',phase:'ACTIVE',score:17,soft:false,dealer:9},rows,frames),/yeterli/);
 });

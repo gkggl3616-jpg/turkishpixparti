@@ -1,6 +1,6 @@
 import {mineProfiles,wilson} from './owo-math';
 export type Ledger={message_id:string;game:string;phase:string;player_id?:string|null;net?:string|number|null;bet?:string|number|null;state:any;source_created_at?:Date|string};
-type Frame={message_id:string;phase:string;score:number|null;soft:boolean|null;source_edited_at:Date|string;recorded_at?:Date|string};
+type Frame={message_id:string;phase:string;score:number|null;soft:boolean|null;source_edited_at:Date|string;recorded_at?:Date|string;state?:any};
 const settled=(phase:string)=>['WIN','LOSS','PUSH'].includes(phase);
 function resultRates(rows:Ledger[]){const known=rows.filter(r=>settled(r.phase)),wins=known.filter(r=>r.phase==='WIN').length,losses=known.filter(r=>r.phase==='LOSS').length,pushes=known.filter(r=>r.phase==='PUSH').length;return {games:known.length,wins,losses,pushes,rate:known.length?wins/known.length:null,interval:wilson(wins,known.length)};}
 export function blackjackObserved(rows:Ledger[],frames:Frame[]){
@@ -14,6 +14,40 @@ export function blackjackObserved(rows:Ledger[],frames:Frame[]){
  const terminal=new Map<number,Ledger[]>();for(const row of outcomes.values()){const score=row.state.score;if(Number.isInteger(score)){const entries=terminal.get(score)||[];entries.push(row);terminal.set(score,entries);}}
  return {byScore,thresholds,best,observedActiveGames:first.size,terminalScores:[...terminal].map(([score,r])=>({score,...resultRates(r)})).sort((a,b)=>a.score-b.score),
   notice:'Oranlar taranan OwO sonuçlarıdır. El toplamı, hamle sırasında gerçekten gözlenmiş kayıttan sonuca bağlanır; aynı oyun bir el satırında bir kez sayılır. Eşik karşılaştırması ilk gözlenen aktif elden yapılır. Son el tablosu ayrıdır; geçmiş düzenlemeler geri getirilemez. Gözlenen ilişki, o sayıda durmanın kazanmayı artırdığını kanıtlamaz.'};
+}
+// Infer only visible transitions; Discord does not expose another app's button clicks.
+export function blackjackActions(rows:Ledger[],frames:Frame[],score:number|null,soft:boolean|null,dealer:number|null){
+ const outcomes=new Map(rows.filter(r=>r.game==='BLACKJACK'&&settled(r.phase)).map(r=>[r.message_id,r])),groups=new Map<string,Frame[]>();
+ for(const f of frames){const group=groups.get(f.message_id)||[];group.push(f);groups.set(f.message_id,group);}
+ const hit=new Map<string,Ledger>(),stand=new Map<string,Ledger>();
+ for(const [id,group] of groups){const outcome=outcomes.get(id);if(!outcome)continue;group.sort((a,b)=>new Date(a.source_edited_at).getTime()-new Date(b.source_edited_at).getTime());
+ for(let n=0;n<group.length-1;n++){const f=group[n],next=group[n+1],cards=f.state?.cards,after=next.state?.cards;
+ if(f.phase!=='ACTIVE'||f.score!==score||f.soft!==soft||f.state?.dealer!==dealer||!cards?.length||!after?.length)continue;
+ const same=cards.length===after.length&&cards.every((c:number,k:number)=>c===after[k]);
+ if(after.length>cards.length&&cards.every((c:number,k:number)=>c===after[k]))hit.set(id,outcome);
+ else if(same&&settled(next.phase)&&Number(f.score)<21)stand.set(id,outcome);
+ }}
+ return {hit:resultRates([...hit.values()]),stand:resultRates([...stand.values()]),notice:'Hamleler gözlenen kart değişiminden çıkarılır; tıklama kaydı değildir.'};
+}
+export function advisorText(observation:any,rows:Ledger[],frames:Frame[]){
+ if(!observation)return 'Senin oyun mesajın bekleniyor.';
+ if(observation.phase!=='ACTIVE')return 'Sonuç: '+observation.phase+' · '+(observation.net===null?'net tutar bilinmiyor':'net '+observation.net);
+ if(observation.game==='MINES'){
+ const report=observedReport(rows,frames,observation.mines),candidates=report.mines.cells.filter((c:any)=>observation.board[c.position-1]==='HIDDEN'&&c.revealed>=20).sort((a:any,b:any)=>a.mines/a.revealed-b.mines/b.revealed);
+ const rowsText=report.mines.cells.map((c:any)=>c.position+': '+(c.revealed?'mayın %'+(100*c.mines/c.revealed).toFixed(1)+' (n='+c.revealed+')':'veri yok')).join(' · ');
+ return (candidates.length?'Geçmişte en düşük gözlenen mayın oranı: '+candidates[0].position+'. hücre.':'Hücre önermek için aynı mayın sayısında en az 20 açıklanmış örnek gerekli.')+'\n'+rowsText+'\nAçık elmas/mayınlar mesajdan okunur; kapalı hücreler yalnız geçmiş frekansıdır. Sonraki tahta konumu kesin bilinemez.';
+ }
+ if(observation.game==='BLACKJACK'){
+ const data=blackjackActions(rows,frames,observation.score,observation.soft,observation.dealer),enough=data.hit.games>=20&&data.stand.games>=20;
+ const detail='El '+observation.score+' · krupiye '+(observation.dealer??'?')+'\nKart çek: '+(data.hit.rate===null?'veri yok':(100*data.hit.rate).toFixed(1)+'% kazanım')+' (n='+data.hit.games+')\nPas: '+(data.stand.rate===null?'veri yok':(100*data.stand.rate).toFixed(1)+'% kazanım')+' (n='+data.stand.games+')';
+ const separated=enough&&((data.hit.interval!.low>data.stand.interval!.high)||(data.stand.interval!.low>data.hit.interval!.high));
+ const decision=observation.score===21?'Pas: görünen el toplamı 21.':separated?(data.hit.rate!>data.stand.rate!?'Kart çek':'Pas')+' · taramada benzer ellerin gözlenen sonucu daha yüksek.':'Kart çek / Pas seçimi için yeterli ayrışmış örnek yok; kesin hamle üretilmedi.';
+ return decision+'\n'+detail+'\n'+data.notice+' Geçmiş oranlar nedensel veya garantili kazanç değildir.';
+ }
+ if(observation.game==='COINFLIP'){
+ const coin=rows.filter(r=>r.game==='COINFLIP'&&settled(r.phase));return ['HEADS','TAILS'].map(choice=>{const data=resultRates(coin.filter(r=>r.state.choice===choice));return choice+': '+data.wins+'/'+data.games+' gözlenen kazanım';}).join(' · ')+'\nÖnceki sonuç bir sonraki yazı/turayı belirlemez.';
+ }
+ return observation.advice;
 }
 function canonical(positions:number[]){const variants:string[]=[];for(let flip=0;flip<2;flip++)for(let rotation=0;rotation<4;rotation++){const transformed=positions.map(p=>{let r=Math.floor((p-1)/3),c=(p-1)%3;if(flip)c=2-c;for(let k=0;k<rotation;k++){const old=r;r=c;c=2-old;}return r*3+c+1;});variants.push(transformed.sort((a,b)=>a-b).join('-'));}return variants.sort()[0];}
 export function minesPatterns(rows:Ledger[],mines?:number|null){
