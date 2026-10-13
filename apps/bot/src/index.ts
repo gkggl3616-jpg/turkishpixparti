@@ -1,5 +1,6 @@
 import {handleOwoInteraction,ingestOwoMessage,handleOwoMessageUpdate,owoTick,owoOcrTick} from './owo';
 import {verifyOwoOcr} from './owo-ocr';
+import {OSINT_VERSION} from '../../../packages/core/src/osint-releases';
 import {osintCategories} from '../../../packages/core/src/osint-navigation';
 import {queueWelcomeStaff,welcomeStaffTick,ensureWelcomeReady} from '../../../packages/core/src/welcome-staff';
 import {probeOsintProviders,probeOsintHead} from '../../../packages/core/src/osint-admin';
@@ -72,7 +73,7 @@ async function register(){const c=config();if(c.guildId&&client.guilds.cache.has
   const support=saved.find((command:any)=>command.name==='destek')?.options;
   for(const options of [ticket,support])if(options?.length!==1||options[0]?.name!=='tur'||options[0]?.choices?.length!==ticketTopics.length||!ticketTopics.every(topic=>options[0].choices.some((choice:any)=>choice.value===topic.id&&choice.name===topic.label)))throw new DomainError('COMMAND_REGISTRATION_FAILED','Bilet kategorilerinin kaydı doğrulanamadı.');
  });
- if(commandRegistrar.hasGlobal('kur')&&!osintPanelsReported){osintPanelsReported=true;void refreshOsintPanels(client.user?.displayAvatarURL({size:256,extension:'png'})).then(result=>console.log('OSINT_PANEL_REFRESH',JSON.stringify(result))).catch(()=>console.error('OSINT_PANEL_REFRESH_FAILED'));console.log('OSINT_PANELS_READY',JSON.stringify({version,commands:osintCategories.map(c=>'kur '+c.command),categories:osintCategories.length,componentsV2:true,persistent:true,dmOnly:true,proxyCount:'10+5*level'}));}
+ if(commandRegistrar.hasGlobal('kur')&&!osintPanelsReported){osintPanelsReported=true;void refreshOsintPanels(client.user?.displayAvatarURL({size:256,extension:'png'})).then(result=>console.log('OSINT_PANEL_REFRESH',JSON.stringify(result))).catch(()=>console.error('OSINT_PANEL_REFRESH_FAILED'));console.log('OSINT_PANELS_READY',JSON.stringify({version:OSINT_VERSION,commands:osintCategories.map(c=>'kur '+c.command),categories:osintCategories.length,componentsV2:true,persistent:true,dmOnly:false,resultDelivery:'invoking-channel',privateInboxes:true,proxyCount:'10+5*level',ownerProxyCount:'unlimited'}));}
  if(commandRegistrar.hasGlobal('owo')&&!owoReported){owoReported=true;console.log('OWO_ANALYSIS_READY',JSON.stringify({command:'owo',role:'1557607714681786448',owners:true,commands:['kanal','tara','calistir'],continuous:true,readOnly:true,personal:true,catalog:197,empirical:true,manualScan:'oldest-or-date',automaticScanLimit:700,periodDays:3}));void verifyOwoOcr().then(status=>console.log('OWO_OCR_READY',JSON.stringify(status)));}
  if(result.error)console.error('COMMAND_REGISTRATION_DEFERRED',JSON.stringify({...discordErrorDetails(result.error),retryMs:result.retryMs}));
  if(!result.ready)return;
