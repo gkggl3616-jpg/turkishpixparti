@@ -74,18 +74,16 @@ test('Level analysis uses the saved server guild even when environment settings 
 });
 
 let pendingId='';
-test('A blocked DM retains encrypted results, never leaks to the channel, and can be retried without billing',async()=>{
+test('Public proxy replies do not need DMs; private delivery remains encrypted and retryable',async()=>{
  dmOpen=false;
- const i:any={id:'777777777777777770',guildId:guild,channelId:publicChannel,user,client:{user:{id:bot}},message:{author:{id:bot}},customId:'tp-osint:proxy',isChatInputCommand:()=>false,isButton:()=>true,isStringSelectMenu:()=>false,isModalSubmit:()=>false,deferred:false,deferReply:async function(v:any){assert.equal(v.flags,64);this.deferred=true;},editReply:async(v:any)=>{i.output=v;},reply:async(v:any)=>{i.output=v;}};
- assert.equal(await handleOsintInteraction(i),true);
- assert.match(i.output.content,/DM/);assert.ok(!i.output.content.includes('8.8.'));
- assert.deepEqual(i.output.allowedMentions,{parse:[]});assert.equal(i.output.components[0].components[0].style,3);
- pendingId=i.output.components[0].components[0].custom_id.replace('tp-osint:retry:','');
+ const i:any={id:'777777777777777770',guildId:guild,channelId:publicChannel,user,client:{user:{id:bot}},message:{author:{id:bot}},customId:'tp-osint:proxy',isChatInputCommand:()=>false,isButton:()=>true,isStringSelectMenu:()=>false,isModalSubmit:()=>false,deferred:false,deferReply:async function(v:any){assert.equal(v.flags,undefined);this.deferred=true;},editReply:async(v:any)=>{i.output=v;},reply:async(v:any)=>{i.output=v;}};
+ assert.equal(await handleOsintInteraction(i),true);assert.match(i.output.embeds[0].title,/Proxy/);assert.equal(i.output.files[0].name,'turkishpix-proxy-10.txt');assert.deepEqual(i.output.allowedMentions,{parse:[]});
+ const outcome=await queueOsintDm(user,'private-delivery-fixture',{content:'Private mailbox report',file:{name:'private.txt',text:'8.8.8.8:80\n'.repeat(10)}});pendingId=outcome.id;
  const row=(await pg.query<any>('SELECT * FROM osint_dm_deliveries WHERE id=$1',[pendingId])).rows[0];
  assert.equal(row.status,'PENDING');assert.equal(row.last_error,'DM_CLOSED');assert.ok(!row.payload_cipher.includes('8.8.'));
  await assert.rejects(()=>retryOsintDelivery(pendingId,'555555555555555555',true),{code:'DM_NOT_FOUND'});
  const before=(await pg.query('SELECT count(*) n FROM osint_usage WHERE user_id=$1',[user.id])).rows;
- dmOpen=true;const outcome=await retryOsintDelivery(pendingId,user.id,true);assert.equal(outcome.delivered,true);
+ dmOpen=true;const retried=await retryOsintDelivery(pendingId,user.id,true);assert.equal(retried.delivered,true);
  const sent=posted.at(-1)!;assert.equal(sent.text.trim().split('\n').length,10);assert.deepEqual(sent.payload.allowed_mentions,{parse:[]});assert.equal(sent.payload.enforce_nonce,true);
  const count=posted.length;assert.equal((await retryOsintDelivery(pendingId,user.id,true)).delivered,true);assert.equal(posted.length,count);
  assert.deepEqual((await pg.query('SELECT count(*) n FROM osint_usage WHERE user_id=$1',[user.id])).rows,before);

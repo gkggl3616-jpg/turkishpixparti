@@ -94,9 +94,20 @@ test('QR web report stays encrypted under its owner and PNG DM attachment is act
  const payload=osintDmPayload(data.result,null);assert.equal(payload.file?.contentType,'image/png');assert.equal(payload.file?.name,'turkishpix-qr.png');
  assert.equal((await sendOsintResult(owner,data.result,null,'utility-dm-fixture-001')).delivered,true);const sent=posted.at(-1)!;assert.equal(sent.blob?.type,'image/png');const bytes=Buffer.from(await sent.blob!.arrayBuffer());assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');assert.equal(PNG.sync.read(bytes).width,1024);assert.deepEqual(sent.body.allowed_mentions,{parse:[]});
 });
-test('Direct slash wrappers use the shared engine and DM routing; /kur remains exactly eight categories',async()=>{
- const replies:any[]=[];const i:any={id:'555555555555555555',guildId:guild,commandName:'qr-olustur',user:owner,client:{user:{id:bot}},isChatInputCommand:()=>true,isButton:()=>false,isStringSelectMenu:()=>false,isModalSubmit:()=>false,options:{getString:()=> 'slash fixture QR'},deferReply:async function(d:any){assert.equal(d.flags,64);this.deferred=true;},editReply:async(d:any)=>replies.push(d),reply:async(d:any)=>replies.push(d)};
- assert.equal(await handleOsintInteraction(i),true);assert.match(replies.at(-1).content,/özel mesajına gönderildi/);assert.equal(posted.at(-1)?.blob?.type,'image/png');
+test('Direct slash wrappers show channel results through the shared engine; /kur remains exactly eight categories',async()=>{
+ const replies:any[]=[];const i:any={id:'555555555555555555',guildId:guild,commandName:'qr-olustur',user:owner,client:{user:{id:bot}},isChatInputCommand:()=>true,isButton:()=>false,isStringSelectMenu:()=>false,isModalSubmit:()=>false,options:{getString:()=> 'slash fixture QR'},deferReply:async function(d:any){assert.equal(d.flags,undefined);this.deferred=true;},editReply:async(d:any)=>replies.push(d),reply:async(d:any)=>replies.push(d)};
+ assert.equal(await handleOsintInteraction(i),true);assert.match(replies.at(-1).embeds[0].title,/QR/);assert.equal(replies.at(-1).files[0].name,'turkishpix-qr.png');assert.deepEqual(replies.at(-1).allowedMentions,{parse:[]});
  assert.equal(osintSetupCommand.options.length,8);assert.equal(osintCategories.find(c=>c.id==='research')?.tools.includes('api-directory'),true);assert.equal(guildCommands.length,100);for(const name of ['qr-olustur','api-ara','altyapi-ara','temp-mail','proxy-cek','roblox-isim-kontrol','mc-durum'])assert.ok(globalCommands.some(c=>c.name===name));assert.equal(new Set(commands.map(c=>c.name)).size,commands.length);
 });
 test('New web tools remain behind the session gate',async()=>{const response=await POST(new Request('https://osint.example/api/osint/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'qr-code',target:'test',requestId:'anonymous-fixture'})}));assert.equal(response.status,401);});
+
+test('Roblox bulk lookup keeps each missing/invalid name visible and deduplicates case-insensitively',async()=>{
+ mode='empty';const data=await robloxUsername('MissingOne, MissingTwo\nmissingone, _bad');assert.equal(data.items.length,3);assert.equal(data.items[0].value,'Bulunamadı: MissingOne');assert.equal(data.items[1].value,'Bulunamadı: MissingTwo');assert.match(data.items[2].value,/Geçersiz/);mode='normal';
+});
+
+test('Target-based bulk input preserves individual failures and supports TXT modals without splitting QR content',async()=>{
+ const {bulkTargets,readTargetAttachment}=await import('../packages/core/src/osint-bulk');const {osintQueryModal,osintPanel}=await import('../packages/core/src/osint-panels');
+ assert.deepEqual(bulkTargets('dns','example.com,EXAMPLE.COM\nother.example'),['example.com','other.example']);assert.deepEqual(bulkTargets('qr-code','a,b\nc'),['a,b\nc']);assert.throws(()=>bulkTargets('dns',Array.from({length:21},(_,n)=>n+'.example').join(',')),{code:'BULK_LIMIT'});
+ assert.equal(osintQueryModal('dns')!.components[1].component.type,19);assert.match(JSON.stringify(osintPanel('research')),/query:qr-code/);assert.match(JSON.stringify(osintPanel('social')),/query:roblox-username/);await assert.rejects(()=>readTargetAttachment({name:'bad.txt',url:'https://evil.example/a.txt',size:10}),{code:'BULK_FILE_URL'});
+ const batch=await osintRun(owner,'ioc','example[.]com,https://example.com','bulk-normalizer-fixture');assert.equal(batch.result.items.length,2);assert.ok(batch.result.items.every(i=>!i.value.startsWith('Hata:')));
+});

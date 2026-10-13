@@ -20,6 +20,11 @@ export function osintDmPayload(r:OsintResult,remaining:number|null):OsintDmPaylo
   file:r.qr?{name:'turkishpix-qr.png',text:'',base64:r.qr.pngDataUrl.split(',')[1],contentType:'image/png'}:{name:proxies?'turkishpix-proxy-'+proxies.length+'.txt':'turkishpix-'+r.kind+'-sonuc.txt',text:proxies?proxies.join('\n')+'\n':full}
  };
 }
+/** Results in the invoking channel, including large reports as attachments. */
+export function osintChannelPayload(result:OsintResult,remaining:number|null){
+ const full=result.items.map(i=>'**'+safe(i.name)+'**\n'+safe(i.value)).join('\n\n'),long=full.length>3400||result.items.length>20,legacy=osintDmPayload(result,remaining);
+ return {content:'',embeds:[{title:'🛰️ '+safe(result.title).slice(0,240),color:0x5865f2,description:(safe(result.summary)+'\n\n'+(long?full.slice(0,2800)+'\n\n📎 Tam sonuç ektedir.':full)).slice(0,3800),...(result.qr?{image:{url:'attachment://turkishpix-qr.png'}}:{}),footer:{text:('Kalan hak: '+(remaining===null?'Sınırsız':remaining)+' · '+safe(result.notice)).slice(0,1500)}}],files:result.qr||result.kind==='proxy'||long?[{attachment:legacy.file!.base64?Buffer.from(legacy.file!.base64,'base64'):Buffer.from(legacy.file!.text),name:legacy.file!.name}]:[],allowedMentions:{parse:[]}};
+}
 function key(){
  if(config().auditKey.length<32)throw new DomainError('DM_KEY_MISSING','Özel sonuç teslimi için sunucu anahtarı eksik.',503);
  return createHash('sha256').update('turkishpix-osint-dm-v1:').update(config().auditKey).digest();

@@ -1,3 +1,4 @@
+import {bulkTargets} from './osint-bulk';
 import {parseApiSearch,searchApiDirectory} from './osint-api-directory';
 import {parseMinecraftTarget,validateRobloxName,robloxUsername,minecraftStatus} from './osint-game-tools';
 import {utilityCatalog,type UtilityKind,type QrArtifact,type RepositorySearch,type ApiDirectory} from './osint-utility-catalog';
@@ -110,11 +111,13 @@ function urlInspect(input:string):OsintResult{
 }
 export function validateOsint(kind:string,target:unknown){
  const type=z.enum(osintTools.map(t=>t.id) as [OsintKind,...OsintKind[]]).parse(kind);
- const input=utilityCatalog.some(t=>t.id===type)?z.string().trim().min(type==='qr-code'?1:2).max(1800).parse(target):type==='proxy-live'?z.string().trim().min(2).max(64000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(12000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
+ const targets=typeof target==='string'?bulkTargets(type,target):[];
+ if(targets.length>1&&type!=='roblox-username'){targets.forEach(t=>validateOsint(type,t));return {kind:type,target:targets.join('\n')};}
+ const input=type==='roblox-username'?z.string().trim().min(3).max(24000).parse(target):utilityCatalog.some(t=>t.id===type)?z.string().trim().min(type==='qr-code'?1:2).max(1800).parse(target):type==='proxy-live'?z.string().trim().min(2).max(64000).parse(target):comboPresets.some(p=>p.id===type)?z.string().trim().min(2).max(12000).parse(target):type==='metadata'?z.string().trim().min(2).max(700).parse(target):targetSchema.parse(target);
  if(type==='qr-code'||type==='repository-search')validateUtility(type,input);
  if(type==='api-directory')parseApiSearch(input);
  if(type==='minecraft-status')parseMinecraftTarget(input);
- if(type==='roblox-username')validateRobloxName(input);
+ if(type==='roblox-username'&&bulkTargets(type,input).length===1)validateRobloxName(input);
  if(socialCatalog.some(t=>t.id===type))validateSocial(type as SocialKind,input);
  if(type==='web-risks')researchUrl(input);
  if(multiCatalog.some(t=>t.id===type))validateMulti(type as MultiKind,input);
@@ -137,13 +140,25 @@ export function validateOsint(kind:string,target:unknown){
  return {kind:type,target:input};
 }
 export async function osintRun(actor:OsintActor,kind:string,target:unknown,requestId:string,onProgress?:(event:ScanEvent)=>void,delivery:'WEB'|'DISCORD'='DISCORD'){
+ z.enum(osintTools.map(t=>t.id) as [OsintKind,...OsintKind[]]).parse(kind);
+ const entries=typeof target==='string'?bulkTargets(kind,target):[];
+ if(entries.length<2||kind==='roblox-username')return runSingle(actor,kind,target,requestId,onProgress,delivery);
+ await loadServerSettings();if(config().demo)throw new DomainError('OSINT_DISABLED','Demo modunda araştırma kapalı.',403);if(!/^[a-zA-Z0-9:_-]{10,96}$/.test(requestId))throw new DomainError('INVALID_REQUEST','Geçersiz toplu işlem anahtarı.',400);
+ await guildMember(actor.id);await assertOsintAllowed(actor.id);if(!config().owners.includes(actor.id))await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
+ const items:{name:string;value:string}[]=[];let remaining=await osintQuota(actor.id);
+ for(let n=0;n<entries.length;n++)try{const data=await runSingle(actor,kind,entries[n],requestId+':'+n,onProgress,'DISCORD',true);remaining=data.quota;items.push({name:entries[n],value:data.result.summary+'\n'+data.result.items.map(i=>i.name+': '+i.value).join('\n')});}catch(e){items.push({name:entries[n],value:'Hata: '+(e instanceof DomainError?e.message:e instanceof z.ZodError?e.issues[0]?.message:'Sağlayıcı yanıtı alınamadı.')});}
+ const result:OsintResult={kind:kind as OsintKind,target:entries.join(', '),title:'Toplu Araştırma',summary:entries.length+' hedef · her hedefin sonucu aşağıda',items,notice:'Her başarılı hedef kendi sorgu hakkını kullanır. API hatası bulunamadı veya güvenli sayılmaz.'};
+ const reportId=delivery==='WEB'?await transaction(async tx=>{await syncUser(tx,actor);return saveResearchReport(tx,actor.id,requestId,result);}):undefined;
+ return {result,reportId,quota:remaining,duplicate:false};
+}
+async function runSingle(actor:OsintActor,kind:string,target:unknown,requestId:string,onProgress?:(event:ScanEvent)=>void,delivery:'WEB'|'DISCORD'='DISCORD',batch=false){
  await loadServerSettings();
  if(config().demo)throw new DomainError('OSINT_DISABLED','Demo modunda araştırma kapalı.',403);
  if(!/^[a-zA-Z0-9:_-]{10,100}$/.test(requestId))throw new DomainError('INVALID_REQUEST','Geçersiz işlem anahtarı.',400);
  const parsed=validateOsint(kind,target);if(parsed.kind==='aliases')throw new DomainError('ALIAS_PANEL','Alias işlemleri kişisel alias panelinden yapılır.',400);
  const member=await guildMember(actor.id);
  await assertOsintAllowed(actor.id);
- if(!config().owners.includes(actor.id))await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
+ if(!batch&&!config().owners.includes(actor.id))await rateLimit('osint:'+config().guildId+':'+actor.id,8,60);
  const beforeQuota=await osintQuota(actor.id,member);
  if(!beforeQuota.unlimited&&beforeQuota.remaining!<=0)throw new DomainError('OSINT_QUOTA','Araştırma hakkın doldu. Günlük hak 00:00’da yenilenir; ek hak için owner ile iletişime geç.',429);
  if(['mail','mail-inbox'].includes(parsed.kind))await syncUser(database(),actor);

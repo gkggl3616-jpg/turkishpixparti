@@ -1,3 +1,4 @@
+import {owoCommand} from './owo-command';
 import {osintUtilityCommands} from './osint-utility-commands';
 import {releases} from './releases';
 import {osintSetupCommand} from './osint-policy';
@@ -29,6 +30,7 @@ export const commands=[
  {name:'guncellemeler',description:'Yeni özellikleri, komutları ve önceki sürüm notlarını görüntüle.',options:[{type:3,name:'surum',description:'Görüntülenecek sürüm; boşsa en yeni sürüm',required:false,choices:releases.map(r=>({name:'v'+r.version+' · '+r.title,value:r.version}))}]},
  {name:'yardim',description:'Tüm komutların kategorilerini ve tüm alt komutları keşfet.'},
  osintSetupCommand,
+ owoCommand,
  ...osintUtilityCommands,
  expansionCommand,
  ...musicCommands,
@@ -43,6 +45,6 @@ export function commandReply(name:string){
 }
 
 // Discord allows 100 guild CHAT_INPUT commands plus a separate global quota.
-const globalNames=new Set(['inv','kick','ban','sil','kur',...osintUtilityCommands.map(c=>c.name)]);
+const globalNames=new Set(['inv','kick','ban','sil','kur','owo',...osintUtilityCommands.map(c=>c.name)]);
 export const guildCommands=commands.filter(c=>!globalNames.has(c.name));
 export const globalCommands=commands.filter(c=>globalNames.has(c.name)).sort((a,b)=>a.name==='kur'?-1:b.name==='kur'?1:0);
