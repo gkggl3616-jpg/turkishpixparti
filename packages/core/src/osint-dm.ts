@@ -5,19 +5,19 @@ import {config,DomainError} from './config';
 import {database,transaction} from './db';
 import type {OsintResult,OsintActor} from './osint';
 
-export type OsintDmPayload={content:string;embeds?:any[];file?:{name:string;text:string}};
+export type OsintDmPayload={content:string;embeds?:any[];file?:{name:string;text:string;base64?:string;contentType?:string}};
 export type DeliveryOutcome={id:string;delivered:boolean;error?:string};
 const safe=(s:string)=>s.replace(/[@`*_~|<>]/g,'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'');
 export function formatOsintDm(r:OsintResult,remaining:number|null):string{
- return ('🛰️ **TURKISHPİX · '+safe(r.title)+'**\n'+safe(r.summary)+'\n\n📎 **Tam sonuç dosyan ektedir.**\n📊 Kalan sorgu hakkı: **'+(remaining===null?'Sınırsız (Owner)':remaining)+'**\n-# '+safe(r.notice)).slice(0,1850);
+ return ('🛰️ **TURKISHPİX · '+safe(r.title)+'**\n'+safe(r.summary)+'\n\n📎 **Sonuç dosyan ektedir.**\n📊 Kalan sorgu hakkı: **'+(remaining===null?'Sınırsız (Owner)':remaining)+'**\n-# '+safe(r.notice)).slice(0,1850);
 }
 export function osintDmPayload(r:OsintResult,remaining:number|null):OsintDmPayload{
  const proxies=r.kind==='proxy'?r.items.filter(item=>/^\d+ · /.test(item.name)).map(item=>item.value.split(' · ')[0]):null;
  const full=r.title+'\n'+r.summary+'\nHedef: '+r.target+'\n\n'+r.items.map(x=>x.name+'\n'+x.value).join('\n\n')+'\n\n'+r.notice+'\n';
  return {
   content:formatOsintDm(r,remaining),
-  embeds:[{title:'✦ '+safe(r.title),description:r.items.slice(0,4).map(x=>'**'+safe(x.name)+'**\n'+safe(x.value).slice(0,240)).join('\n\n').slice(0,1600)||'Filtrene uyan kayıt bulunamadı.',color:0x5865f2,footer:{text:'TurkishPix • Sonuç yalnızca sana gönderilir'}}],
-  file:{name:proxies?'turkishpix-proxy-'+proxies.length+'.txt':'turkishpix-'+r.kind+'-sonuc.txt',text:proxies?proxies.join('\n')+'\n':full}
+  embeds:[{title:'✦ '+safe(r.title),description:r.items.slice(0,4).map(x=>'**'+safe(x.name)+'**\n'+safe(x.value).slice(0,240)).join('\n\n').slice(0,1600)||'Filtrene uyan kayıt bulunamadı.',color:0x5865f2,...(r.qr?{image:{url:'attachment://turkishpix-qr.png'}}:{}),footer:{text:'TurkishPix • Sonuç yalnızca sana gönderilir'}}],
+  file:r.qr?{name:'turkishpix-qr.png',text:'',base64:r.qr.pngDataUrl.split(',')[1],contentType:'image/png'}:{name:proxies?'turkishpix-proxy-'+proxies.length+'.txt':'turkishpix-'+r.kind+'-sonuc.txt',text:proxies?proxies.join('\n')+'\n':full}
  };
 }
 function key(){
@@ -38,7 +38,7 @@ async function postDm(userId:string,payload:OsintDmPayload,nonce?:string){
  let body:string|FormData;
  if(payload.file){
   message.attachments=[{id:0,filename:payload.file.name}];
-  const form=new FormData();form.set('payload_json',JSON.stringify(message));form.set('files[0]',new Blob([payload.file.text],{type:'text/plain;charset=utf-8'}),payload.file.name);body=form;
+  const form=new FormData();form.set('payload_json',JSON.stringify(message));form.set('files[0]',new Blob([payload.file.base64?Uint8Array.from(Buffer.from(payload.file.base64,'base64')):payload.file.text],{type:payload.file.contentType||'text/plain;charset=utf-8'}),payload.file.name);body=form;
  }else body=JSON.stringify(message);
  return discordRequest('/channels/'+dm.id+'/messages',{method:'POST',body});
 }

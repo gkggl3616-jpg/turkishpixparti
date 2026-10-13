@@ -97,7 +97,7 @@ test('Installing a panel twice updates its native Discord V2 card instead of pos
  const before=publicPosts;await handleOsintInteraction(i);await handleOsintInteraction({...i,id:'777777777777777772'});
  assert.equal(publicPosts,before+1);assert.equal(publicEdits,1);
  const payload=posted.filter(x=>x.channel===publicChannel).at(-1)!.payload;
- assert.equal(payload.flags,32768);assert.equal(payload.components[0].type,17);assert.equal(payload.components[0].accent_color,0x5865f2);
+ assert.equal(payload.flags,32768);assert.equal(payload.components[0].type,17);assert.equal(payload.components[0].accent_color,0x59d7ff);
  const json=JSON.stringify(payload);assert.match(json,/Proxy Al/);assert.match(json,/Filtrele/);assert.match(json,/Proxy Checker/);assert.match(json,/discord.gg\/turkishpix/);
  assert.equal((await pg.query('SELECT * FROM osint_panels')).rows.length,1);
  const root=globalCommands.find(c=>c.name==='kur')!;assert.ok(root);assert.ok(JSON.stringify(root).includes('"name":"proxy"'));assert.ok(!globalCommands.some(c=>['osint','proxy','tempmail'].includes(c.name)));

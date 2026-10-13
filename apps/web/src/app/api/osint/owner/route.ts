@@ -1,3 +1,5 @@
+import {osintActiveUsers,osintGuildMembers} from '../../../../../../../packages/core/src/osint-live-admin';
+import {ownedProviderNumbers,assignProviderNumber,type NumberProvider} from '../../../../../../../packages/core/src/osint-number-providers';
 import {loadServerSettings} from '../../../../../../../packages/core/src/setup';
 import {NextResponse} from 'next/server';
 import {session,csrf,DomainError,osintAdminState,osintSetBlocked,purgeOldOsintLogs,osintGrant,revokeOsintGrant,setOsintProviderKey,testOsintProvider,osintAuditExport,osintMemberDetails,rateLimit,assertOsintOwner,ownedSmsNumbers,smsAssignments,assignSmsNumber,revokeSmsNumber} from '../../../../../../../packages/core/src/index';
@@ -8,7 +10,8 @@ export async function GET(req:Request){try{
  await loadServerSettings();
  const me=await session(req);if(!me)throw new DomainError('LOGIN_REQUIRED','Discord ile giriş gerekli.',401);
  const url=new URL(req.url),search=url.searchParams.get('q')||'',offset=Number(url.searchParams.get('offset')||0);
- if(url.searchParams.get('sms')==='1')return NextResponse.json({...(await ownedSmsNumbers(me.id)),assignments:await smsAssignments(me.id)},{headers});
+ if(url.searchParams.get('activity')==='1'||url.searchParams.get('guild-members')==='1'){assertOsintOwner(me.id);await rateLimit('osint-live-owner:'+me.id,30,60);return NextResponse.json(url.searchParams.get('activity')==='1'?await osintActiveUsers(me.id):await osintGuildMembers(me.id,search,offset,url.searchParams.get('kind')||'all',url.searchParams.get('role')||''),{headers});}
+ if(url.searchParams.get('sms')==='1')return NextResponse.json({...(await ownedProviderNumbers(me.id,(url.searchParams.get('provider')||'twilio') as NumberProvider)),assignments:await smsAssignments(me.id)},{headers});
  if(url.searchParams.get('member'))return NextResponse.json(await osintMemberDetails(me.id,url.searchParams.get('member')!),{headers});
  if(url.searchParams.get('export')==='1'){const data=await osintAuditExport(me.id,search,offset);return NextResponse.json(data,{headers:{...headers,'Content-Disposition':'attachment; filename="turkishpix-osint-audit.json"'}});}
  assertOsintOwner(me.id);await purgeOldOsintLogs();const data=await osintAdminState(me.id,search,offset);return NextResponse.json({...data,csrf:me.csrf},{headers});
@@ -19,7 +22,7 @@ export async function POST(req:Request){try{
  const raw=await req.text();if(raw.length>2000)throw new DomainError('BAD_REQUEST','İstek fazla büyük.',413);
  let d:any;try{d=JSON.parse(raw);}catch{throw new DomainError('BAD_REQUEST','Geçerli JSON gerekli.',400);}
  let result:any;
- if(d?.action==='sms-assign')result=await assignSmsNumber(me,d.userId,d.phone,d.expiresAt);
+ if(d?.action==='sms-assign')result=await assignProviderNumber(me,d.userId,d.provider||'twilio',d.phone,d.expiresAt);
  else if(d?.action==='sms-revoke')result=await revokeSmsNumber(me,d.id);
  else if(d?.action==='grant')result=await osintGrant(me,d.userId,d.credits,d.expiresAt);
  else if(d?.action==='revoke')result=await revokeOsintGrant(me,d.id);

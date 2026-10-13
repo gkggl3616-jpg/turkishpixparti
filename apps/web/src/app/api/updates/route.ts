@@ -1,3 +1,4 @@
+import {osintReleases,OSINT_VERSION} from '../../../../../../packages/core/src/osint-releases';
 import {NextResponse} from 'next/server';
 import {database} from '../../../../../../packages/core/src/db';
 import {RELEASE_VERSION} from '../../../../../../packages/core/src/config';
@@ -6,6 +7,7 @@ import {botInviteUrl} from '../../../../../../packages/core/src/setup';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export async function GET(){
+ if(process.env.OSINT_ONLY==='true')return NextResponse.json({scope:'OSINT',webVersion:OSINT_VERSION,releases:osintReleases},{headers:{'Cache-Control':'no-store'}});
  let bot=null;
  if(process.env.DATABASE_URL)try{
   const row=(await database().query("SELECT status,updated_at FROM integration_status WHERE name='discord'")).rows[0];

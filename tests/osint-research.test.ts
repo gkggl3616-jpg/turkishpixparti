@@ -49,7 +49,7 @@ before(async()=>{
 });
 after(async()=>{globalThis.fetch=originalFetch;await pg.close();});
 test('All four configured owners receive unlimited quota at level zero; ordinary XP quota still applies',async()=>{
- for(const id of config().owners){if(id!==owner.id)await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[id,'owner']);const q=await osintQuota(id);assert.equal(q.unlimited,true);assert.equal(q.remaining,null);assert.equal(q.dailyLimit,null);assert.equal(q.level,0);assert.equal(q.proxyResultLimit,10);}
+ for(const id of config().owners){if(id!==owner.id)await pg.query('INSERT INTO users(id,username) VALUES($1,$2)',[id,'owner']);const q=await osintQuota(id);assert.equal(q.unlimited,true);assert.equal(q.remaining,null);assert.equal(q.dailyLimit,null);assert.equal(q.level,0);assert.equal(q.proxyResultLimit,null);}
  const q=await osintQuota(member.id);assert.equal(q.unlimited,false);assert.equal(q.remaining,5);
 });
 test('Additional credits expire, are server scoped and consume once per request after the daily allowance',async()=>{

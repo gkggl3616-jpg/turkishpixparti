@@ -1,3 +1,4 @@
+import {OSINT_VERSION} from '../../../../../../packages/core/src/osint-releases';
 import {authBrokerOrigin,createLoginHandoff,startLoginHandoff,completeLoginHandoff,redeemLoginHandoff,HANDOFF_COOKIE} from '../../../../../../packages/core/src/auth-bridge';
 import {cookieValue} from '../../../../../../packages/core/src/auth';
 import {arcadeOverview,startArcade,finishArcade} from '../../../../../../packages/core/src/index';
@@ -19,6 +20,7 @@ export async function GET(req:Request){
  try{
   if(path==='/api/health'){
    if(!process.env.DATABASE_URL)return json({status:config().demo?'preview':'database_missing'},config().demo?200:503);
+   if(process.env.OSINT_ONLY==='true'){const ready=await database().query("SELECT version FROM schema_migrations WHERE version='030_osint_utilities'");if(!ready.rows.length)return json({status:'migration_required',scope:'OSINT'},503);return json({status:'ok',scope:'OSINT',version:OSINT_VERSION});}
    const schemas=await database().query("SELECT version FROM schema_migrations WHERE version IN ('001_initial','003_discord_roles','004_server_setup','005_community','006_voice_presence','007_entertainment','008_chat_moderation','009_community_features','010_music_application_security','011_tickets_giveaways','012_community_expansion','013_level_notifications','014_arcade_currency')");if(schemas.rows.length!==13)return json({status:'migration_required'},503);await loadServerSettings();return json({status:'ok',version:RELEASE_VERSION,ready:readiness().ready,demo:config().demo});
   }
   if(process.env.DATABASE_URL&&!config().demo)await loadServerSettings();

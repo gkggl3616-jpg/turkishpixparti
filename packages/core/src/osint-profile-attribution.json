@@ -1,0 +1,26 @@
+{
+  "project": "WhatsMyName",
+  "url": "https://github.com/WebBreacher/WhatsMyName",
+  "retrievedAt": "2026-10-12",
+  "license": [
+    "Copyright (C) 2015-2026 Micah Hoffman",
+    "This work is licensed under the Creative Commons Attribution-ShareAlike",
+    "4.0 International License. To view a copy of this license, visit",
+    "http://creativecommons.org/licenses/by-sa/4.0/ or send a letter to",
+    "Creative Commons, PO Box 1866, Mountain View, CA 94042, USA."
+  ],
+  "authors": [
+    "3xp0rt",
+    "AlexisPradoOficial",
+    "funnyzak",
+    "jschibberges",
+    "mbiesiad",
+    "Micah Hoffman",
+    "mtedholm",
+    "Owen Ross"
+  ],
+  "totalSources": 696,
+  "addedSources": 604,
+  "note": "Normalized HTTPS GET adapters derived from wmn-data.json; original 92 adapters preserved.",
+  "upstreamCommit": "062bcfe48df79fa618e96edc79dc9673f3fe5643"
+}

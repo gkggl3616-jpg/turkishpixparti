@@ -6,7 +6,13 @@ import {assertOsintOwner} from './osint-entitlements';
 import {syncUser,guildMember} from './discord';
 import {audit} from './audit';
 import sources from './osint-profile-sources.json';
+import {extraProviderDefinitions} from './osint-multi-catalog';
 export const providerDefinitions:{id:string;name:string;key:boolean;env?:string;category?:string}[]=[
+ ...extraProviderDefinitions,
+ {id:'public-api-catalog',name:'Public APIs topluluk kataloğu (API bağlantısı değildir)',key:false,category:'catalog'},
+ {id:'roblox-users',name:'Roblox resmî Users API',key:false},
+ {id:'temp-mail-io',name:'Temp-Mail.io premium API',key:true,env:'TEMP_MAIL_IO_API_KEY'},
+ {id:'tempmail-lol',name:'TempMail.lol tokenlu kutu API',key:false},
  {id:'cloudflare',name:'Cloudflare DNS',key:false},{id:'google-dns',name:'Google DNS (alternatif)',key:false},
  {id:'rdap',name:'RDAP.org',key:false},{id:'iana-rdap',name:'IANA / kayıt operatörü (alternatif)',key:false},
  {id:'ripe',name:'RIPEstat ASN/BGP',key:false},{id:'ipwho',name:'IPwho.is GeoIP',key:false},
@@ -21,6 +27,14 @@ export const providerDefinitions:{id:string;name:string;key:boolean;env?:string;
  {id:'securitytrails',name:'SecurityTrails DNS geçmişi',key:true,env:'SECURITYTRAILS_API_KEY'},
  {id:'malwarebazaar',name:'MalwareBazaar hash (alternatif)',key:true,env:'MALWAREBAZAAR_AUTH_KEY'},
  {id:'urlscan',name:'urlscan.io geçmiş araştırma',key:true,env:'URLSCAN_API_KEY'},
+ {id:'observatory',name:'Mozilla / MDN HTTP Observatory',key:false},
+ {id:'certspotter',name:'SSLMate CertSpotter CT',key:false},{id:'hsts-preload',name:'Chromium HSTS preload',key:false},{id:'tranco',name:'Tranco tarihsel sıralama',key:false},{id:'greenweb',name:'Green Web Foundation hosting kaydı',key:false},{id:'ssllabs',name:'SSL Labs v4 kayıtlı kurumsal email',key:true,env:'SSLLABS_REGISTERED_EMAIL'},
+ {id:'internetdb',name:'Shodan InternetDB (pasif)',key:false},{id:'hibp',name:'HIBP site ihlal kataloğu',key:false},
+ {id:'geojs',name:'GeoJS',key:false},{id:'countryis',name:'country.is',key:false},
+ {id:'aws-ranges',name:'AWS resmî IP aralıkları',key:false},{id:'cloudflare-ranges',name:'Cloudflare resmî IP aralıkları',key:false},{id:'google-ranges',name:'Google Cloud resmî IP aralıkları',key:false},
+ {id:'nominatim',name:'OpenStreetMap Nominatim',key:false},
+ {id:'otx',name:'AlienVault OTX',key:true,env:'OTX_API_KEY'},{id:'greynoise',name:'GreyNoise Community',key:true,env:'GREYNOISE_API_KEY'},
+ {id:'brave',name:'Brave Search API',key:true,env:'BRAVE_SEARCH_API_KEY'},{id:'github-token',name:'GitHub kod araması token',key:true,env:'GITHUB_RESEARCH_TOKEN'},{id:'gravatar',name:'Gravatar v3',key:true,env:'GRAVATAR_API_KEY'},
  {id:'commoncrawl',name:'Common Crawl URL indeksi',key:false},
  {id:'twilio',name:'Twilio sahip olunan numaralar / SMS',key:true,env:'TWILIO_CREDENTIALS'},
  ...sources.map(s=>({id:'profile:'+s.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),name:s.name+' / açık profil',key:false,category:'username'}))
@@ -36,6 +50,8 @@ export async function providerKey(id:string):Promise<string|null>{
 export async function setOsintProviderKey(owner:{id:string;username:string},id:string,value:string){
  assertOsintOwner(owner.id);await guildMember(owner.id);
  if(!providerDefinitions.some(x=>x.id===id&&x.key)||value.length>512||value&&(!/^[\x21-\x7e]+$/.test(value)||value.length<8))throw new DomainError('INVALID_PROVIDER_KEY','Desteklenen sağlayıcı ve geçerli API anahtarı gerekli.',400);
+ if(id==='ssllabs'&&value&&!/^[^\s@]+@[^\s@]+\.[a-z]{2,63}$/i.test(value))throw new DomainError('INVALID_PROVIDER_KEY','SSL Labs v4 kayıtlı kurumsal email gerekli.',400);
+ if(id==='signalwire'&&value)(await import('./osint-number-providers')).signalWireCredentials(value);
  if(id==='twilio'&&value&&!/^AC[a-f0-9]{32}:[a-f0-9]{32}$/i.test(value))throw new DomainError('INVALID_PROVIDER_KEY','Twilio için AccountSID:AuthToken biçimini gir.',400);
  await transaction(async tx=>{await syncUser(tx,owner);if(value)await tx.query('INSERT INTO osint_provider_keys(provider,key_cipher,updated_by) VALUES($1,$2,$3) ON CONFLICT(provider) DO UPDATE SET key_cipher=EXCLUDED.key_cipher,updated_by=EXCLUDED.updated_by,updated_at=now()',[id,sealOsintSecret(value),owner.id]);else await tx.query('DELETE FROM osint_provider_keys WHERE provider=$1',[id]);await audit(tx,owner.id,'OSINT_PROVIDER_KEY',id,{configured:!!value});});return {success:true};
 }
@@ -50,7 +66,9 @@ export async function providerHealth(id:string,ok:boolean,code:string,ms:number)
 }
 export async function boundedProviderText(id:string,url:string,maximum=3000000,init:RequestInit={}):Promise<string>{
  if((cooldown.get(id)||0)>Date.now())throw new DomainError('PROVIDER_COOLDOWN','Sağlayıcının hız sınırı nedeniyle bekleniyor: '+id,503);
- const limits:Record<string,number>={cloudflare:600,'google-dns':600,rdap:25,'iana-rdap':25,ripe:120,ipwho:16,crtsh:8,hackertarget:5,nvd:5,mitre:30,github:30,gitlab:30,wayback:8,virustotal:4,abuseipdb:20,urlscan:20,securitytrails:10,malwarebazaar:20,proxyscrape:20,'proxyscrape-origin':20};
+ const limits:Record<string,number>={'public-api-catalog':2,'roblox-users':20,'temp-mail-io':30,'tempmail-lol':30,guerrilla:30,dropmail:30,mailslurp:60,twilio:30,'ipapi-co':30,'ipapi-is':30,certspotter:2,observatory:10,ssllabs:5,cloudflare:600,'google-dns':600,rdap:25,'iana-rdap':25,ripe:120,ipwho:16,crtsh:8,hackertarget:5,nvd:5,mitre:30,github:30,gitlab:30,wayback:8,virustotal:4,abuseipdb:20,urlscan:20,securitytrails:10,malwarebazaar:20,proxyscrape:20,'proxyscrape-origin':20};
+ if(id==='tranco')await rateLimit('osint-provider:tranco-second',1,1);
+ if(id==='nominatim')await rateLimit('osint-provider:nominatim-second',1,1);
  if(!['mailtm','mailgw'].includes(id)){await rateLimit('osint-provider:'+id,limits[id]||60,60);if(id==='ipwho')await rateLimit('osint-provider:ipwho-day',1000,86400);if(id==='github')await rateLimit('osint-provider:github-hour',60,3600);}
  const started=Date.now();
  try{

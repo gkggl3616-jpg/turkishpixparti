@@ -1,0 +1,4 @@
+import Link from 'next/link';
+import {ArrowLeft,ArrowUpRight,Radio} from 'lucide-react';
+import {osintReleases,OSINT_VERSION} from '../../../../packages/core/src/osint-releases';
+export default function OsintUpdates(){return <main className="os-updates"><header><Link href="/osint"><ArrowLeft size={16}/> OSINT konsolu</Link><span>NEXUS / OSINT · v{OSINT_VERSION}</span></header><div className="os-updates-hero"><Radio size={22}/><span>OSINT SÜRÜM GÜNLÜĞÜ</span><h1>Araştırma araçlarındaki yenilikler</h1><p>Yalnızca OSINT sitesinin özellikleri, kaynak bağlantıları ve kullanım değişiklikleri.</p></div>{osintReleases.map(r=><article key={r.version}><time>{r.date} · v{r.version}</time><h2>{r.title}</h2><p>{r.summary}</p><div>{r.features.map(f=><Link href={f.path} key={f.title}><h3>{f.title}<ArrowUpRight size={16}/></h3><p>{f.description}</p>{f.note&&<small>{f.note}</small>}</Link>)}</div></article>)}<footer>NEXUS OSINT / by@frizz2025</footer></main>;}
