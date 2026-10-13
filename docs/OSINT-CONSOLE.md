@@ -160,3 +160,8 @@ WhatsApp, Google/Gmail, TikTok, Telegram and other are keyword-based labels in t
 Visible signed-in OSINT pages send a CSRF-checked heartbeat every 30 seconds, paused when hidden or idle for five minutes. Only the server timestamp is accepted. An owner-only active list defines active as a heartbeat within 90 seconds. Discord online presence is separate and is not inferred. Owner member lists are refreshed from the configured guild every 30 seconds with 1000-member cursor pages, capped at 20000 records and marked incomplete when capped. Search, human/bot, role filters and 100-row pages are supported; stale/error/time fields are explicit. Member snapshots are transient, not inserted as fake site visitors. Worker logs contain aggregate counts only.
 
 Migration 029 adds last_active_at and service_filter and grants only the runtime column update needed for heartbeat. It does not add account-enumeration fields. Both the OSINT web service and the explicitly requested OSINT Discord interaction update are deployed; management release entries and the primary web service remain unchanged.
+
+
+## OSINT 2.24.1 — public-number selection
+
+Public list cards now have an explicit selection button and selected state. A keyboard-focused detail panel shows only the chosen source/number pair, country, provider, source state and check time. Different sources for the same phone remain distinct. Refresh updates the selected record from the current list; a disappeared record gets an explicit message. Provider change clears the selection, and country/search filtering does not manufacture new data. No phone-account registration checks or public SMS body ingestion are added. This UI patch deploys only the OSINT site.
