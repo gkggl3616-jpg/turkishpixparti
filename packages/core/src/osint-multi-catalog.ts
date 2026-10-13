@@ -1,3 +1,4 @@
+import {publicNumberSources} from './osint-public-number-catalog';
 // Browser-safe inventory: API integrations and public profile adapters are counted separately.
 export const multiCatalog=[
  {id:'dns-multi',name:'Çoklu DNS DoH',label:'Bağımsız çözümleyiciler, DNSSEC ve A / AAAA / MX / TXT karşılaştırması',input:'domain',icon:'🌐',enabled:true},
@@ -27,7 +28,7 @@ export const temporaryProviderDirectory=[
  {name:'TempMail.lol',providerId:'tempmail-lol',url:'https://tempmail.lol',docs:'https://tempmail.lol/en/api/',kind:'mail',state:'API_ADAPTER',notice:'Yeni kutu tokenı ile erişim; 1 saat, yalnız kendi adresine gelen mesajlar.'},
  {name:'TempMail.plus',url:'https://tempmail.plus',docs:'https://tempmail.plus',kind:'mail',state:'API_UNVERIFIED',notice:'PIN destekleyen web hizmeti. Bu uygulama için belgelenmiş özel kutu API bağlantısı doğrulanmadı.'},
  {name:'Inboxes.com',url:'https://inboxes.com',docs:'https://inboxes.com/ourapi',kind:'mail',state:'API_ACCESS_REQUIRED',notice:'Resmî sayfa RapidAPI anahtar/aboneliği istiyor; özel oturum kapsamı bu sürümde bağlanmadı.'},
- ...['sms-receive-online.com','receive-sms.io','sms24.me','anonymsms.com','receive-smss.com','freephonenum.com','sms-online.co','receive-sms.cc','receive-sms-online.info','receive-sms-free.cc'].map(host=>({name:host,url:'https://'+host,kind:'number',state:'EXTERNAL_SITE',notice:'Videodaki kaynak. Kişisel numara API’si doğrulanmadı; paylaşılan SMS bu uygulamaya aktarılmaz.'})),
+ ...publicNumberSources.map(s=>({name:s.id,url:s.url,kind:'number',state:'PUBLIC_NUMBER_LIST',notice:'Anahtarsız HTML numara listesi bağlı. Ücretsiz numaralar sekmesinde filtrele ve kopyala; ortak mesajlar sağlayıcının sitesinde kalır.'})),
  ...['blondmail.com','chapsmail.com','chitthi.in','dropjar.com','fexbox.org','fexpost.com','fextemp.com','fivermail.com','getairmail.com','getmule.com','getnada.com','gimpmail.com','merepost.com','olipii.com','pokemail.net','replyloop.com','robot-mail.com','ruutukf.com','sharklasers.com','maxxspace.com','rover.info'].map(host=>({name:host,url:'https://'+host,kind:'mail',state:'VIDEO_DOMAIN',notice:'Videodaki domain adı. Güncel sahiplik, adres kullanılabilirliği ve ayrı API desteği doğrulanmadı.'})),
  {name:'Mail.tm',providerId:'mailtm',url:'https://mail.tm',kind:'mail',state:'API_ADAPTER',notice:'Kişisel hesap oluşturma ve mesaj API’si.'},{name:'Mail.gw',providerId:'mailgw',url:'https://mail.gw',kind:'mail',state:'API_ADAPTER',notice:'Kişisel hesap oluşturma ve mesaj API’si.'},
  {name:'Guerrilla Mail',providerId:'guerrilla',url:'https://www.guerrillamail.com',kind:'mail',state:'API_ADAPTER',notice:'Sunucuda saklanan kişisel API oturumu; rastgele adres.'},
