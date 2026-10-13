@@ -1,8 +1,8 @@
 import {createHash} from 'node:crypto';
-import {blackjackRisk,cardRanks,handValue} from './owo-math';
+import {cardRanks,handValue} from './owo-math';
 export type Cell='HIDDEN'|'SAFE'|'MINE'|'HIT'|'UNKNOWN';
-export type Game='MINES'|'BLACKJACK'|'WSG'|'COINFLIP'|'SLOTS'|'BATTLE';
-export type Observation={game:Game;playerId:string|null;playerName:string|null;identity:'EXPLICIT'|'AVATAR'|'COMMAND_MATCH'|'UNKNOWN';phase:'ACTIVE'|'WIN'|'LOSS'|'PUSH'|'UNKNOWN';bet:number|null;payout:number|null;net:number|null;board:Cell[];selected:number[];mines:number|null;cashOut:number|null;next:number|null;failure:number|null;steps:number|null;dealer:number|null;score:number|null;soft:boolean|null;cards:number[];choice:'HEADS'|'TAILS'|null;advice:string;evidence:'COMPONENTS'|'TEXT'|'IMAGE_ONLY';signature:string};
+export type Game='MINES'|'BLACKJACK'|'WSG'|'COINFLIP'|'SLOTS'|'BATTLE'|`CATALOG:${string}`;
+export type Observation={game:Game;playerId:string|null;playerName:string|null;identity:'EXPLICIT'|'AVATAR'|'COMMAND_MATCH'|'UNKNOWN';phase:'ACTIVE'|'WIN'|'LOSS'|'PUSH'|'UNKNOWN';bet:number|null;payout:number|null;net:number|null;board:Cell[];selected:number[];mines:number|null;cashOut:number|null;next:number|null;failure:number|null;steps:number|null;dealer:number|null;score:number|null;soft:boolean|null;cards:number[];choice:'HEADS'|'TAILS'|null;advice:string;evidence:'COMPONENTS'|'TEXT'|'IMAGE_ONLY'|'OCR';ocr?:{status:string;confidence:number;text:string;trustedText:string};signature:string};
 const id=/^\d{17,20}$/;
 const collection=(v:any):any[]=>Array.isArray(v)?v:typeof v?.values==='function'?[...v.values()]:[];
 export function normalizeOwoName(s:string){return s.normalize('NFKC').replace(/<a?:[\w]+:\d{17,20}>/g,'').replace(/[*`~]/g,'').trim().toLocaleLowerCase('en-US').slice(0,128);}
@@ -16,11 +16,7 @@ function avatarId(embeds:any[]){
 function cell(button:any):Cell{const v=(button.emoji?.name||button.data?.emoji?.name||'')+' '+(button.label||button.data?.label||'');if(/💥|explos|explod|blast|boom/i.test(v))return 'HIT';if(/💣|bomb|mine(?!s)/i.test(v))return 'MINE';if(/💎|diamond|gem/i.test(v))return 'SAFE';if(/\?|question|hidden|unopened/i.test(v))return 'HIDDEN';return 'UNKNOWN';}
 export function signatureFor(observation:Omit<Observation,'signature'>|Observation){const {signature:_,...data}=observation as Observation;return createHash('sha256').update(JSON.stringify(data)).digest('hex');}
 export function minesRisk(board:Cell[],mines:number|null,bet:number|null,cashOut:number|null,next:number|null){
- const opened=board.filter(c=>c==='SAFE').length,hidden=board.filter(c=>c==='HIDDEN').length;
- if(!board.length||board.some(c=>c==='UNKNOWN')||mines===null||mines<1||mines>=board.length||hidden+opened!==board.length)return 'Kapalı kareler/oyun verisi eksik; güvenli konum önerilemez.';
- const safe=hidden-mines;if(safe<0||hidden===0)return 'Tahta ile mayın sayısı tutarsız; hamle yorumu yapılmadı.';
- const chance=safe/hidden,expected=next===null?null:chance*next;
- return 'Her kapalı kare eşit: güvenli çıkma '+(chance*100).toFixed(2)+'%, mayın '+((1-chance)*100).toFixed(2)+'%. Konum tahmini yapılamaz.'+(cashOut===null?'':' Mevcut Cash Out '+cashOut.toLocaleString('tr-TR')+(bet===null?'':' (net '+(cashOut-bet).toLocaleString('tr-TR')+').'))+(expected===null?'':' Bir sonraki adımın koşullu beklenen ödemesi '+expected.toLocaleString('tr-TR',{maximumFractionDigits:2})+'.')+' Cash Out, devam etmeye göre sonucu sabitler; hamle seçimi sende.';
+ return 'Görünen tahta kaydedildi. Hücre oranları bu dönemde taranan sonuçlardan hesaplanır; kapalı hücreye kesin konum atanmaz.';
 }
 /** Read fields Discord exposes, including author/footer and custom card emoji names. */
 export function analyzeOwoMessage(message:any):Observation|null{
@@ -37,7 +33,7 @@ export function analyzeOwoMessage(message:any):Observation|null{
  const rawRows=collection(message.components).map(r=>collection(r.components||r.data?.components)),grid=rawRows.filter(r=>r.length===3&&r.every(b=>(b.type||b.data?.type)===2)).slice(0,3),buttons=grid.flat(),board=game==='MINES'&&grid.length===3?buttons.map(cell):[];
  const selected=board.flatMap((c,index)=>c==='HIT'||c==='SAFE'&&(buttons[index]?.style||buttons[index]?.data?.style)===3?[index+1]:[]);
  // Both-bust and tied games return the stake in the published Blackjack implementation.
- const phase:Observation['phase']=/you both bust|you tied|\btie\b|\bpush\b|\bdraw\b/i.test(text)?'PUSH':/touched a mine|you lost|you lose|lost (?:the game|[0-9])|lost it all|won nothing|\bbust\b|explod|💥/i.test(text)||board.includes('HIT')?'LOSS':/cashed out|you won|you win|\band won\b|won (?:the game|[0-9])/i.test(text)?'WIN':/is playing|started a mines|your turn|cash out|dealer|failure chance|plant|the coin spins|\bbet\b/i.test(text)?'ACTIVE':'UNKNOWN';
+ const phase:Observation['phase']=/you both bust|you tied|\b(?:result|status)[:\s]+(?:tie|push|draw)\b|^\s*(?:tie|push|draw)\s*$/im.test(text)?'PUSH':/touched a mine|you lost|you lose|lost (?:the game|[0-9])|lost it all|won nothing|you bust|went bust|explod|💥/i.test(text)||board.includes('HIT')?'LOSS':/cashed out|you won|you win|\band won\b|won (?:the game|[0-9])/i.test(text)?'WIN':/is playing|started a mines|your turn|cash out|dealer|failure chance|plant|the coin spins|\bbet\b/i.test(text)?'ACTIVE':'UNKNOWN';
  const bet=amount(text,'Bet|Wager|Bahis|spent'),cashOut=amount(text,'Cash Out'),next=amount(text,'Next'),mines=amount(text,'Mines'),steps=amount(text,'Steps'),failureRaw=/Failure Chance\s*[:：]?\s*([0-9]+(?:[.,][0-9]+)?)\s*%/i.exec(text)?.[1],fv=failureRaw?Number(failureRaw.replace(',','.')):NaN,failure=Number.isFinite(fv)&&fv>=0&&fv<=100?fv:null;
  const displayed=amount(text,'Payout|Payment|Total Won|Paid|Ödeme'),won=amount(text,'(?:you |and )?won');
  let payout:number|null=phase==='LOSS'&&bet!==null?0:phase==='PUSH'?bet:phase==='WIN'?(displayed??(game==='MINES'?cashOut:['COINFLIP','SLOTS'].includes(game)?won:null)):null;
@@ -54,12 +50,12 @@ export function analyzeOwoMessage(message:any):Observation|null{
  const images=embeds.some(e=>e.image?.url)||collection(message.attachments).some(a=>/^image\//.test(a.contentType||a.content_type||''));
  let advice='Ödeme veya sonuç açıkça okunamadı; net kazanç uydurulmadı.';
  if(phase==='LOSS')advice='Kaybedilmiş oyun.'+(game==='MINES'?' Üstte kalan eski Cash Out/Next tutarları kazanılmış para değildir.':'')+(net===null?' Kesin ödeme bilinmiyor.':' Net '+net.toLocaleString('tr-TR')+' cowoncy.');
- else if(phase==='WIN'||phase==='PUSH')advice=game==='BATTLE'?'Battle/XP bilgisi cowoncy kazancı değildir. Raster savaş görselindeki hayvan/kart özelliklerine OCR bağlanmadı.':net===null?'Oyun tamamlanmış; kesin ödeme alanı yok, net tutar bilinmiyor.':'Gözlenen ödeme '+payout?.toLocaleString('tr-TR')+' · net '+net.toLocaleString('tr-TR')+'.';
+ else if(phase==='WIN'||phase==='PUSH')advice=game==='BATTLE'?'Battle/XP bilgisi cowoncy kazancı değildir. Görsel metni OCR kuyruğunda okunur; düşük güvenli alanlar kesin sonuç sayılmaz.':net===null?'Oyun tamamlanmış; kesin ödeme alanı yok, net tutar bilinmiyor.':'Gözlenen ödeme '+payout?.toLocaleString('tr-TR')+' · net '+net.toLocaleString('tr-TR')+'.';
  else if(game==='MINES')advice=minesRisk(board,mines,bet,cashOut,next);
- else if(game==='BLACKJACK'){const risk=blackjackRisk(score,soft);advice=risk?`El ${score} (${soft?'soft: As 11 sayılıyor':'hard'}) · dealer ${dealer??'?'}. Bir kart daha çekersen 21 aşma riski yaklaşık %${(100*risk.bust).toFixed(2)} (${risk.level}). ${risk.model} `+(score===21?'21 tamamlanmış eldir.':'Hamle seçimi sende.'):'El/dealer skoru veya Asın 1/11 durumu eksik; yüzdelik risk uydurulmadı.';}
+ else if(game==='BLACKJACK')advice='Gözlenen el '+(score??'?')+' · '+(soft===null?'As durumu bilinmiyor':soft?'soft':'hard')+'. Kazanma/kaybetme oranları taranan sonuç ve kaydedilmiş ara ellerden hesaplanır; hazır deste yüzdesi kullanılmaz.';
  else if(game==='WSG')advice=failure===null?'Failure Chance okunamadı; risk tahmini yapılmadı.':'Gösterilen sonraki adım kayıp riski %'+failure+'. Kapalı RNG sonucu önceden bilinmez; bir çarpan kârlılık garantisi değildir.';
- else if(game==='COINFLIP'||game==='SLOTS')advice='Kişisel geçmiş betimleyicidir; kazanma serisi sonraki sonucu değiştirmez. Kazanma olasılığı ve ödeme dağılımı doğrulanmadan EV veya kazanç garantisi verilemez.';
- else if(game==='BATTLE')advice='Battle/XP bilgisi cowoncy kazancı değildir. Raster savaş görselindeki hayvan/kart özelliklerine OCR bağlanmadı.';
+ else if(game==='COINFLIP'||game==='SLOTS')advice='Kazanma oranı ve net sonuç yalnız taranan mesajlardan hesaplanır. Örnek sayısı belirtilir; bilinmeyen sonuçlar başarı veya kayıp sayılmaz.';
+ else if(game==='BATTLE')advice='Battle/XP bilgisi cowoncy kazancı değildir. Görsel metni OCR kuyruğunda okunur; düşük güvenli alanlar kesin sonuç sayılmaz.';
  const evidence:Observation['evidence']=board.length?'COMPONENTS':images&&bet===null&&score===null?'IMAGE_ONLY':'TEXT';
  const result={game,playerId,playerName,identity:explicit?'EXPLICIT' as const:avatar?'AVATAR' as const:'UNKNOWN' as const,phase,bet,payout,net,board,selected,mines,cashOut,next,failure,steps,dealer,score,soft,cards,choice,advice,evidence};
  return {...result,signature:signatureFor(result)};

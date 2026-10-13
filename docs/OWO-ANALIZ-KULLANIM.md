@@ -1,53 +1,65 @@
-# Discord OwO analiz modülü
+# Discord OwO · OCR ve tarama istatistikleri
 
-Bu modül yalnız Discord botuna eklenmiştir. Web arayüzü ve yönetim botunun sürüm/güncelleme listesi değiştirilmez.
+Bu modül Discord botunda çalışır. Sonuçlar özel bot kartları, çizilmiş istatistik görselleri ve sayfa/oyun düğmeleriyle gösterilir; TXT/JSON istatistik eki gönderilmez.
 
-## Erişim ve kurulum
+## Komutlar
 
-Yalnız `1557607714681786448` rolüne sahip sunucu üyeleri ve yapılandırılmış owner hesapları kullanabilir. Yönetici izni tek başına yeterli değildir. Üyelik, rol ve kanal geçmişine erişim oturum boyunca tekrar kontrol edilir.
+| Komut | İşlev |
+|---|---|
+| `/owo kur kanal:#owo kaynak:@oyun-botu` | Kanalı ve kaynak botu doğrular. Varsayılan resmî OwO hesabı `408785106942164992`. |
+| `/owo takip acik:true` | Sürekli salt okunur izlemesini ve üç günlük otomatik taramayı açar. |
+| `/owo takip acik:false` | Sürekli izlemesini kapatır. Süreli özel oturumlar ayrı çalışır. |
+| `/owo tara adet:700` | Son 700 erişilebilir mesajı sayfalı tarar. 100–5000 seçilebilir. |
+| `/owo istatistik` | Bu dönemin kanal raporunu ve oyun düğmelerini gösterir. |
+| `/owo istatistik tarih:2026-10-13 oyun:BLACKJACK` | Tarihin ait olduğu üç günlük dönem ve oyun seçilir. |
+| `/owo benim` | Aynı raporu yalnız kendi kimliğine bağlanan kayıtlardan hesaplar. |
+| `/owo yardim sure:5` | 1–15 dakikalık özel canlı panel. |
+| `/owo durum`, `/owo durdur` | Kendi oturumunu gösterir/kapatır. |
+| `/owo ocr` | Son görsel okumalarının durum, metin ve OCR skorunu gösterir. |
+| `/owo komutlar arama:bj` | Kaynak/alias/kapsam rehberi; 197 kayıt. |
 
-1. `/owo kur kanal:#owo kaynak:@oyun-botu`: İzlenecek normal metin kanalını ve bot hesabını belirler. Kaynak belirtilmezse resmî OwO hesabı `408785106942164992` kullanılır. Ekran görüntüsündeki takma ad kaynak hesabının ID'sini doğrulamaz; farklı bot kullanılıyorsa onu açıkça seçin.
-2. `/owo yardim sure:5`: Yalnız kullanıcıya görünen, beş dakikalık analiz paneli açar. Süre 1–15 dakika olabilir. Oyun mesajları/düzenlemeleri öncelikli güncelleme tetikler; işçi yaklaşık saniyede bir çalışır. Sayaç düzenli yenilenir; Discord erişimi/rate limit nedeniyle gecikebilir.
-3. `/owo tara`: Yapılandırılan kanalın erişilebilir mesaj geçmişini 100 mesajlık sayfalarla sonuna kadar okur. Kalıcı imleç yeniden başlatmadan sonra taramayı sürdürür. Yetki kaybı taramayı durdurur.
-4. `/owo istatistik`: Tarama ilerlemesini, oyuncu/oyun bazında gözlenen sonuçları ve açıklanmış Mines tahtalarını özel JSON ekiyle verir.
-5. `/owo benim`: Yalnız kendi ödeme/net geçmişini, ROI hesaplarını, Coinflip heads/tails örneklerini ve mayın sayısına göre Mines hücre geçmişini özel kart ve JSON ekiyle gösterir.
-6. `/owo komutlar arama:bj` veya `kategori:animals sayfa:1`: Komut/alias, kaynak ve analiz kapsamını gösterir. 197 kayıt / 346 farklı alias; 195 açık kaynak tanımı, videoda görülen Mines ve doğrulanmamış olarak işaretlenen WSG. Bu, canlı sağlayıcının yayımlanmamış bütün komutlarını bildiğimiz anlamına gelmez.
-7. `/owo durum` ve `/owo durdur`: Kendi oturumunu görüntüler veya kapatır.
+Yalnız rol `1557607714681786448` veya yapılandırılmış owner hesapları kullanır. Sunucu üyeliği ve kanal geçmişi izni tekrar doğrulanır. Sürekli izlemenin yetkisi yaklaşık 30 saniyede, özel oturumun yetkisi yaklaşık 5 saniyede yeniden kontrol edilir. Kanal/kaynak değişikliği açık oturumları kapatır.
 
-Yeni bir kanal/kaynak kurulumu mevcut oturumları kapatır. Yeni geçmiş taraması ilk kez başlatıldığında sona kadar gider; tamamlanmış taramanın tekrar başlatılması geçmişi baştan kontrol eder; yarım kalan tarama imleçten sürer. Yeni mesajlar, aktif oturum veya tarama sırasında olay dinleyicileriyle alınır. Modül sürekli, sınırsız bir arşiv değildir.
+## Takvim ve tarama
 
-## Okunan veriler
+İstanbul saatine göre ayın 1–3, 4–6, 7–9, 10–12, 13–15 gibi dönemleri kullanılır. Ayın son dönemi kısalabilir; sonraki ay tekrar 1’inden başlar. Örneğin 13 Ekim 2026 seçimi 13–15 Ekim dönemini verir.
 
-Discord'un sunduğu mesaj metni, embed alanları ve 3×3 Mines düğmelerindeki görünen emoji/etiketler okunur. Kapalı, elmas, mayın, patlama ve bilinmeyen durumlar ayrı tutulur. Aynı mesajın düzenlenmesi yeni oyun olarak sayılmaz; eski düzenlemeler daha yeni gözlemleri değiştirmez. Yalnız seçilen bot kaynağı işlenir.
+Her yeni dönemde son 700 mesaj otomatik taranır. Bu sayı oyun değil, kanalda erişilen toplam mesaj sayısıdır. Canlı kaynağın yeni mesajları ve düzenlemeleri ayrıca izlenir. Bot kapalı kalmışsa çalışmaya döndüğünde güncel döneme devam eder; sonsuz geriye dönük arşiv oluşturmaz. Aynı dönemde otomatik tarama tekrar tekrar başlatılmaz; manuel `/owo tara` ayrıca kullanılabilir.
 
-Mines, Blackjack, WSG, Coinflip, Slots ve Battle için tanınan metinler ayrıştırılır. Tanınmayan biçimler kesin sonuç diye gösterilmez. Raster savaş görsellerine OCR eklenmemiştir; hayvan/kart detayları resimden çıkarılmaz. Battle XP'si cowoncy kazancı sayılmaz.
+Rapor, oyun mesajının oluşturulma tarihine göre dönem seçer. Son 700 mesajın hepsinin aynı dönemde olması gerekmez. Tutulan kayıtlar 30 gün sonra temizlenir. Rapor örneği en fazla 5000 sonuç ve 20000 ara durum içerir; sınır aşımı belirtilir.
 
-Blackjack author/footer alanları, görünen özel kart emoji adları, `You won`, `You lost` ve `You both bust` metinleri okunur. Kaynak tanımında Blackjack footer kazancı net, Slots/Coinflip kazancı brüt ödeme olarak ayrılır. Aynı adlı oyuncular belirsizse kişisel eşleştirme yapılmaz.
+## Oranların anlamı
 
-Ödeme, net sonuç ve bilinmeyen tutarlar ayrıdır. Kaybedilmiş Mines mesajında kalan eski `Cash Out` değeri kazanç değildir. Oyuncu ID'si ancak açık bir mention veya etkileşim kimliğinden belirlenir; belirsiz kayıtlar isimsiz kalır. Bunlar hesap bakiyeleri değil, bot mesajlarından gözlenen sonuçlardır.
+İstatistik yüzdeleri yalnız taranmış OwO mesajlarından hesaplanır. Standart deste/gerçek hayat Blackjack yüzdesi, teorik Coinflip yüzdesi veya hazır slot dağılımı kullanılmaz. Okunamayan kayıt kayıp veya sıfır kazanç sayılmaz. Net lider, bilinen parasal sonuçların toplamına göre belirlenir; gelecekte en iyi oyunu göstermez.
 
-## Mines örneği
+### Mines
 
-Dokuz kare, üç mayın ve açılmış bir elmas bulunan tahtada sekiz kapalı kare kalır. Her kapalı karenin güvenli olma olasılığı `5/8 = %62,5` olur. Önceki oyunların bomba yerleri yeni oyunun kapalı karelerini göstermez.
+3×3 görselde her hücre için gözlenen elmas/mayın oranı, açıklanan hücre sayısı ve doğrulanmış seçim sayısı gösterilir. Kapalı/bilinmeyen kareler paydaya alınmaz. Mayın sayıları ayrı gruplara ayrılır. Az örnek açıkça işaretlenir; %95 örnek aralığı yeterli kayıt olduğunda gösterilir.
 
-Ekrandaki `Cash Out = 352.500`, `Next = 564.000` için sonraki adımın koşullu beklenen ödemesi `0,625 × 564.000 = 352.500` olur. Devam etmek aynı beklenen tutarda daha fazla risk taşır. İlk adımda `6/9 × 1,41 = 0,94` geri ödeme, bahis başına %6 negatif beklenti demektir; garantili kazanç stratejisi yoktur.
+Tam açıklanmış tahtalarda aynı mayın dizilimi ve döndürme/yansıtma ile aynı geometrik şablon tekrarları sayılır. Kısmi tahtalar senaryo araştırmasına katılmaz. Tekrar görmek sabit senaryo, gizli konum veya gelecek kazanç kanıtı değildir.
 
-## Kişisel olasılık analizi
+### Blackjack
 
-Mines’te görünen açıklanmış hücre ile kullanıcının gerçekten seçtiği hücre ayrı sayılır. Yeşil elmas / patlama gibi bileşen kanıtı varsa seçim örneği kaydedilir. Orta (5) için başarı/adet, %95 Wilson aralığı ve az örnek uyarısı gösterilir. Üç ve dört mayınlı oyunlar ayrı tutulur. Geçmiş seçimler yanlı olabilir ve gelecek konumu tahmin etmez.
+Canlı mesajın ara el durumları saklanır ve son Win/Loss/Push sonucuna bağlanır. Bir oyun aynı el satırında bir kez sayılır. Soft/hard durumlar ayrı gösterilir. Eşik karşılaştırması ilk gözlenen aktif el üzerinden yapılır; iki grupta da en az 20 oyun gerekir. Bu, gözlenen ilişkiyi gösterir; o sayıda durmanın kazanmayı artırdığını kanıtlamaz.
 
-Blackjack’te soft/hard el ve görünen As dönüşümü değerlendirilir. Standart, yerine koymalı rank modelinde hard 17 için bir sonraki kartta 21 aşma riski yaklaşık %69,23; hard 20 için %92,31; soft 17 için o tek kartta %0 olur. Bunlar oyunu kazanma/kaybetme olasılığı değildir. Gerçek gizli deste ve canlı kurallar bilinmediğinden yaklaşık model açıkça belirtilir; eksik/tutarsız kartlarda yüzde verilmez.
+Eski mesajların önceki düzenlemeleri Discord geçmişinden elde edilemez. Yalnız terminal el görüldüyse son el tablosu ayrı etiketlenir; ara el veya kart çekme riski uydurulmaz. Oyun ve el tabloları sayfa düğmeleriyle gezilir.
 
-Coinflip ve Slots için açık kaynak snapshot’ının teorik dağılımı ayrıca etiketlenir: %100 ve %95 brüt beklenen geri ödeme. Bu dağılım canlı veya özel bot hesabının doğrulaması değildir. Kişisel heads/tails örnekleri geçmiş sonuçlar olarak gösterilir; seri gelecek sonucu değiştirmez.
+### Diğer kategoriler
 
-## Kapsam ve sınırlar
+Coinflip, Slots, WSG ve Battle için tanınan mesaj biçimleri sonuçlara bağlanır. Battle XP’si cowoncy değildir. Diğer katalog komutlarının kullanım sayısı izlenir; kaynak botun doğrudan yanıt referansı varsa yanıt kaydı ilişkilendirilir. Tanınmayan sonuç biçiminde başarı veya parasal sonuç üretilmez.
 
-- Konum tablosu son 1.000 tamamlanmış Mines mesajının görünen hücrelerinden oluşur; kullanıcı listesi en fazla 20.000 oyuncu/oyun satırıdır ve kesilme açıkça belirtilir.
-- Gözlemler 30 gün tutulur. Botun göremediği, silinmiş veya sağlayıcı tarafından açıklanmamış sonuçlar elde edilemez.
-- Discord Message Content erişimi ve Kanalı Görüntüle/Mesaj Geçmişini Oku izinleri gerekir.
-- Oturum tokenleri şifreli tutulur ve oturum kapanınca temizlenir. Paneller yalnız kendi uygulamamızın özel yanıtını günceller.
-- Bot bahis göndermez, başka botun düğmelerine basmaz, kullanıcı tokeni kullanmaz ve CAPTCHA aşmaz. Hamleleri kullanıcı yapar.
+## OCR
 
-## Doğrulama
+Tesseract sunucuda çalışır; harici görüntü/AI servisine gönderim yoktur. PNG/JPEG/WebP, 8 MB ve 12 milyon giriş pikseli sınırı uygulanır. Kaynak görselleri HTTPS ile yalnız Discord CDN ve onaylı OwO CDN alanlarından alınır; yönlendirme kabul edilmez.
 
-Tip kontrolü, 18 OwO testi ve genel regresyon kontrolleri çalıştırılır. Test sonuçları teslim kaydında belirtilir. Bunlar ayrıştırma, yetki kontrolü, süre sınırı, geçmiş sayfalama, mesaj düzenlemeleri ve özel panel güncellemelerini kapsar. Canlı oyun biçimleri değişirse yeni parser örnekleriyle yeniden doğrulama gerekir.
+OCR sözcük skoru 75’in altındaysa ilgili sözcük `[?]` ile maskelenir ve sayı/sonuç çıkarımına sokulmaz. Tam/kısmi/düşük güven/boş durumları ayrıdır. OCR skoru gerçek doğruluk yüzdesi değildir. Küçük, sıkıştırılmış veya stilize hayvan/kart ikonları kesin okunmuş sayılmaz; gerçek Mines bileşenleri varsa bunlar görsel tahminin önünde tutulur.
+
+Kuyruk kalıcıdır, sınırlı paralellikte çalışır, geçici görsel dosyaları silinir. Hatalı görsel en fazla üç deneme görür. Eski OCR işi yeni mesaj düzenlemesini ezemez. Yalnız eksik alanlar yüksek güvenli okumalardan doldurulur.
+
+## Sınırlar ve doğrulama
+
+Mesajlar yalnız yapılandırılan kaynak bot hesabından alınır. Takma ad, kullanıcı ID’si yerine kabul edilmez: açık mention/avatar ID’si veya tek anlamlı komut eşleştirmesi gerekir; çakışma bilinmeyen kalır. Özel paneller yalnız kendi uygulamamıza ait yanıtı düzenler. Başka botun düğmesine basma, otomatik bahis veya CAPTCHA aşma bulunmaz.
+
+Doğrulamalar: takvim sınırları, 700 mesajda durma, ara el/sonuç bağlantısı, düzenleme tekrarları, kişisel kanal kapsamı, mikro saniyeli tarama imleci, gerçek Tesseract çalıştırması, OCR kaynak/boyut/güven sınırları, PNG üretimi ve özel cevap düğmeleri.
+
+Tesseract kaynağı: https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
