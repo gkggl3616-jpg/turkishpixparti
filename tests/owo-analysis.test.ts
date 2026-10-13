@@ -127,3 +127,9 @@ test('Previously rejected OCR jobs are repaired from the fresh source embed prox
  globalThis.fetch=async(input,init)=>new URL(String(input)).hostname==='images-ext-1.discordapp.net'?new Response(new Uint8Array(png)):saved(input,init);
  try{await owoOcrTick(client);const jobs=(await pg.query<any>('SELECT status,last_error FROM owo_ocr_jobs WHERE message_id=$1',[id])).rows;assert.ok(jobs.some(j=>j.status==='COMPLETE'));assert.ok(jobs.some(j=>j.last_error==='OWO_OCR_REPLACED'));assert.equal(jobs.filter(j=>j.status==='UNSUPPORTED').length,0);}finally{globalThis.fetch=saved;}
 });
+
+test('A formerly rejected host now approved can requeue the same image URL/job ID',async()=>{
+ const id='100000000000096001',message={...mines(id),components:[],embeds:[{description:'<@'+member.id+'> goes into battle. You won in 7 turns!',image:{url:'https://images-ext-2.discordapp.net/external/same/battle.png'}}]};await ingestOwoMessage(message,true);await pg.query("UPDATE owo_ocr_jobs SET status='UNSUPPORTED',last_error='OWO_OCR_HOST' WHERE message_id=$1",[id]);imageMessages.set(id,message);
+ const saved=globalThis.fetch,png=await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120"><rect width="600" height="120" fill="white"/><text x="20" y="75" font-family="DejaVu Sans" font-size="35">You won in 7 turns!</text></svg>')).png().toBuffer();globalThis.fetch=async(input,init)=>new URL(String(input)).hostname==='images-ext-2.discordapp.net'?new Response(new Uint8Array(png)):saved(input,init);
+ try{await owoOcrTick(client);const jobs=(await pg.query<any>('SELECT status FROM owo_ocr_jobs WHERE message_id=$1',[id])).rows;assert.equal(jobs.length,1);assert.equal(jobs[0].status,'COMPLETE');}finally{globalThis.fetch=saved;}
+});
