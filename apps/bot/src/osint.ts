@@ -7,7 +7,7 @@ import {rateLimit} from '../../../packages/core/src/auth';
 import {osintRun,osintQuota,osintTools,osintCatalog} from '../../../packages/core/src/osint';
 import {osintLog,assertOsintAllowed} from '../../../packages/core/src/osint-access';
 import {sendOsintResult,queueOsintDm,retryOsintDelivery,type DeliveryOutcome} from '../../../packages/core/src/osint-dm';
-import {guildMember,discordRequest,isDiscordMissing,syncUser} from '../../../packages/core/src/discord';
+import {guildMember,discordRequest,isDiscordMissing,syncUser,DiscordAPIError} from '../../../packages/core/src/discord';
 import {osintPanel,osintWebLink,osintQueryModal,osintProxyModal,osintMailModal,osintToolMenus,type OsintPanelKind} from '../../../packages/core/src/osint-panels';
 
 const running=new Set<string>();
@@ -40,7 +40,7 @@ async function installPanel(i:any,kind:OsintPanelKind){
   await syncUser(tx,actor(i));
   const existing=(await tx.query('SELECT message_id,panel_type FROM osint_panels WHERE guild_id=$1 AND channel_id=$2 AND panel_type=ANY($3::text[]) ORDER BY (panel_type=$4) DESC LIMIT 1',[i.guildId,channel.id,[kind,...(kind==='infrastructure'?['osint']:kind==='communication'?['mail']:[])],kind])).rows[0];
   let message:any;
-  if(existing)try{message=await discordRequest('/channels/'+channel.id+'/messages/'+existing.message_id,{method:'PATCH',body:JSON.stringify(payload)});}catch(e){if(!isDiscordMissing(e,10008))throw e;}
+  if(existing)try{message=await discordRequest('/channels/'+channel.id+'/messages/'+existing.message_id,{method:'PATCH',body:JSON.stringify({...payload,content:null,embeds:[]})});}catch(e){if(!isDiscordMissing(e,10008))throw e;}
   if(!message)message=await discordRequest('/channels/'+channel.id+'/messages',{method:'POST',body:JSON.stringify({...payload,nonce:i.id,enforce_nonce:true})});
   if(existing&&existing.panel_type!==kind)await tx.query('DELETE FROM osint_panels WHERE guild_id=$1 AND channel_id=$2 AND panel_type=$3',[i.guildId,channel.id,existing.panel_type]);
   await tx.query('INSERT INTO osint_panels(guild_id,channel_id,panel_type,message_id,updated_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(guild_id,channel_id,panel_type) DO UPDATE SET message_id=EXCLUDED.message_id,updated_by=EXCLUDED.updated_by,updated_at=now()',[i.guildId,channel.id,kind,message.id,i.user.id]);
@@ -131,7 +131,7 @@ export async function handleOsintInteraction(i:any):Promise<boolean>{
 
 /** Refresh only previously installed, bot-owned panel messages. Never create new posts. */
 export async function refreshOsintPanels(thumbnail?:string){
- const rows=(await database().query('SELECT channel_id,message_id,panel_type FROM osint_panels WHERE guild_id=$1 ORDER BY channel_id,panel_type',[config().guildId])).rows;let updated=0,failed=0;
- for(let start=0;start<rows.length;start+=2)await Promise.all(rows.slice(start,start+2).map(async row=>{const kind=row.panel_type==='osint'?'infrastructure':row.panel_type==='mail'?'communication':row.panel_type;if(!osintCategories.some(c=>c.id===kind)||!/^\d{17,20}$/.test(row.channel_id)||!/^\d{17,20}$/.test(row.message_id)){failed++;return;}try{const {allowedMentions,...wire}=osintPanel(kind as OsintPanelKind,thumbnail);await discordRequest('/channels/'+row.channel_id+'/messages/'+row.message_id,{method:'PATCH',body:JSON.stringify({...wire,allowed_mentions:{parse:[]}})});await database().query('UPDATE osint_panels SET updated_at=now() WHERE guild_id=$1 AND channel_id=$2 AND panel_type=$3',[config().guildId,row.channel_id,row.panel_type]);updated++;}catch{failed++;}}));
- return {registered:rows.length,updated,failed,newPosts:0};
+ const rows=(await database().query('SELECT channel_id,message_id,panel_type FROM osint_panels WHERE guild_id=$1 ORDER BY channel_id,panel_type',[config().guildId])).rows;let updated=0,failed=0;const failures:{code:string;http?:number;discordCode?:number|null}[]=[];
+ for(let start=0;start<rows.length;start+=2)await Promise.all(rows.slice(start,start+2).map(async row=>{const kind=row.panel_type==='osint'?'infrastructure':row.panel_type==='mail'?'communication':row.panel_type;if(!osintCategories.some(c=>c.id===kind)||!/^\d{17,20}$/.test(row.channel_id)||!/^\d{17,20}$/.test(row.message_id)){failed++;return;}try{const {allowedMentions,...wire}=osintPanel(kind as OsintPanelKind,thumbnail);await discordRequest('/channels/'+row.channel_id+'/messages/'+row.message_id,{method:'PATCH',body:JSON.stringify({...wire,content:null,embeds:[],allowed_mentions:{parse:[]}})});await database().query('UPDATE osint_panels SET updated_at=now() WHERE guild_id=$1 AND channel_id=$2 AND panel_type=$3',[config().guildId,row.channel_id,row.panel_type]);updated++;}catch(e){failed++;if(failures.length<20)failures.push(e instanceof DiscordAPIError?{code:e.code,http:e.responseStatus,discordCode:e.discordCode}:{code:e instanceof DomainError?e.code:'REFRESH_FAILED'});}}));
+ return {registered:rows.length,updated,failed,newPosts:0,failures};
 }
