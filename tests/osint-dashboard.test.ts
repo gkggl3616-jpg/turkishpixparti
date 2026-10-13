@@ -1,3 +1,4 @@
+import {osintCategories} from '../packages/core/src/osint-navigation';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -25,13 +26,10 @@ test('An OSINT site join date is recorded on authenticated access, not inferred 
  assert.match(endpoint,/siteJoinedAt/);
 });
 
-test('The 25 OSINT category tools are routed into the dedicated sidebar',async()=>{
+test('Main OSINT categories are routed from the shared web and Discord navigation',async()=>{
  const src=await readFile(new URL('../apps/web/src/components/OsintDashboard.tsx',import.meta.url),'utf8');
- assert.match(src,/Proxy & Network/);
- assert.match(src,/Altyapı Analizi/);
- assert.match(src,/Tehdit Araştırması/);
- assert.match(src,/İletişim & Kimlik/);
- assert.match(src,/Araştırma & Dosyalar/);
+ assert.match(src,/GROUPS=osintCategories.map/);
+ assert.equal(osintCategories.length,8);for(const label of ['Proxy & Network','Altyapı Analizi','Tehdit Araştırması','İletişim & Kimlik','Araştırma & Dosyalar'])assert.ok(osintCategories.some(c=>c.label===label));
  assert.match(src,/osint-assets\/network-constellation\.svg/);
  assert.match(src,/osint-assets\/proxy-mesh\.svg/);
  assert.match(src,/osint-assets\/threat-matrix\.svg/);

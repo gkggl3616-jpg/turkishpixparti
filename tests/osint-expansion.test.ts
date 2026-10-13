@@ -22,7 +22,7 @@ test('Private URL tokens are stripped from owner log previews',()=>{
 test('Discord OSINT slash commands remain under 25 subcommands, all have valid option ordering',()=>{
  assert.equal(osintSetupCommand.name,'kur');assert.ok(osintSetupCommand.options.length<=25);
  const names=osintSetupCommand.options.map(x=>x.name);
- for(const n of ['proxy','proxy-checker','osint','temp-mail'])assert.ok(names.includes(n));
+ for(const n of ['kombolar','proxy','altyapi','tehdit','iletisim','arastirma','web','sosyal'])assert.ok(names.includes(n));
  for(const cmd of osintSetupCommand.options){let optional=false;for(const option of ('options' in cmd?cmd.options:[])||[]){if(option.required)assert.equal(optional,false);else optional=true;}}
 });
 test('Additional provider inputs are strictly validated',()=>{
