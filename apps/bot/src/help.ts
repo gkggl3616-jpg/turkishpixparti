@@ -18,6 +18,7 @@ export const helpCategories=[
 ];
 export function commandCategory(name:string){
  if(['kick','ban','sil'].includes(name))return 'feature-yonetim';
+ if(name==='owo')return 'fun-oyun';
  if(name==='guncellemeler')return 'guncellemeler';
  if(name==='topluluk')return 'gelismis';
  if(supportNames.includes(name))return 'bilet';
@@ -29,6 +30,7 @@ export function commandCategory(name:string){
  return 'sistem';
 }
 const examples:Record<string,string>={
+ 'owo yardim':'/owo yardim sure: 5','owo kur':'/owo kur kanal: #owo kaynak: @OwO','owo tara':'/owo tara','owo istatistik':'/owo istatistik',
  'kick':'/kick uye: @Üye reason: Sunucu kuralları','ban':'/ban uye: @Üye reason: Tekrarlanan ihlal',
  'sil':'/sil adet: 50 uye: @Üye',
  'bilet ac':'/bilet ac tur: Ödül Talebi','destek':'/destek tur: Destek','cekilis':'/cekilis odul: Nitro dakika: 60 kazanan: 2',

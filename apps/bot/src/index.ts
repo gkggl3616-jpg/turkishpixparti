@@ -1,3 +1,4 @@
+import {handleOwoInteraction,ingestOwoMessage,handleOwoMessageUpdate,owoTick} from './owo';
 import {osintCategories} from '../../../packages/core/src/osint-navigation';
 import {queueWelcomeStaff,welcomeStaffTick,ensureWelcomeReady} from '../../../packages/core/src/welcome-staff';
 import {probeOsintProviders,probeOsintHead} from '../../../packages/core/src/osint-admin';
@@ -71,6 +72,7 @@ async function register(){const c=config();if(c.guildId&&client.guilds.cache.has
   for(const options of [ticket,support])if(options?.length!==1||options[0]?.name!=='tur'||options[0]?.choices?.length!==ticketTopics.length||!ticketTopics.every(topic=>options[0].choices.some((choice:any)=>choice.value===topic.id&&choice.name===topic.label)))throw new DomainError('COMMAND_REGISTRATION_FAILED','Bilet kategorilerinin kaydı doğrulanamadı.');
  });
  if(commandRegistrar.hasGlobal('kur')&&!osintPanelsReported){osintPanelsReported=true;void refreshOsintPanels(client.user?.displayAvatarURL({size:256,extension:'png'})).then(result=>console.log('OSINT_PANEL_REFRESH',JSON.stringify(result))).catch(()=>console.error('OSINT_PANEL_REFRESH_FAILED'));console.log('OSINT_PANELS_READY',JSON.stringify({version,commands:osintCategories.map(c=>'kur '+c.command),categories:osintCategories.length,componentsV2:true,persistent:true,dmOnly:true,proxyCount:'10+5*level'}));}
+ if(commandRegistrar.hasGlobal('owo'))console.log('OWO_ANALYSIS_READY',JSON.stringify({command:'owo',role:'1557607714681786448',owners:true,defaultMinutes:5,readOnly:true}));
  if(result.error)console.error('COMMAND_REGISTRATION_DEFERRED',JSON.stringify({...discordErrorDetails(result.error),retryMs:result.retryMs}));
  if(!result.ready)return;
 console.log('TICKET_CATEGORIES_READY',JSON.stringify({version,categories:ticketTopics.map(topic=>topic.label),subjectForm:false}));registeredGuild=c.guildId;try{const lobby=await ensureVoiceRoomLobby(client.guilds.cache.get(c.guildId));settings=await communitySettings();console.log('VOICE_ROOM_LOBBY_READY',JSON.stringify({version,...lobby,enabled:settings.expansion.enabled&&settings.expansion.rooms.enabled&&settings.expansion.rooms.joinToCreate}));}catch(e){console.error('VOICE_ROOM_LOBBY_PENDING',e instanceof DomainError?e.code:(e as any)?.code||'INTERNAL');}try{console.log('WELCOME_ROLES_READY',JSON.stringify({version,...await ensureWelcomeReady({id:client.user!.id,username:client.user!.username,avatar:client.user!.avatar})}));settings=await communitySettings();}catch(e){console.error('WELCOME_ROLES_PENDING',e instanceof DomainError?e.code:(e as any)?.code||'INTERNAL');}console.log('LEVEL_NOTIFICATIONS_READY',JSON.stringify({version,enabled:settings.features.levelUpEnabled,channel:settings.features.levelUpChannel?'selected':'xp-message-channel',photo:true,mention:true,persistent:true}));await reportExpansionReady();await reportYouTubeSearchReady(settings);try{await renderCategoryBanner('rank');console.log('RANK_CARD_READY',JSON.stringify({version,photo:true,public:true,rank:true,chatXP:settings.features.enabled&&settings.features.economy&&settings.features.xpEnabled,xpPerMessage:settings.features.xpPerMessage,cooldownSeconds:settings.features.xpCooldownSeconds,dailyCap:settings.features.xpDailyCap,attachFiles:!!client.guilds.cache.get(c.guildId)?.members.me?.permissions.has(PermissionFlagsBits.AttachFiles)}));}catch{console.error('RANK_CARD_RENDER_FAILED');}console.log(`TurkishPix ${commands.length} slash komutu kaydedildi (${entertainmentCommands.length} eğlence + 50 yeni topluluk özelliği).`);console.log('GIVEAWAY_STATE_READY',JSON.stringify(await supportState()));console.log('DISCORD_CONTROL_READY',JSON.stringify({version,command:'botpanel',native:true,componentsV2:true,audit:true,roleAutomation:true,reactionRoles:true,guildTagRoles:true,selfBotProtected:true}));console.log('MODERATION_COMMANDS_READY',JSON.stringify({version,commands:['kick','ban','sil'],messageFilter:true,protectedGiveaways:true,reasonOptional:true,banDM:true,freshPermissions:true}));console.log('UPDATES_COMMAND_READY',JSON.stringify({version,command:'guncellemeler',website:'/guncellemeler'}));console.log('PUBLIC_COMMAND_REPLIES_READY',JSON.stringify({version,help:'public',features:'public except personal records',music:'public',ai:'public'}));}}
@@ -95,6 +97,7 @@ client.on(Events.InteractionCreate,interaction=>{void safeInteraction(interactio
  if(await handleArcadeInteraction(interaction,settings))return;
  if(await handleExpansionInteraction(interaction,settings))return;
  if(await handleSupportInteraction(interaction,settings))return;
+ if(await handleOwoInteraction(interaction))return;
  if(await handleOsintInteraction(interaction))return;
  if(await handleFeatureInteraction(interaction,settings))return;
  if(await handleEntertainmentInteraction(interaction,settings.entertainment))return;
@@ -142,6 +145,8 @@ client.on(Events.GuildMemberAdd,async member=>{
 });
 client.on(Events.GuildMemberRemove,member=>{if(member.guild.id===config().guildId&&!member.user.bot)void expansionMemberLeave(member,settings).catch(()=>console.error('FAREWELL_PENDING'));});
 client.on(Events.GuildMemberUpdate,(oldMember,member)=>{if(member.guild.id===config().guildId&&oldMember.pending&&!member.pending)void expansionMemberJoin(member,settings).catch(()=>console.error('AUTOMATIC_ROLE_PENDING'));});
+client.on(Events.MessageCreate,message=>{void ingestOwoMessage(message).catch(e=>console.error('OWO_MESSAGE_FAILED',e instanceof DomainError?e.code:'INTERNAL'));});
+client.on(Events.MessageUpdate,async(_old,message)=>{if(message.guildId!==config().guildId)return;try{await handleOwoMessageUpdate(message);}catch(e){console.error('OWO_UPDATE_FAILED',e instanceof DomainError?e.code:'INTERNAL');}});
 client.on(Events.MessageCreate,async message=>{
  if(message.guildId!==config().guildId||!message.guild||message.system)return;
  try{
@@ -194,6 +199,7 @@ async function worker(){while(!stopped){try{
   background.run('osint-mail-expiry',300000,()=>purgeExpiredMailboxes());
   background.run('osint-provider-health',300000,()=>probeOsintProviders());
   background.run('osint-public-head',3600000,()=>probeOsintHead());
+  background.run('owo-analysis',5000,()=>owoTick(client));
   background.run('features',5000,()=>featureTick(client,settings,false));
   background.run('voice-xp',1000,()=>voiceXPTick(client,settings));
   background.run('rooms-voice',5000,()=>expansionTick(client,settings));
