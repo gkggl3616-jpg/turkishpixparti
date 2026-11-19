@@ -1,3 +1,4 @@
+import {externalTagTick,handleServerEngagement,serverGiveawayTick,trackGiveawayMessages} from './server-engagement';
 import {queueWelcomeStaff,welcomeStaffTick,ensureWelcomeReady} from '../../../packages/core/src/welcome-staff';
 import {probeOsintProviders,probeOsintHead} from '../../../packages/core/src/osint-admin';
 import {purgeExpiredMailboxes} from '../../../packages/core/src/osint-mail';
@@ -38,6 +39,7 @@ import {Client,GatewayIntentBits,Events,MessageFlags,PermissionFlagsBits,Activit
 import {randomUUID} from 'node:crypto';
 import {RELEASE_VERSION as version} from '../../../packages/core/src/config';
 import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,ticketTopics,entertainmentCommands,syncNativeModeration,awardChatXP,cleanupFeatures,brightEmbed,theme,repairLegacySecurityLogs} from '@turkishpix/core';
+import {serverEngagementCommands} from '../../../packages/core/src/server-engagement-commands';
 import {commandReply,commands,guildCommands,globalCommands} from '../../../packages/core/src/commands';
 const initial=config();
 if(!process.env.DATABASE_URL||!initial.botToken||initial.demo){console.error('Bot token ve veritabanı gerekli; demo modu kapalı olmalı.');process.exit(1);}
@@ -48,6 +50,7 @@ const client=new Client({partials:[Partials.Message,Partials.Channel,Partials.Re
 const recoverGuild=createGuildRecovery(client,()=>config().guildId);
 installDiscordAudit(client);
 installRoleAutomation(client);
+trackGiveawayMessages(client);
 const invites=new InviteTracker(client);invites.install();
 const commandRegistrar=new CommandRegistrar();let osintPanelsReported=false;
 let registeredGuild='',settings=defaultCommunitySettings();const guard=new MessageGuard();const greetingTimes=new Map<string,number>();let joins:number[]=[],lastRaid=0;
@@ -63,15 +66,16 @@ async function heartbeat(connected=client.isReady()){
  const guild=client.guilds.cache.get(config().guildId),bot=guild?.members.me;
  await database().query("INSERT INTO integration_status(name,status) VALUES('discord',$1) ON CONFLICT(name) DO UPDATE SET status=EXCLUDED.status,updated_at=now()",[{connected,version,configuredGuild:!!guild?.available,osintPanelsRegistered:commandRegistrar.hasGlobal('kur'),commandsRegistered:registeredGuild===config().guildId,registeredVersion:registeredGuild===config().guildId?version:null,botId:client.user?.id||null,botName:client.user?.username||null,guilds:[...client.guilds.cache.keys()],intents:enabledIntents,presence:appliedPresence?settings.presence:null,applicationProtection:applicationStatus,music:{enabled:settings.music.enabled,connect:!!bot?.permissions.has(PermissionFlagsBits.Connect),speak:!!bot?.permissions.has(PermissionFlagsBits.Speak)},protection:{enabled:settings.security.enabled&&settings.security.content.enabled,categories:Object.entries(settings.security.content.modes).filter(([,v])=>v!=='OFF').map(([k])=>k),edits:settings.security.content.checkEdits,native:nativeStatus},features:{enabled:settings.features.enabled,commands:50,totalCommands:commands.length,xp:settings.features.xpEnabled},permissions:{createInvite:!!bot?.permissions.has(PermissionFlagsBits.CreateInstantInvite),manageNicknames:!!bot?.permissions.has(PermissionFlagsBits.ManageNicknames),banMembers:!!bot?.permissions.has(PermissionFlagsBits.BanMembers),kickMembers:!!bot?.permissions.has(PermissionFlagsBits.KickMembers),moveMembers:!!bot?.permissions.has(PermissionFlagsBits.MoveMembers),manageChannels:bot?.permissions.has(PermissionFlagsBits.ManageChannels)||false,manageRoles:bot?.permissions.has(PermissionFlagsBits.ManageRoles)||false,embedLinks:bot?.permissions.has(PermissionFlagsBits.EmbedLinks)||false,manageGuild:bot?.permissions.has(PermissionFlagsBits.ManageGuild)||false,deleteMessages:bot?.permissions.has(PermissionFlagsBits.ManageMessages)||false,timeout:bot?.permissions.has(PermissionFlagsBits.ModerateMembers)||false}}]);
 }
-async function register(){const c=config();if(c.guildId&&client.guilds.cache.has(c.guildId)&&registeredGuild!==c.guildId){
- const result=await commandRegistrar.sync(c.clientId,c.guildId,globalCommands,guildCommands,saved=>{
+async function register(){const c=config();const homeReady=!!c.guildId&&client.guilds.cache.has(c.guildId);
+ if(registeredGuild!==c.guildId||!commandRegistrar.hasGlobal('giveaway')||!commandRegistrar.hasGlobal('tag-role')){
+ const result=await commandRegistrar.sync(c.clientId,homeReady?c.guildId:'',[...globalCommands,...serverEngagementCommands],guildCommands,saved=>{
   const ticket=saved.find((command:any)=>command.name==='bilet')?.options?.find((option:any)=>option.name==='ac')?.options;
   const support=saved.find((command:any)=>command.name==='destek')?.options;
   for(const options of [ticket,support])if(options?.length!==1||options[0]?.name!=='tur'||options[0]?.choices?.length!==ticketTopics.length||!ticketTopics.every(topic=>options[0].choices.some((choice:any)=>choice.value===topic.id&&choice.name===topic.label)))throw new DomainError('COMMAND_REGISTRATION_FAILED','Bilet kategorilerinin kaydı doğrulanamadı.');
  });
  if(commandRegistrar.hasGlobal('kur')&&!osintPanelsReported){osintPanelsReported=true;console.log('OSINT_PANELS_READY',JSON.stringify({version,commands:['kur proxy','kur osint','kur temp-mail'],componentsV2:true,persistent:true,dmOnly:true,proxyCount:'10+5*level'}));}
  if(result.error)console.error('COMMAND_REGISTRATION_DEFERRED',JSON.stringify({...discordErrorDetails(result.error),retryMs:result.retryMs}));
- if(!result.ready)return;
+ if(!result.ready||!homeReady)return;
 console.log('TICKET_CATEGORIES_READY',JSON.stringify({version,categories:ticketTopics.map(topic=>topic.label),subjectForm:false}));registeredGuild=c.guildId;try{const lobby=await ensureVoiceRoomLobby(client.guilds.cache.get(c.guildId));settings=await communitySettings();console.log('VOICE_ROOM_LOBBY_READY',JSON.stringify({version,...lobby,enabled:settings.expansion.enabled&&settings.expansion.rooms.enabled&&settings.expansion.rooms.joinToCreate}));}catch(e){console.error('VOICE_ROOM_LOBBY_PENDING',e instanceof DomainError?e.code:(e as any)?.code||'INTERNAL');}try{console.log('WELCOME_ROLES_READY',JSON.stringify({version,...await ensureWelcomeReady({id:client.user!.id,username:client.user!.username,avatar:client.user!.avatar})}));settings=await communitySettings();}catch(e){console.error('WELCOME_ROLES_PENDING',e instanceof DomainError?e.code:(e as any)?.code||'INTERNAL');}console.log('LEVEL_NOTIFICATIONS_READY',JSON.stringify({version,enabled:settings.features.levelUpEnabled,channel:settings.features.levelUpChannel?'selected':'xp-message-channel',photo:true,mention:true,persistent:true}));await reportExpansionReady();await reportYouTubeSearchReady(settings);try{await renderCategoryBanner('rank');console.log('RANK_CARD_READY',JSON.stringify({version,photo:true,public:true,rank:true,chatXP:settings.features.enabled&&settings.features.economy&&settings.features.xpEnabled,xpPerMessage:settings.features.xpPerMessage,cooldownSeconds:settings.features.xpCooldownSeconds,dailyCap:settings.features.xpDailyCap,attachFiles:!!client.guilds.cache.get(c.guildId)?.members.me?.permissions.has(PermissionFlagsBits.AttachFiles)}));}catch{console.error('RANK_CARD_RENDER_FAILED');}console.log(`TurkishPix ${commands.length} slash komutu kaydedildi (${entertainmentCommands.length} eğlence + 50 yeni topluluk özelliği).`);console.log('GIVEAWAY_STATE_READY',JSON.stringify(await supportState()));console.log('DISCORD_CONTROL_READY',JSON.stringify({version,command:'botpanel',native:true,componentsV2:true,audit:true,roleAutomation:true,reactionRoles:true,guildTagRoles:true,selfBotProtected:true}));console.log('MODERATION_COMMANDS_READY',JSON.stringify({version,commands:['kick','ban','sil'],messageFilter:true,protectedGiveaways:true,reasonOptional:true,banDM:true,freshPermissions:true}));console.log('UPDATES_COMMAND_READY',JSON.stringify({version,command:'guncellemeler',website:'/guncellemeler'}));console.log('PUBLIC_COMMAND_REPLIES_READY',JSON.stringify({version,help:'public',features:'public except personal records',music:'public',ai:'public'}));}}
 client.on(Events.ClientReady,()=>{appliedPresence='';applyPresence();console.log(`TurkishPix bot hazır: ${client.user?.tag}`);console.log('VOICE_DEPENDENCIES',generateDependencyReport());void reportYouTubeAudioReady();void reportSoundCloudReady();void verifyAudioEncoding().then(result=>console.log('AUDIO_ENCODING_READY',JSON.stringify(result))).catch(()=>console.error('AUDIO_ENCODING_FAILED'));void verifyRadioSources().then(result=>console.log('RADIO_SOURCES_READY',JSON.stringify(result))).catch(()=>console.error('RADIO_SOURCES_FAILED'));const bot=client.guilds.cache.get(config().guildId)?.members.me;console.log('FEATURE_PERMISSIONS',JSON.stringify({createInvite:!!bot?.permissions.has(PermissionFlagsBits.CreateInstantInvite),manageNicknames:!!bot?.permissions.has(PermissionFlagsBits.ManageNicknames),banMembers:!!bot?.permissions.has(PermissionFlagsBits.BanMembers),kickMembers:!!bot?.permissions.has(PermissionFlagsBits.KickMembers),moveMembers:!!bot?.permissions.has(PermissionFlagsBits.MoveMembers),manageChannels:!!bot?.permissions.has(PermissionFlagsBits.ManageChannels),manageRoles:!!bot?.permissions.has(PermissionFlagsBits.ManageRoles),embedLinks:!!bot?.permissions.has(PermissionFlagsBits.EmbedLinks),connect:!!bot?.permissions.has(PermissionFlagsBits.Connect),speak:!!bot?.permissions.has(PermissionFlagsBits.Speak)}));void heartbeat().catch(()=>{});});
 // Record only our bot's membership events. A Gateway outage is distinct from removal.
@@ -83,6 +87,7 @@ client.on(Events.GuildUnavailable,guild=>{if(guild.id===config().guildId)console
 client.on(Events.GuildAuditLogEntryCreate,(entry,guild)=>membershipAudit(entry,guild.id));
 client.on(Events.Error,()=>console.error('DISCORD_GATEWAY_ERROR'));
 client.on(Events.InteractionCreate,interaction=>{void safeInteraction(interaction,async()=>{
+ if(await handleServerEngagement(interaction))return;
  if(interaction.guildId!==config().guildId){if(interaction.isRepliable())await interaction.reply({content:'Bu bot TurkishPix sunucusuna bağlı.',flags:MessageFlags.Ephemeral});return;}
  if(await handleUpdatesInteraction(interaction))return;
  if(await handleRoleAutomationInteraction(interaction))return;
@@ -181,8 +186,13 @@ const background=new BackgroundTasks();let stopped=false,lastRefresh=0,logRepair
 async function worker(){while(!stopped){try{
  const configuredGuild=client.isReady()?await recoverGuild():null,now=Date.now();
  if(now-lastRefresh>=5000){await loadServerSettings();settings=await communitySettings();applyPresence();lastRefresh=now;await heartbeat();}
+ if(client.isReady()){
+  background.run('server-giveaways',5000,()=>serverGiveawayTick(client));
+  background.run('external-tag-jobs',1000,()=>externalTagTick(client));
+  background.run('external-tag-scans',5000,()=>externalTagTick(client,true));
+  if(configuredGuild||!commandRegistrar.hasGlobal('tag-role')||!commandRegistrar.hasGlobal('giveaway'))await register();
+ }
  if(client.isReady()&&configuredGuild){
-  await register();
   background.run('native-moderation',30000,async()=>{const bot=client.guilds.cache.get(config().guildId)?.members.me;nativeStatus=await syncNativeModeration(settings.security.content,settings.security.enabled,!!bot?.permissions.has(PermissionFlagsBits.ManageGuild),client.user.id)||nativeStatus;const protection=JSON.stringify({enabled:settings.security.enabled&&settings.security.content.enabled,modes:settings.security.content.modes,edits:settings.security.content.checkEdits,normalize:settings.security.content.normalizeObfuscation,escalation:settings.security.content.escalation,messageContent:enabledIntents.messageContent,deleteMessages:!!bot?.permissions.has(PermissionFlagsBits.ManageMessages),timeout:!!bot?.permissions.has(PermissionFlagsBits.ModerateMembers),native:nativeStatus?.reason});if(protection!==lastProtection){console.log('CHAT_PROTECTION_STATUS',protection);lastProtection=protection;}});
   background.run('application-protection',30000,async()=>{applicationStatus=await syncExternalApplicationPermissions(client,settings);});
   background.run('currency',30000,()=>runCurrencyGrant(client.guilds.cache.get(config().guildId)));

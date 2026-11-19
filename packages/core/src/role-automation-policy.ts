@@ -1,5 +1,5 @@
 import {z} from 'zod';
-export const roleAutomationSchema=z.object({autoEnabled:z.boolean().default(false),autoRoleIds:z.array(z.string().regex(/^\d{17,20}$/)).max(10).default([]),tagEnabled:z.boolean().default(false),tagRoleId:z.union([z.string().regex(/^\d{17,20}$/),z.literal('')]).default('')}).refine(s=>!s.tagEnabled||!!s.tagRoleId,{message:'Sunucu tagı için bir rol seç.'}).refine(s=>!s.tagRoleId||!s.autoRoleIds.includes(s.tagRoleId),{message:'Tag rolü ile otomatik üye rolü farklı olmalı.'});
+export const roleAutomationSchema=z.object({autoEnabled:z.boolean().default(false),autoRoleIds:z.array(z.string().regex(/^\d{17,20}$/)).max(10).default([]),tagGuildId:z.string().regex(/^\d{17,20}$/).optional(),tagEnabled:z.boolean().default(false),tagRoleId:z.union([z.string().regex(/^\d{17,20}$/),z.literal('')]).default('')}).refine(s=>!s.tagEnabled||!!s.tagRoleId,{message:'Sunucu tagı için bir rol seç.'}).refine(s=>!s.tagRoleId||!s.autoRoleIds.includes(s.tagRoleId),{message:'Tag rolü ile otomatik üye rolü farklı olmalı.'});
 export type RoleAutomationSettings=z.infer<typeof roleAutomationSchema>;
 /** The actual primary guild identity is authoritative; nickname text is unrelated. */
 export function hasServerTag(user:any,guildId:string):boolean|null{

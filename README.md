@@ -1,5 +1,16 @@
 # TurkishPix Bot Merkezi v2.14.2
 
+## Sunucu tagı ve iki dilli çekilişler
+
+Bu komutlar botun kurulu olduğu her sunucuda çalışır. Komut adlarını Discord istemcisinin dili belirler.
+
+- `/tag-role set` (`/tag-rol ayarla`), rolün tam adını veya ID’sini kabul eder. `tag-server-id` boş bırakılırsa mevcut sunucunun tagı kullanılır. Discord üyenin tag değişikliğini bildirdiğinde rol kuyruğu güncellenir. Düzenli üye taraması kaçırılan olayları tamamlar. Botun **Rolleri Yönet** izni olmalı ve bot rolü hedef rolün üstünde bulunmalı. Üye taraması için Discord Developer Portal’da **Server Members Intent** açık olmalı.
+- `/giveaway start` (`/cekilis-yonet baslat`) ile ödülü, süreyi ve isteğe bağlı kazanan sayısını belirle. `language` seçeneği çekiliş kartının, düğmelerin, katılım yanıtlarının ve sonuçların dilini belirler. Dil seçilmezse bot sunucunun tercih edilen diline bakar ve Türkçe dışındaki sunucularda İngilizce kullanır.
+- `require-tag` ayarlanmış tagı şart koşar. `minimum-messages: 100` botun bu sürümden itibaren o sunucuda gördüğü toplam 100 insan mesajını şart koşar. İki şart birlikte verilirse ikisi de katılım anında doğrulanır. Mesaj toplamı XP ayarlarından bağımsızdır.
+- Başlatma onayındaki kodla `/giveaway end`, `cancel` ve `reroll` kullanılabilir.
+
+Botu güncellemeden önce migration `025_giveaway_chat_totals` uygulanır.
+
 ## Discord güvenilirlik düzeltmesi (2.14.2)
 
 - `/bilet kur`, silinmiş eski panel nedeniyle yeni kanal kurulumunu durdurmaz. Bilet kurtarma mevcut konu kanalını bulur; silinmiş mesajı aynı kayıtta yeniler.
