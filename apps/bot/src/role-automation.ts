@@ -1,20 +1,27 @@
 import {randomUUID} from 'node:crypto';
 import {Events,PermissionFlagsBits,ChannelType,MessageFlags,type Client} from 'discord.js';
 import {config,DomainError,database,discordRequest,roleAutomationSettings,saveRoleAutomation,queueRoleChange,claimRoleChange,finishRoleChange,createRoleBulk,activateRoleBulk,cancelRoleBulk,roleBulkStatus,reactionRolePanel,requestRoleScan,hasServerTag,reactionEmojiKey,communitySettings,changeLevelRewards,queueLevelRoleRewards,eligibleLevelRoles,memberProfile,levelInfo,discordCard,uiText,uiRow,uiButton,userTag,roleTag,channelTag,theme,displayText,recordDiscordAudit} from '@turkishpix/core';
+import {withGuildScope} from '../../../packages/core/src/config';
 import {controlActor} from './control-panel';
 const timers=new Map<string,number>();
 const guarded=(task:Promise<unknown>,event:string)=>{void task.catch((e:any)=>console.error('ROLE_AUTOMATION_PENDING',JSON.stringify({event,code:typeof e?.code==='number'||typeof e?.code==='string'?e.code:'INTERNAL'})));};
 export {assignableRole as automationRole} from './role-policy';
 import {assignableRole as automationRole} from './role-policy';
+export async function configureTagRole(guild:any,member:any,roleId:string,tagGuildId:string){
+ await automationRole(guild,roleId,member);
+ if((await communitySettings()).expansion.levelRoles.some(r=>r.roleId===roleId))throw new DomainError('ROLE_CONFLICT','Tag rolü seviye ödülünden farklı olmalı.');
+ if((await database().query('SELECT id FROM role_reaction_panels WHERE guild_id=$1 AND role_id=$2 AND active LIMIT 1',[guild.id,roleId])).rows.length)throw new DomainError('ROLE_CONFLICT','Tag rolü emoji rolünden farklı olmalı.');
+ await saveRoleAutomation({id:member.id,username:member.user.username},{tagEnabled:true,tagRoleId:roleId,tagGuildId});
+}
 async function roleManager(i:any){const actor=await controlActor(i,true);if(!actor.configuredOwner&&actor.id!==i.guild.ownerId&&!actor.member.permissions.has(PermissionFlagsBits.ManageRoles))throw new DomainError('ROLE_PERMISSION','Bu işlem için Rolleri Yönet izni gerekir.',403);return actor;}
 export async function reconcileMember(member:any,rawUser?:any){
  if(member.user.bot||member.pending)return;const s=await roleAutomationSettings();
  await queueLevelRoleRewards(member.id,member.roles.cache.keys(),await communitySettings());
  if(s.autoEnabled)for(const roleId of s.autoRoleIds)if(!member.roles.cache.has(roleId))await queueRoleChange(member.id,roleId,true,'AUTO');
- if(s.tagEnabled){const user=rawUser??await discordRequest('/users/'+member.id),tag=hasServerTag(user,member.guild.id);if(tag!==null&&member.roles.cache.has(s.tagRoleId)!==tag)await queueRoleChange(member.id,s.tagRoleId,tag,'TAG');}
+ if(s.tagEnabled){const user=rawUser??await discordRequest('/users/'+member.id),tag=hasServerTag(user,s.tagGuildId??member.guild.id);if(tag!==null&&member.roles.cache.has(s.tagRoleId)!==tag){await queueRoleChange(member.id,s.tagRoleId,tag,'TAG');return s.tagRoleId;}}
 }
-export async function runRoleJob(client:Client){
- const guild=client.guilds.cache.get(config().guildId);if(!guild?.available)return;const job=await claimRoleChange();if(!job)return;
+export async function runRoleJob(client:Client,target?:{userId:string;roleId:string}){
+ const guild=client.guilds.cache.get(config().guildId);if(!guild?.available)return;const job=await claimRoleChange(target);if(!job)return;
  try{
   const s=await roleAutomationSettings();
   if(job.source==='AUTO'&&(!s.autoEnabled||!s.autoRoleIds.includes(job.role_id))||job.source==='TAG'&&(!s.tagEnabled||s.tagRoleId!==job.role_id)){await finishRoleChange(job,'SKIPPED','AUTOMATION_DISABLED');return;}
@@ -25,7 +32,7 @@ export async function runRoleJob(client:Client){
   const role=await automationRole(guild,job.role_id);
   if(member.user.bot||member.pending){await finishRoleChange(job,member.pending?'QUEUED':'SKIPPED',member.pending?'MEMBERSHIP_PENDING':'BOT_PROTECTED');return;}
   let desired=job.desired;
-  if(job.source==='TAG'){const tag=hasServerTag(await discordRequest('/users/'+member.id),guild.id);if(tag===null){await finishRoleChange(job,'QUEUED','TAG_IDENTITY_UNAVAILABLE');return;}desired=tag;}
+  if(job.source==='TAG'){const tag=hasServerTag(await discordRequest('/users/'+member.id),s.tagGuildId??guild.id);if(tag===null){await finishRoleChange(job,'QUEUED','TAG_IDENTITY_UNAVAILABLE');return;}desired=tag;}
   // A newer reaction or configuration must win over a queued older mutation.
   const current=(await database().query('SELECT revision FROM role_automation_jobs WHERE guild_id=$1 AND user_id=$2 AND role_id=$3',[guild.id,job.user_id,job.role_id])).rows[0];if(current?.revision!==job.revision)return;
   if(member.roles.cache.has(role.id)!==desired){if(desired)await member.roles.add(role,'TurkishPix: '+job.source+' rol otomasyonu');else await member.roles.remove(role,'TurkishPix: '+job.source+' rol otomasyonu');}
@@ -43,7 +50,7 @@ export async function scanMembers(client:Client){
   for(const row of rows){if(row.user?.bot||row.pending)continue;const roles=new Set(row.roles||[]);
    for(const reward of eligibleLevelRoles(community,levels.get(row.user.id)||0))if(!roles.has(reward.roleId))await queueRoleChange(row.user.id,reward.roleId,true,'LEVEL');
    if(s.autoEnabled)for(const roleId of s.autoRoleIds)if(!roles.has(roleId))await queueRoleChange(row.user.id,roleId,true,'AUTO');
-   if(s.tagEnabled){const raw=Object.hasOwn(row.user,'primary_guild')?row.user:await discordRequest('/users/'+row.user.id),tag=hasServerTag(raw,guild.id);if(tag!==null&&roles.has(s.tagRoleId)!==tag)await queueRoleChange(row.user.id,s.tagRoleId,tag,'TAG');}
+   if(s.tagEnabled){const raw=Object.hasOwn(row.user,'primary_guild')?row.user:await discordRequest('/users/'+row.user.id),tag=hasServerTag(raw,s.tagGuildId??guild.id);if(tag!==null&&roles.has(s.tagRoleId)!==tag)await queueRoleChange(row.user.id,s.tagRoleId,tag,'TAG');}
   }
   const cursor=rows.length===50?rows.at(-1).user.id:'0';await database().query("UPDATE role_scan_state SET cursor_id=$2,next_scan=now()+$3*interval '1 second',last_error=NULL,updated_at=now() WHERE guild_id=$1 AND revision=$4",[guild.id,cursor,cursor==='0'?300:5,scan.revision]);
  }catch{await database().query("UPDATE role_scan_state SET next_scan=now()+interval '30 seconds',last_error='MEMBER_SCAN_RETRY',updated_at=now() WHERE guild_id=$1 AND revision=$2",[guild.id,scan.revision]);}
@@ -78,7 +85,24 @@ export async function reactionRoleChange(reaction:any,user:any,desired:boolean){
 export function installRoleAutomation(client:Client){
  client.on(Events.GuildMemberAdd,member=>{if(member.guild.id===config().guildId)guarded(reconcileMember(member),'MEMBER_JOIN');});
  client.on(Events.GuildMemberUpdate,(_,member)=>{if(member.guild.id===config().guildId)guarded(reconcileMember(member),'MEMBER_UPDATE');});
- client.on(Events.UserUpdate,(_,user)=>{const member=client.guilds.cache.get(config().guildId)?.members.cache.get(user.id);if(member)guarded(reconcileMember(member),'TAG_UPDATE');});
+ client.on(Events.Raw,packet=>{
+  const raw=packet.t==='GUILD_MEMBER_UPDATE'||packet.t==='GUILD_MEMBER_ADD'?packet.d.user:packet.t==='USER_UPDATE'?packet.d:null;
+  if(!raw||hasServerTag(raw,'')===null)return;
+  const guilds=packet.t==='USER_UPDATE'?client.guilds.cache:[client.guilds.cache.get((packet.d as {guild_id:string}).guild_id)];
+  for(const guild of guilds.values()){
+   const member=guild?.members.cache.get(raw.id);
+   if(!guild||(!member&&packet.t!=='GUILD_MEMBER_UPDATE'))continue;
+   guarded(withGuildScope(guild.id,async()=>{
+    if(!(await roleAutomationSettings()).tagEnabled)return;
+    const currentMember=member??await guild.members.fetch(raw.id);
+    const roleId=await reconcileMember(currentMember,raw);
+    if(roleId)await runRoleJob(client,{userId:raw.id,roleId});
+   }),'TAG_UPDATE');
+  }
+ });
+ client.on(Events.GuildMemberAdd,member=>{
+  if(member.guild.id!==config().guildId)guarded(withGuildScope(member.guild.id,()=>reconcileMember(member)),'EXTERNAL_MEMBER_JOIN');
+ });
  client.on(Events.MessageCreate,message=>{if(message.guildId!==config().guildId||message.author.bot||!message.member)return;const now=Date.now();if(now-(timers.get(message.author.id)||0)<120000)return;timers.set(message.author.id,now);if(timers.size>5000)timers.delete(timers.keys().next().value!);guarded(reconcileMember(message.member),'ACTIVE_MEMBER');});
  client.on(Events.MessageReactionAdd,(reaction,user)=>guarded(reactionRoleChange(reaction,user,true),'REACTION_ADD'));
  client.on(Events.MessageReactionRemove,(reaction,user)=>guarded(reactionRoleChange(reaction,user,false),'REACTION_REMOVE'));
@@ -131,8 +155,8 @@ export async function handleRoleAutomationInteraction(i:any){
    if(['seviye-tara','levelscan'].includes(action)){await requestRoleScan();notice='Hak edilmiş XP rollerinin kontrolü sıraya alındı.';}await i.editReply(await levelRewardView(i,notice,Number(value)||0));return true;
   }else if(['otorol','tag','auto'].includes(action)&&!(component&&action==='tag'&&!i.values)){
    const ids=component?i.values:[i.options.getRole('rol',true).id];for(const id of ids)await automationRole(i.guild,id,actor.member);
-   if(action==='tag'){if((await communitySettings()).expansion.levelRoles.some(r=>r.roleId===ids[0]))throw new DomainError('ROLE_CONFLICT','Tag rolü seviye ödülünden farklı olmalı.');if((await database().query('SELECT id FROM role_reaction_panels WHERE guild_id=$1 AND role_id=$2 AND active LIMIT 1',[i.guildId,ids[0]])).rows.length)throw new DomainError('ROLE_CONFLICT','Tag rolü emoji rolünden farklı olmalı.');s.tagRoleId=ids[0];s.tagEnabled=true;}
-   else{s.autoRoleIds=ids;s.autoEnabled=true;if((await database().query('SELECT id FROM role_reaction_panels WHERE guild_id=$1 AND role_id=ANY($2::text[]) AND active LIMIT 1',[i.guildId,ids])).rows.length)throw new DomainError('ROLE_CONFLICT','Otorol emoji rolünden farklı olmalı.');}await saveRoleAutomation(actor,action==='tag'?{tagEnabled:true,tagRoleId:ids[0]}:{autoEnabled:true,autoRoleIds:ids});notice='Rol otomasyonu kaydedildi; mevcut üyeler de kontrol edilecek.';
+   if(action==='tag'){await configureTagRole(i.guild,actor.member,ids[0],i.guildId);}
+   else{s.autoRoleIds=ids;s.autoEnabled=true;if((await database().query('SELECT id FROM role_reaction_panels WHERE guild_id=$1 AND role_id=ANY($2::text[]) AND active LIMIT 1',[i.guildId,ids])).rows.length)throw new DomainError('ROLE_CONFLICT','Otorol emoji rolünden farklı olmalı.');await saveRoleAutomation(actor,{autoEnabled:true,autoRoleIds:ids});}notice='Rol otomasyonu kaydedildi; mevcut üyeler de kontrol edilecek.';
   }else if(['otorol-kapat','tag-kapat','autooff','tagoff'].includes(action)){await saveRoleAutomation(actor,action.startsWith('tag')?{tagEnabled:false}:{autoEnabled:false});notice='Otomasyon durduruldu; verilen roller korundu.';}
   else if(['tag-tara','scan'].includes(action)){await requestRoleScan();notice='Üye taglarının kontrolü sıraya alındı.';}
   else if(action==='herkese'){

@@ -28,7 +28,7 @@ export class CommandRegistrar {
     for(const command of old)if(['osint','proxy','tempmail'].includes(command.name)&&/^\d{17,20}$/.test(command.id))await this.request('/applications/'+clientId+'/commands/'+command.id,{method:'DELETE'});
     this.cleaned=true;
    }
-   if(this.guild!==guildId){
+   if(guildId&&this.guild!==guildId){
     const saved=await this.request('/applications/'+clientId+'/guilds/'+guildId+'/commands',{method:'PUT',body:JSON.stringify(guildCommands.map(({contexts,integration_types,...c})=>c))});
     if(!Array.isArray(saved)||saved.length!==guildCommands.length)throw new DomainError('COMMAND_REGISTRATION_FAILED','Sunucu komut kaydı doğrulanamadı.');
     validateGuild(saved);this.guild=guildId;

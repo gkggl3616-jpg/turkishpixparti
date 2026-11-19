@@ -1,3 +1,4 @@
+import {AsyncLocalStorage} from 'node:async_hooks';
 import 'dotenv/config';
 export const RELEASE_VERSION='2.19.0';
 export const APPLICATION_ID = '1557484052133707896';
@@ -8,14 +9,21 @@ export function setServerSettings(settings:Partial<ServerSettings>){serverSettin
 const integer = (name: string, fallback: number, min: number, max: number) => {
  const n=Number(process.env[name] ?? fallback); if(!Number.isInteger(n)||n<min||n>max) throw new Error(`Geçersiz ${name}`); return n;
 };
+const guildScope = new AsyncLocalStorage<string>();
+export function withGuildScope<T>(guildId:string,work:()=>T):T {
+ return guildScope.run(guildId,work);
+}
 export function config() {
+ const scopedGuild=guildScope.getStore();
+ const homeGuild=serverSettings.guildId??process.env.DISCORD_GUILD_ID??'';
+ const external=!!scopedGuild&&scopedGuild!==homeGuild;
  const owners=(process.env.DISCORD_OWNER_IDS||'').split(',').map(s=>s.trim()).filter(Boolean);
  return {
   appUrl:(process.env.APP_URL||'http://localhost:3000').replace(/\/$/,''),
   clientId:process.env.DISCORD_CLIENT_ID||APPLICATION_ID, publicKey:process.env.DISCORD_PUBLIC_KEY||PUBLIC_KEY,
   clientSecret:process.env.DISCORD_CLIENT_SECRET||'', botToken:process.env.DISCORD_BOT_TOKEN||'',
-  guildId:serverSettings.guildId??process.env.DISCORD_GUILD_ID??'', voteChannel:serverSettings.voteChannel??process.env.DISCORD_VOTE_CHANNEL_ID??'',
-  logChannel:serverSettings.logChannel??process.env.DISCORD_LOG_CHANNEL_ID??'', mpRole:process.env.DISCORD_MP_ROLE_ID||'', owners,
+  guildId:scopedGuild??homeGuild, voteChannel:external?'':(serverSettings.voteChannel??process.env.DISCORD_VOTE_CHANNEL_ID??''),
+  logChannel:external?'':(serverSettings.logChannel??process.env.DISCORD_LOG_CHANNEL_ID??''), mpRole:process.env.DISCORD_MP_ROLE_ID||'', owners,
   quorum:integer('OWNER_APPROVAL_QUORUM',4,4,4), ballotHours:integer('BALLOT_HOURS',24,1,720),
   minVotes:integer('MIN_VOTES',1,1,1000000), minMemberAge:integer('MIN_MEMBER_AGE_HOURS',0,0,8760),
   sessionHours:integer('SESSION_HOURS',24,1,168), demo:process.env.DEMO_MODE==='true',

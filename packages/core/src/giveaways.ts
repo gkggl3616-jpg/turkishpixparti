@@ -11,12 +11,34 @@ import {audit} from './audit';
 import {brightEmbed,displayText,userTag,theme} from './presentation';
 export function giveawayRequestId(key:string){const h=createHash('sha256').update(config().guildId+':giveaway:'+key).digest('hex');return h.slice(0,8)+'-'+h.slice(8,12)+'-4'+h.slice(13,16)+'-a'+h.slice(17,20)+'-'+h.slice(20,32);}
 export const giveawayCreateSchema=z.object({title:z.string().trim().min(1).max(200),channelId:z.string().regex(/^\d{17,20}$/),minutes:z.number().int().min(5).max(10080),winnerCount:z.number().int().min(1).max(10).default(1),requestId:z.uuid()});
-export function giveawayMessage(r:FeatureRecord,count=0){
- const winners=r.payload.winners||(r.payload.winner?[r.payload.winner]:[]),open=r.status==='OPEN',done=r.status==='DONE';
- const description=done?'**Ödül sahipleri belli oldu!**\n'+(winners.length?winners.map(userTag).join(' · '):'Bu çekilişte katılımcı bulunmadı.')+(r.payload.drawNumber>1?'\nYeniden seçim #'+r.payload.drawNumber:''):open?'**Şansını dene, ödül senin olsun.**\nKatılım ücretsiz · Her üyeye tek katılım hakkı.':'Bu çekiliş organizatör tarafından iptal edildi.';
- const embed=brightEmbed(open?'🎁 '+displayText(r.title,230):done?'🏆 '+displayText(r.title,230):'🚫 '+displayText(r.title,230),description,[{name:'🎟️ Katılım',value:'**'+(done?r.payload.entries||0:count)+'** üye',inline:true},{name:'🏅 Kazanan',value:'**'+(r.payload.winnerCount||1)+'** kişi',inline:true},{name:open?'⏳ Kalan süre':'🕒 Bitiş',value:'<t:'+Math.floor(new Date(r.due_at!).getTime()/1000)+':'+(open?'R':'f')+'>',inline:true},{name:'👤 Organizatör',value:userTag(r.owner_id),inline:true},{name:'🎉 Ödül',value:displayText(r.title,500)}],done?theme.green:open?theme.gold:theme.red);
- embed.footer={text:'TurkishPix • Ödül teslimi organizatöre aittir • '+r.id.slice(0,8)};
- return {embeds:[embed],components:[{type:1,components:[...(open?[{type:2,style:3,custom_id:`feature:${r.id}:join`,label:'Çekilişe katıl',emoji:{name:'🎉'}}]:[]),{type:2,style:2,custom_id:'giveaway:participants:'+r.id+':0',label:'Katılımcılar · Yetkili',emoji:{name:'👥'}}]}],allowed_mentions:{parse:[]}};
+export function giveawayMessage(r:FeatureRecord,count=0) {
+ const en=r.payload.giveawayLanguage==='en';
+ const t=(tr:string,english:string)=>en?english:tr;
+ const winners=r.payload.winners||(r.payload.winner?[r.payload.winner]:[]);
+ const open=r.status==='OPEN',done=r.status==='DONE';
+ const description=done
+  ? (winners.length?t('**Ödül sahipleri belli oldu!**','**The winners are in!**')+'\n'+winners.map(userTag).join(' · '):t('Bu çekilişte katılımcı bulunmadı.','Nobody entered this giveaway.'))+(r.payload.drawNumber>1?t('\nYeniden seçim #','\nReroll #')+r.payload.drawNumber:'')
+  : open?t('Katılım ücretsiz · Her üyeye tek katılım hakkı.','Free to enter · One entry per member.'):t('Bu çekiliş organizatör tarafından iptal edildi.','The organizer cancelled this giveaway.');
+ const requirements=[
+  r.payload.requiredTagGuildId?t('Profilinde etkin Discord sunucu tagı','Active Discord server tag')+' · '+r.payload.requiredTagGuildId:null,
+  r.payload.minimumMessages?t('Sunucuda toplam en az ','At least ')+r.payload.minimumMessages+t(' mesaj',' total messages in the server'):null
+ ].filter(Boolean);
+ const fields=[
+  {name:t('🎟️ Katılım','🎟️ Entries'),value:String(done?r.payload.entries||0:count),inline:true},
+  {name:t('🏅 Kazanan sayısı','🏅 Winners'),value:String(r.payload.winnerCount||1),inline:true},
+  {name:open?t('⏳ Kalan süre','⏳ Time remaining'):t('🕒 Bitiş','🕒 End time'),value:'<t:'+Math.floor(new Date(r.due_at!).getTime()/1000)+':'+(open?'R':'f')+'>',inline:true},
+  {name:t('👤 Organizatör','👤 Host'),value:userTag(r.owner_id),inline:true},
+  {name:t('🎉 Ödül','🎉 Prize'),value:displayText(r.title,500)}
+ ];
+ if(requirements.length)fields.push({name:t('Katılım şartları','Entry requirements'),value:requirements.join('\n')});
+ const embed=brightEmbed((open?'🎁 ':done?'🏆 ':'🚫 ')+displayText(r.title,230),description,fields,done?theme.green:open?theme.gold:theme.red);
+ embed.footer={text:t('TurkishPix • Ödül teslimi organizatöre aittir','TurkishPix • The host delivers the prize')+' • '+r.id.slice(0,8)};
+ const localized=r.payload.giveawayLanguage;
+ const buttonPrefix='server-giveaway:'+localized+':'+r.id;
+ return {embeds:[embed],components:[{type:1,components:[
+  ...(open?[{type:2,style:3,custom_id:localized?buttonPrefix+':join':`feature:${r.id}:join`,label:t('Çekilişe katıl','Enter giveaway'),emoji:{name:'🎉'}}]:[]),
+  {type:2,style:2,custom_id:localized?buttonPrefix+':participants:0':'giveaway:participants:'+r.id+':0',label:t('Katılımcılar · Yetkili','Participants · Staff'),emoji:{name:'👥'}}
+ ]}],allowed_mentions:{parse:[]}};
 }
 export async function giveawayParticipants(id:string,page=0){
  const r=await getFeatureRecord(id);if(r.kind!=='GIVEAWAY')throw new DomainError('GIVEAWAY_KIND','Bir çekiliş seç.');
