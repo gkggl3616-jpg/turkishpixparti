@@ -1,6 +1,7 @@
 import {ChannelType, Events, MessageFlags, PermissionFlagsBits, type Client, type Interaction} from 'discord.js';
 import {addFeatureRecord, checkFeature, communitySettings, database, DomainError, finishGiveaway, getFeatureRecord, giveawayParticipants, inspectContent, manageGiveaway, participateFeature, publishGiveaway, requestRoleScan, roleAutomationSettings, saveRoleAutomation} from '@turkishpix/core';
-import {config, withGuildScope} from '../../../packages/core/src/config';
+import {config} from '../../../packages/core/src/config';
+import {withGuildScope} from './guild-scope';
 import {configureTagRole, runRoleJob, scanMembers} from './role-automation';
 
 const snowflake = /^\d{17,20}$/;

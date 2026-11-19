@@ -1,4 +1,3 @@
-import {AsyncLocalStorage} from 'node:async_hooks';
 import 'dotenv/config';
 export const RELEASE_VERSION='2.19.0';
 export const APPLICATION_ID = '1557484052133707896';
@@ -9,12 +8,10 @@ export function setServerSettings(settings:Partial<ServerSettings>){serverSettin
 const integer = (name: string, fallback: number, min: number, max: number) => {
  const n=Number(process.env[name] ?? fallback); if(!Number.isInteger(n)||n<min||n>max) throw new Error(`Geçersiz ${name}`); return n;
 };
-const guildScope = new AsyncLocalStorage<string>();
-export function withGuildScope<T>(guildId:string,work:()=>T):T {
- return guildScope.run(guildId,work);
-}
+let getScopedGuild:()=>string|undefined=()=>undefined;
+export function setGuildScopeReader(reader:()=>string|undefined){getScopedGuild=reader;}
 export function config() {
- const scopedGuild=guildScope.getStore();
+ const scopedGuild=getScopedGuild();
  const homeGuild=serverSettings.guildId??process.env.DISCORD_GUILD_ID??'';
  const external=!!scopedGuild&&scopedGuild!==homeGuild;
  const owners=(process.env.DISCORD_OWNER_IDS||'').split(',').map(s=>s.trim()).filter(Boolean);

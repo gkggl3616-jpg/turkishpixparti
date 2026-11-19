@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {Events,PermissionFlagsBits,ChannelType,MessageFlags,type Client} from 'discord.js';
 import {config,DomainError,database,discordRequest,roleAutomationSettings,saveRoleAutomation,queueRoleChange,claimRoleChange,finishRoleChange,createRoleBulk,activateRoleBulk,cancelRoleBulk,roleBulkStatus,reactionRolePanel,requestRoleScan,hasServerTag,reactionEmojiKey,communitySettings,changeLevelRewards,queueLevelRoleRewards,eligibleLevelRoles,memberProfile,levelInfo,discordCard,uiText,uiRow,uiButton,userTag,roleTag,channelTag,theme,displayText,recordDiscordAudit} from '@turkishpix/core';
-import {withGuildScope} from '../../../packages/core/src/config';
+import {withGuildScope} from './guild-scope';
 import {controlActor} from './control-panel';
 const timers=new Map<string,number>();
 const guarded=(task:Promise<unknown>,event:string)=>{void task.catch((e:any)=>console.error('ROLE_AUTOMATION_PENDING',JSON.stringify({event,code:typeof e?.code==='number'||typeof e?.code==='string'?e.code:'INTERNAL'})));};
