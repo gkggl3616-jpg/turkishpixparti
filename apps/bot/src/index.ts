@@ -1,4 +1,4 @@
-import {externalTagTick,handleServerEngagement,serverEngagementCommands,serverGiveawayTick,trackGiveawayMessages} from './server-engagement';
+import {externalTagTick,handleServerEngagement,serverGiveawayTick,trackGiveawayMessages} from './server-engagement';
 import {queueWelcomeStaff,welcomeStaffTick,ensureWelcomeReady} from '../../../packages/core/src/welcome-staff';
 import {probeOsintProviders,probeOsintHead} from '../../../packages/core/src/osint-admin';
 import {purgeExpiredMailboxes} from '../../../packages/core/src/osint-mail';
@@ -39,6 +39,7 @@ import {Client,GatewayIntentBits,Events,MessageFlags,PermissionFlagsBits,Activit
 import {randomUUID} from 'node:crypto';
 import {RELEASE_VERSION as version} from '../../../packages/core/src/config';
 import {config,readiness,checkActor,castVote,workerTick,closeDatabase,DomainError,database,loadServerSettings,discordRequest,communitySettings,defaultCommunitySettings,communityDeliveryTick,queueWelcome,queueVoiceNotifications,setVoiceDMPreference,recordSecurity,MessageGuard,isGreeting,setAIEnabled,setDMSubscription,assistantAnswer,ticketTopics,entertainmentCommands,syncNativeModeration,awardChatXP,cleanupFeatures,brightEmbed,theme,repairLegacySecurityLogs} from '@turkishpix/core';
+import {serverEngagementCommands} from '../../../packages/core/src/server-engagement-commands';
 import {commandReply,commands,guildCommands,globalCommands} from '../../../packages/core/src/commands';
 const initial=config();
 if(!process.env.DATABASE_URL||!initial.botToken||initial.demo){console.error('Bot token ve veritabanı gerekli; demo modu kapalı olmalı.');process.exit(1);}
